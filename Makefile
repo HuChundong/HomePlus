@@ -7,7 +7,18 @@ include $(THEOS)/makefiles/common.mk
 
 TWEAK_NAME = HomePlus
 
-HomePlus_FILES = HomePlus.xm HPEditorViewController.m HPEditorWindow.m HPSettingsTableViewController.m HPUtilities.m EditorManager.m OBSlider.m
+
+dtoim = $(foreach d,$(1),-I$(d))
+
+
+_IMPORTS =  $(shell /bin/ls -d ./HomePlusEditor/*/)
+_IMPORTS += $(shell /bin/ls -d ./HomePlusEditor/*/*/)
+_IMPORTS += $(shell /bin/ls -d ./)
+IMPORTS = -I$./HomePlusEditor $(call dtoim, $(_IMPORTS))
+
+SOURCES = $(shell find HomePlusEditor -name '*.m')
+HomePlus_FILES = HomePlus.xm ${SOURCES}
+HomePlus_CFLAGS += -fobjc-arc -w $(IMPORTS)
 
 include $(THEOS_MAKE_PATH)/tweak.mk
 SUBPROJECTS += homeplusprefs
