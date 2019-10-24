@@ -1,0 +1,3 @@
+
+@interface HPEditorWindow : UIWindow
+@end 

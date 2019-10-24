@@ -1,0 +1,488 @@
+//
+// HPEditorViewController.m
+// HomePlus
+//
+// Most of the UI code goes here. This handles all of the views that are brought up. 
+// Although it isn't the manager, think of this as the home-base for everything that happens
+//      once the editor view is activated.
+// 
+// Created Oct 2019 
+// Authors: Kritanta, Calico
+//
+
+#include "HPEditorViewController.h"
+#include "HomePlus.h"
+#include "EditorManager.h"
+#include "HPUtilities.h"
+#include "HPSettingsTableViewController.h"
+#include "HPEditorViewNavigationTabBar.h"
+#import "OBSlider.h"
+#import <AudioToolbox/AudioToolbox.h>
+
+
+
+@implementation HPEditorViewNavigationTabBar
+@end
+
+@interface HPEditorViewController () 
+@property (nonatomic, readwrite, strong) HPControllerView *offsetControlView;
+@property (nonatomic, readwrite, strong) HPControllerView *spacingControlView;
+@property (nonatomic, readwrite, strong) HPControllerView *settingsView;
+@property (nonatomic, readwrite, strong) HPEditorViewNavigationTabBar *tabBar;
+
+@property (nonatomic, readwrite, strong) UIView *tapBackView;
+
+@property (nonatomic, retain) HPControllerView *activeView;
+@property (nonatomic, retain) UIButton *activeButton;
+
+@property (nonatomic, retain) UIButton *offsetButton;
+@property (nonatomic, retain) UIButton *spacerButton;
+@property (nonatomic, retain) UIButton *settingsButton;
+@property (nonatomic, retain) UIButton *settingsDoneButton;
+
+
+@end
+
+
+@implementation HPControllerView
+- (id)initWithFrame:(CGRect)frame
+{
+    self = [super initWithFrame:frame];
+    return self;
+}
+@end
+
+@implementation HPEditorViewController
+@synthesize topOffsetSlider, sideOffsetSlider, verticalSpacingSlider, horizontalSpacingSlider, 
+            rootIconListViewsToUpdate, topOffsetValueInput, bottomOffsetValueInput,
+            topSpacingValueInput, bottomSpacingValueInput;
+
+- (void)viewDidLoad
+{
+    [super viewDidLoad];
+
+
+
+    [self.view addSubview:[self offsetControlView]];
+    [self.view addSubview:[self spacingControlView]];
+    [self.view addSubview:[self settingsView]];
+    [self loadControllerView:[self offsetControlView]];
+    [self spacingControlView].alpha = 0;
+    [self settingsView].alpha = 0;
+
+
+    self.offsetButton = [UIButton buttonWithType:UIButtonTypeCustom];
+    [self.offsetButton addTarget:self 
+            action:@selector(handleOffsetButtonPress:)
+            forControlEvents:UIControlEventTouchUpInside];
+    [self.offsetButton addTarget:self
+            action:@selector(buttonPressDown:)
+            forControlEvents:UIControlEventTouchDown];
+    UIImage *offsetImage = [HPUtilities offsetImage];
+    [self.offsetButton setImage:offsetImage forState:UIControlStateNormal];
+    self.offsetButton.frame = CGRectMake([[UIScreen mainScreen] bounds].size.width - 47.5, (0.197) * [[UIScreen mainScreen] bounds].size.height, 40.0, 40.0);
+    [self.view addSubview:self.offsetButton];
+
+    self.spacerButton = [UIButton buttonWithType:UIButtonTypeCustom];
+    [self.spacerButton addTarget:self 
+            action:@selector(handleSpacerButtonPress:)
+            forControlEvents:UIControlEventTouchUpInside];
+    [self.spacerButton addTarget:self
+            action:@selector(buttonPressDown:)
+            forControlEvents:UIControlEventTouchDown];
+    UIImage *spacerImage = [HPUtilities spacerImage];
+    [self.spacerButton setImage:spacerImage forState:UIControlStateNormal];
+    self.spacerButton.frame = CGRectMake([[UIScreen mainScreen] bounds].size.width - 47.5,((0.197) * [[UIScreen mainScreen] bounds].size.height) + 40, 40.0, 40.0);
+    self.spacerButton.alpha = 0.7;
+    [self.view addSubview:self.spacerButton];
+
+
+    self.settingsButton = [UIButton buttonWithType:UIButtonTypeCustom];
+    [self.settingsButton addTarget:self 
+            action:@selector(handleSettingsButtonPress:)
+            forControlEvents:UIControlEventTouchUpInside];
+    [self.settingsButton addTarget:self
+            action:@selector(buttonPressDown:)
+            forControlEvents:UIControlEventTouchDown];
+    UIImage *settingsImage = [HPUtilities settingsImage];
+    [self.settingsButton setImage:settingsImage forState:UIControlStateNormal];
+    self.settingsButton.frame = CGRectMake([[UIScreen mainScreen] bounds].size.width - 47.5,((0.197) * [[UIScreen mainScreen] bounds].size.height) + 80, 40.0, 40.0);
+    self.settingsButton.alpha = 0.7;
+    [self.view addSubview:self.settingsButton];
+
+    [self.view addSubview:[self tapBackView]];
+    self.tapBackView.hidden = NO;
+    
+    self.activeButton = self.offsetButton;
+
+}
+-(void)buttonPressDown:(UIButton*)sender
+{
+    // AudioServicesPlaySystemSound(1519);
+}
+-(void)handleSettingsButtonPress:(UIButton*)sender
+{
+    [self loadControllerView:[self settingsView]];
+
+    [UIView animateWithDuration:.2 animations:^{
+        self.settingsButton.alpha = 0;
+        self.spacerButton.alpha = 0;
+        self.offsetButton.alpha = 0;
+    }];
+    self.activeButton = sender;
+    self.tapBackView.hidden = YES;
+}
+-(void)handleDoneSettingsButtonPress:(UIButton*)sender
+{
+    [UIView animateWithDuration:.2 animations:^{
+        self.settingsButton.alpha = 0.7;
+        self.spacerButton.alpha = 0.7;
+        self.offsetButton.alpha = 1;
+    }];
+    [self loadControllerView:[self offsetControlView]];
+}
+-(void)handleOffsetButtonPress:(UIButton*)sender 
+{
+    [self loadControllerView:[self offsetControlView]];
+    [UIView animateWithDuration:.2 animations:^{
+        sender.alpha = 1;
+    }];
+    self.activeButton = sender;
+    self.tapBackView.hidden = NO;
+}
+-(void)handleSpacerButtonPress:(UIButton*)sender 
+{
+    [self loadControllerView:[self spacingControlView]];
+    [UIView animateWithDuration:.2 animations:^{
+        sender.alpha = 1;
+    }];
+    self.activeButton = sender;
+    self.tapBackView.hidden = NO;
+}
+-(void)loadControllerView:(HPControllerView *)arg1 
+{
+    self.activeButton.alpha = 0.7;
+    AudioServicesPlaySystemSound(1519);
+    NSLog(@"HPD: Loading controller view");
+
+    [UIView animateWithDuration:.2 animations:^{
+        self.activeView.alpha = 0;
+        arg1.alpha = 1;
+    }];
+    self.activeView = arg1;
+}
+-(UIView *)tapBackView 
+{
+    if (!_tapBackView) {
+        _tapBackView = [[UIView alloc] initWithFrame:[[UIScreen mainScreen] bounds]];
+        // lol fix pls
+        UITapGestureRecognizer *singleTapRecognizer = [[UITapGestureRecognizer alloc] initWithTarget:self action: @selector(handleTapOnView:)];                                 
+        [singleTapRecognizer setNumberOfTouchesRequired:2];
+        [_tapBackView addGestureRecognizer: singleTapRecognizer];
+        _tapBackView.transform = CGAffineTransformMakeScale(0.7, 0.7);
+    }
+    return _tapBackView;
+}
+- (void)handleTapOnView:(id)sender
+{
+
+    [[self.view subviews]
+        makeObjectsPerformSelector:@selector(removeFromSuperview)];
+    _spacingControlView = nil;
+    _offsetControlView = nil;
+    _settingsView = nil;
+    [self viewDidLoad];
+    [[NSNotificationCenter defaultCenter] postNotificationName:@"HomePlusEditingModeDisabled" object:nil];
+    [[EditorManager sharedManager] hideEditorView];
+}
+#pragma mark HPControllerViews
+
+-(HPControllerView *)settingsView {
+    if (!_settingsView) {
+        _settingsView = [[HPControllerView alloc] initWithFrame:[[UIScreen mainScreen] bounds]];
+        UIView *settingsContainerView = [[HPSettingsTableViewController alloc] init].view;
+        _settingsView.topView = [[UIView alloc] initWithFrame:[[UIScreen mainScreen] bounds]];
+        [_settingsView addSubview:_settingsView.topView];
+        [_settingsView.topView addSubview:settingsContainerView];
+
+        UIView *tableHeaderView = [[UIView alloc] initWithFrame:CGRectMake(0,0,[[UIScreen mainScreen] bounds].size.width,(0.428*[[UIScreen mainScreen] bounds].size.width))];
+        UIImageView *imageView = [[UIImageView alloc] initWithFrame:CGRectMake(0, 0, [[UIScreen mainScreen] bounds].size.width,(0.428*[[UIScreen mainScreen] bounds].size.width))];
+        imageView.image = [HPUtilities inAppBanner];
+        [tableHeaderView addSubview:imageView];
+
+        UIView *doneButtonContainerView = [[UIView alloc] initWithFrame:CGRectMake((0, 0.428*[[UIScreen mainScreen] bounds].size.width)-40, )]
+
+        [_settingsView.topView addSubview:tableHeaderView];
+    }
+    _settingsView.alpha =
+    return _settingsView;
+}
+-(HPControllerView *)offsetControlView 
+{
+    if (!_offsetControlView) {
+        _offsetControlView = [[HPControllerView alloc] initWithFrame:[[UIScreen mainScreen] bounds]];
+
+        _offsetControlView.topView = [[UIView alloc] initWithFrame:
+                CGRectMake((.146 * [[UIScreen mainScreen] bounds].size.width), (0.036) * [[UIScreen mainScreen] bounds].size.height, (.706 * [[UIScreen mainScreen] bounds].size.width), (0.123 * [[UIScreen mainScreen] bounds].size.height))];
+
+        UILabel *topLabel = [[UILabel alloc] initWithFrame:CGRectMake(0, 0, (0.706) * [[UIScreen mainScreen] bounds].size.width, (0.0615) * [[UIScreen mainScreen] bounds].size.height)];
+        [topLabel setText:@"Top Offset: "];
+        topLabel.textColor=[UIColor whiteColor];
+        topLabel.textAlignment=NSTextAlignmentCenter;
+
+        self.topOffsetValueInput = [[UITextField alloc] initWithFrame:CGRectMake((0.613) * [[UIScreen mainScreen] bounds].size.width, (0.0369) * [[UIScreen mainScreen] bounds].size.height, (0.1333) * [[UIScreen mainScreen] bounds].size.width, (0.0369) * [[UIScreen mainScreen] bounds].size.height)];
+        [self.topOffsetValueInput addTarget:self
+                action:@selector(topOffsetValueDidChange:)
+                forControlEvents:UIControlEventEditingChanged];
+        self.topOffsetValueInput.keyboardType = UIKeyboardTypeNumberPad;
+        self.topOffsetValueInput.textColor = [UIColor whiteColor];
+
+        UIToolbar* keyboardToolbar = [[UIToolbar alloc] init];
+
+        [keyboardToolbar sizeToFit];
+        UIBarButtonItem *flexBarButton = [[UIBarButtonItem alloc]
+                                        initWithBarButtonSystemItem:UIBarButtonSystemItemFlexibleSpace
+                                        target:nil action:nil];
+        UIBarButtonItem *doneBarButton = [[UIBarButtonItem alloc]
+                                        initWithBarButtonSystemItem:UIBarButtonSystemItemDone
+                                        target:self.topOffsetValueInput action:@selector(resignFirstResponder)];
+        keyboardToolbar.items = @[flexBarButton, doneBarButton];
+        self.topOffsetValueInput.inputAccessoryView = keyboardToolbar;
+
+        self.topOffsetSlider = [[OBSlider alloc] initWithFrame:CGRectMake(0, (0.0369) * [[UIScreen mainScreen] bounds].size.height, (0.586) * [[UIScreen mainScreen] bounds].size.width, (0.0615) * [[UIScreen mainScreen] bounds].size.height)];
+        [self.topOffsetSlider addTarget:self action:@selector(topOffsetSliderChanged:) forControlEvents:UIControlEventValueChanged];
+        [self.topOffsetSlider setBackgroundColor:[UIColor clearColor]];
+        self.topOffsetSlider.maximumTrackTintColor = [UIColor colorWithWhite:1.0 alpha:0.2];
+        self.topOffsetSlider.minimumTrackTintColor = [UIColor colorWithWhite:1.0 alpha: 0.9];
+        self.topOffsetSlider.minimumValue = 0.0;
+        self.topOffsetSlider.maximumValue = [[UIScreen mainScreen] bounds].size.height;
+        self.topOffsetSlider.continuous = YES;
+        self.topOffsetSlider.value = [[NSUserDefaults standardUserDefaults] floatForKey:@"customTopInset"] ?:28.0;
+        [_offsetControlView addSubview:_offsetControlView.topView];
+        [_offsetControlView.topView addSubview:topLabel];
+        [_offsetControlView.topView addSubview:self.topOffsetSlider];
+        self.topOffsetValueInput.text = [NSString stringWithFormat:@"%.0f", self.topOffsetSlider.value];
+        [_offsetControlView.topView addSubview:topOffsetValueInput];
+
+
+        _offsetControlView.bottomView = [[UIView alloc] initWithFrame:CGRectMake((0.146) * [[UIScreen mainScreen] bounds].size.width, (0.862) * [[UIScreen mainScreen] bounds].size.height, (0.706) * [[UIScreen mainScreen] bounds].size.width, (0.123) * [[UIScreen mainScreen] bounds].size.height)];
+
+        UILabel *sideLabel = [[UILabel alloc] initWithFrame:CGRectMake(0, 0, (0.706) * [[UIScreen mainScreen] bounds].size.width, 50)];
+        [sideLabel setText:@"Left Offset"];
+        sideLabel.textColor=[UIColor whiteColor];
+        sideLabel.textAlignment=NSTextAlignmentCenter;
+
+
+
+        self.bottomOffsetValueInput = [[UITextField alloc] initWithFrame:CGRectMake((0.613) * [[UIScreen mainScreen] bounds].size.width, (0.0369) * [[UIScreen mainScreen] bounds].size.height, 50, 30)];
+        [self.bottomOffsetValueInput addTarget:self
+                action:@selector(bottomOffsetValueDidChange:)
+                forControlEvents:UIControlEventEditingChanged];
+        self.bottomOffsetValueInput.keyboardType = UIKeyboardTypeNumberPad;
+        self.bottomOffsetValueInput.textColor = [UIColor whiteColor];
+
+        UIToolbar* bkeyboardToolbar = [[UIToolbar alloc] init];
+
+        [bkeyboardToolbar sizeToFit];
+        UIBarButtonItem *bflexBarButton = [[UIBarButtonItem alloc]
+                                        initWithBarButtonSystemItem:UIBarButtonSystemItemFlexibleSpace
+                                        target:nil action:nil];
+        UIBarButtonItem *bdoneBarButton = [[UIBarButtonItem alloc]
+                                        initWithBarButtonSystemItem:UIBarButtonSystemItemDone
+                                        target:self.bottomOffsetValueInput action:@selector(resignFirstResponder)];
+        bkeyboardToolbar.items = @[bflexBarButton, bdoneBarButton];
+        self.bottomOffsetValueInput.inputAccessoryView = bkeyboardToolbar;
+
+
+        self.sideOffsetSlider = [[OBSlider alloc] initWithFrame:CGRectMake(0, (0.0369) * [[UIScreen mainScreen] bounds].size.height, (0.586) * [[UIScreen mainScreen] bounds].size.width, 50)];
+        [self.sideOffsetSlider addTarget:self action:@selector(sideOffsetSliderChanged:) forControlEvents:UIControlEventValueChanged];
+        [self.sideOffsetSlider setBackgroundColor:[UIColor clearColor]];
+        self.sideOffsetSlider.maximumTrackTintColor = [UIColor colorWithWhite:1.0 alpha:0.2];
+        self.sideOffsetSlider.minimumTrackTintColor = [UIColor colorWithWhite:1.0 alpha: 0.9];
+        self.sideOffsetSlider.minimumValue = -400.0;
+        self.sideOffsetSlider.maximumValue = 400.0;
+        self.sideOffsetSlider.continuous = YES;
+        self.sideOffsetSlider.value = [[NSUserDefaults standardUserDefaults] floatForKey:@"customLeftOffset"] ?:0.0;
+        [_offsetControlView addSubview:_offsetControlView.bottomView];
+        [_offsetControlView.bottomView addSubview:sideLabel];
+        [_offsetControlView.bottomView addSubview:self.sideOffsetSlider];
+        self.bottomOffsetValueInput.text = [NSString stringWithFormat:@"%.0f", self.sideOffsetSlider.value];
+        [_offsetControlView.bottomView addSubview:self.bottomOffsetValueInput];
+    }
+    return _offsetControlView;
+}
+-(HPControllerView *)spacingControlView
+{
+    if (!_spacingControlView) {
+        _spacingControlView = [[HPControllerView alloc] initWithFrame:[[UIScreen mainScreen] bounds]];
+
+        _spacingControlView.topView =[[UIView alloc] initWithFrame:
+                CGRectMake((.146 * [[UIScreen mainScreen] bounds].size.width), (0.036) * [[UIScreen mainScreen] bounds].size.height, (.706 * [[UIScreen mainScreen] bounds].size.width), (0.123 * [[UIScreen mainScreen] bounds].size.height))];
+
+        UILabel *topLabel = [[UILabel alloc] initWithFrame:CGRectMake(0, 0, (0.706) * [[UIScreen mainScreen] bounds].size.width, (0.0615) * [[UIScreen mainScreen] bounds].size.height)];
+        [topLabel setText:@"Vertical Spacing: "];
+        topLabel.textColor=[UIColor whiteColor];
+        topLabel.textAlignment=NSTextAlignmentCenter;
+
+        self.topSpacingValueInput =[[UITextField alloc] initWithFrame:CGRectMake((0.613) * [[UIScreen mainScreen] bounds].size.width, (0.0369) * [[UIScreen mainScreen] bounds].size.height, (0.1333) * [[UIScreen mainScreen] bounds].size.width, (0.0369) * [[UIScreen mainScreen] bounds].size.height)];
+        [self.topSpacingValueInput addTarget:self
+                action:@selector(topSpacingValueDidChange:)
+                forControlEvents:UIControlEventEditingChanged];
+        self.topSpacingValueInput.keyboardType = UIKeyboardTypeNumberPad;
+        self.topSpacingValueInput.textColor = [UIColor whiteColor];
+
+        UIToolbar* keyboardToolbar = [[UIToolbar alloc] init];
+
+        [keyboardToolbar sizeToFit];
+        UIBarButtonItem *flexBarButton = [[UIBarButtonItem alloc]
+                                        initWithBarButtonSystemItem:UIBarButtonSystemItemFlexibleSpace
+                                        target:nil action:nil];
+        UIBarButtonItem *doneBarButton = [[UIBarButtonItem alloc]
+                                        initWithBarButtonSystemItem:UIBarButtonSystemItemDone
+                                        target:self.topSpacingValueInput action:@selector(resignFirstResponder)];
+        keyboardToolbar.items = @[flexBarButton, doneBarButton];
+        self.topSpacingValueInput.inputAccessoryView = keyboardToolbar;
+
+        self.verticalSpacingSlider = [[OBSlider alloc] initWithFrame:CGRectMake(0, 30, 220, 50)];
+        [self.verticalSpacingSlider addTarget:self action:@selector(verticalSpacingSliderChanged:) forControlEvents:UIControlEventValueChanged];
+        [self.verticalSpacingSlider setBackgroundColor:[UIColor clearColor]];
+        self.verticalSpacingSlider.maximumTrackTintColor = [UIColor colorWithWhite:1.0 alpha:0.2];
+        self.verticalSpacingSlider.minimumTrackTintColor = [UIColor colorWithWhite:1.0 alpha: 0.9];
+        self.verticalSpacingSlider.minimumValue = -100.0;
+        self.verticalSpacingSlider.maximumValue = 200.0;
+        self.verticalSpacingSlider.continuous = YES;
+        self.verticalSpacingSlider.value = [[NSUserDefaults standardUserDefaults] floatForKey:@"customVerticalSpacing"] ?:28.0;
+        [_spacingControlView addSubview:_spacingControlView.topView];
+        [_spacingControlView.topView addSubview:topLabel];
+        [_spacingControlView.topView addSubview:self.verticalSpacingSlider];
+        self.topSpacingValueInput.text = [NSString stringWithFormat:@"%.0f", self.verticalSpacingSlider.value];
+        [_spacingControlView.topView addSubview:topSpacingValueInput];
+
+
+        _spacingControlView.bottomView = [[UIView alloc] initWithFrame:CGRectMake((0.146) * [[UIScreen mainScreen] bounds].size.width, (0.862) * [[UIScreen mainScreen] bounds].size.height, (0.706) * [[UIScreen mainScreen] bounds].size.width, (0.123) * [[UIScreen mainScreen] bounds].size.height)];
+
+
+        UILabel *sideLabel =  [[UILabel alloc] initWithFrame:CGRectMake(0, 0, (0.706) * [[UIScreen mainScreen] bounds].size.width, 50)];
+        [sideLabel setText:@"Horizontal Spacing: "];
+        sideLabel.textColor=[UIColor whiteColor];
+        sideLabel.textAlignment=NSTextAlignmentCenter;
+
+
+        self.bottomSpacingValueInput = [[UITextField alloc] initWithFrame:CGRectMake((0.613) * [[UIScreen mainScreen] bounds].size.width, (0.0369) * [[UIScreen mainScreen] bounds].size.height, 50, 30)];
+        [self.bottomSpacingValueInput addTarget:self
+                action:@selector(bottomSpacingValueDidChange:)
+                forControlEvents:UIControlEventEditingChanged];
+        self.bottomSpacingValueInput.keyboardType = UIKeyboardTypeNumberPad;
+        self.bottomSpacingValueInput.textColor = [UIColor whiteColor];
+
+        UIToolbar* bkeyboardToolbar = [[UIToolbar alloc] init];
+
+        [bkeyboardToolbar sizeToFit];
+        UIBarButtonItem *bflexBarButton = [[UIBarButtonItem alloc]
+                                        initWithBarButtonSystemItem:UIBarButtonSystemItemFlexibleSpace
+                                        target:nil action:nil];
+        UIBarButtonItem *bdoneBarButton = [[UIBarButtonItem alloc]
+                                        initWithBarButtonSystemItem:UIBarButtonSystemItemDone
+                                        target:self.bottomSpacingValueInput action:@selector(resignFirstResponder)];
+        bkeyboardToolbar.items = @[bflexBarButton, bdoneBarButton];
+        self.bottomSpacingValueInput.inputAccessoryView = bkeyboardToolbar;
+
+        self.horizontalSpacingSlider =[[OBSlider alloc] initWithFrame:CGRectMake(0, (0.0369) * [[UIScreen mainScreen] bounds].size.height, (0.586) * [[UIScreen mainScreen] bounds].size.width, 50)];
+        [self.horizontalSpacingSlider addTarget:self action:@selector(horizontalSpacingSliderChanged:) forControlEvents:UIControlEventValueChanged];
+        [self.horizontalSpacingSlider setBackgroundColor:[UIColor clearColor]];
+        self.horizontalSpacingSlider.maximumTrackTintColor = [UIColor colorWithWhite:1.0 alpha:0.2];
+        self.horizontalSpacingSlider.minimumTrackTintColor = [UIColor colorWithWhite:1.0 alpha: 0.9];
+        self.horizontalSpacingSlider.minimumValue = 0.0;
+        self.horizontalSpacingSlider.maximumValue = 600.0;
+        self.horizontalSpacingSlider.continuous = YES;
+        self.horizontalSpacingSlider.value = [[NSUserDefaults standardUserDefaults] floatForKey:@"customSideInset"] ?:0.0;
+        [_spacingControlView addSubview:_spacingControlView.bottomView];
+        self.bottomSpacingValueInput.text = [NSString stringWithFormat:@"%.0f", self.horizontalSpacingSlider.value];
+        [_spacingControlView.bottomView addSubview:sideLabel];
+        [_spacingControlView.bottomView addSubview:self.horizontalSpacingSlider];
+        [_spacingControlView.bottomView addSubview:self.bottomSpacingValueInput];
+    }
+    return _spacingControlView;
+}
+-(void)addRootIconListViewToUpdate:(SBRootIconListView *)view
+{
+    if (!self.rootIconListViewsToUpdate) self.rootIconListViewsToUpdate = [[NSMutableArray alloc] init];
+    [self.rootIconListViewsToUpdate addObject:view];
+}
+
+-(void)resetAllValuesToDefaults {
+    [[self.view subviews]
+        makeObjectsPerformSelector:@selector(removeFromSuperview)];
+    _spacingControlView = nil;
+    _offsetControlView = nil;
+    _settingsView = nil;
+    for (SBRootIconListView *view in self.rootIconListViewsToUpdate) {
+        [view resetValuesToDefaults];
+    }
+    [self viewDidLoad];
+    [[EditorManager sharedManager] hideEditorView];
+}
+
+#pragma mark Text Fields
+
+-(void)topOffsetValueDidChange :(UITextField *) textField
+{
+    self.topOffsetSlider.value = [[textField text] floatValue];
+    for (SBRootIconListView *view in self.rootIconListViewsToUpdate) {
+        [view updateTopInset:[self.topOffsetSlider value]];
+    }   
+}
+-(void)bottomOffsetValueDidChange:(UITextField *)textField
+{
+    self.sideOffsetSlider.value = [[textField text] floatValue];
+    for (SBRootIconListView *view in self.rootIconListViewsToUpdate) {
+        [view updateLeftOffset:[self.sideOffsetSlider value]];
+    }  
+}
+-(void)topSpacingValueDidChange:(UITextField *)textField
+{
+    self.verticalSpacingSlider.value = [[textField text] floatValue];
+    for (SBRootIconListView *view in self.rootIconListViewsToUpdate) {
+        [view updateVerticalSpacing:[self.verticalSpacingSlider value]];
+    }
+}
+-(void)bottomSpacingValueDidChange:(UITextField *)textField 
+{
+    self.horizontalSpacingSlider.value = [[textField text] floatValue];
+    for (SBRootIconListView *view in self.rootIconListViewsToUpdate) {
+        [view updateSideInset:[self.horizontalSpacingSlider value]];
+    }
+}
+# pragma mark Spacing Sliders
+
+-(void)verticalSpacingSliderChanged:(OBSlider *)sender
+{
+    for (SBRootIconListView *view in self.rootIconListViewsToUpdate) {
+        [view updateVerticalSpacing:[sender value]];
+    }    
+    self.topSpacingValueInput.text = [NSString stringWithFormat:@"%.0f", sender.value];
+}
+-(void)horizontalSpacingSliderChanged:(OBSlider *)sender
+{
+    for (SBRootIconListView *view in self.rootIconListViewsToUpdate) {
+        [view updateSideInset:[sender value]];
+    }
+    self.bottomSpacingValueInput.text = [NSString stringWithFormat:@"%.0f", sender.value];
+}
+-(void)topOffsetSliderChanged:(OBSlider *)sender
+{
+    for (SBRootIconListView *view in self.rootIconListViewsToUpdate) {
+        [view updateTopInset:[sender value]];
+    }    
+    self.topOffsetValueInput.text = [NSString stringWithFormat:@"%.0f", sender.value];
+}
+-(void)sideOffsetSliderChanged:(OBSlider *)sender
+{
+    for (SBRootIconListView *view in self.rootIconListViewsToUpdate) {
+        [view updateLeftOffset:[sender value]];
+    }    
+    self.bottomOffsetValueInput.text = [NSString stringWithFormat:@"%.0f", sender.value];
+}
+
+
+@end
