@@ -30,6 +30,9 @@
 @property (nonatomic, readwrite, strong) HPControllerView *settingsView;
 @property (nonatomic, readwrite, strong) HPEditorViewNavigationTabBar *tabBar;
 
+@property (nonatomic, readwrite, strong) HPSettingsTableViewController *tableViewController;
+
+
 @property (nonatomic, readwrite, strong) UIView *tapBackView;
 
 @property (nonatomic, retain) HPControllerView *activeView;
@@ -200,22 +203,39 @@
 -(HPControllerView *)settingsView {
     if (!_settingsView) {
         _settingsView = [[HPControllerView alloc] initWithFrame:[[UIScreen mainScreen] bounds]];
-        UIView *settingsContainerView = [[HPSettingsTableViewController alloc] init].view;
+        UIView *settingsContainerView = self.tableViewController.view;
         _settingsView.topView = [[UIView alloc] initWithFrame:[[UIScreen mainScreen] bounds]];
-        [_settingsView addSubview:_settingsView.topView];
         [_settingsView.topView addSubview:settingsContainerView];
+        [_settingsView addSubview:_settingsView.topView];
 
         UIView *tableHeaderView = [[UIView alloc] initWithFrame:CGRectMake(0,0,[[UIScreen mainScreen] bounds].size.width,(0.428*[[UIScreen mainScreen] bounds].size.width))];
         UIImageView *imageView = [[UIImageView alloc] initWithFrame:CGRectMake(0, 0, [[UIScreen mainScreen] bounds].size.width,(0.428*[[UIScreen mainScreen] bounds].size.width))];
         imageView.image = [HPUtilities inAppBanner];
         [tableHeaderView addSubview:imageView];
 
-        UIView *doneButtonContainerView = [[UIView alloc] initWithFrame:CGRectMake((0, 0.428*[[UIScreen mainScreen] bounds].size.width)-40, )]
-
+        UIView *doneButtonContainerView = [[UIView alloc] initWithFrame:CGRectMake([[UIScreen mainScreen] bounds].size.width-80, (0.428*[[UIScreen mainScreen] bounds].size.width)-40, [[UIScreen mainScreen] bounds].size.width/2, 40)];
+        UIButton *button = [UIButton buttonWithType:UIButtonTypeCustom];
+        [button addTarget:self 
+                action:@selector(handleDoneSettingsButtonPress:)
+        forControlEvents:UIControlEventTouchUpInside];
+        [button setTitle:@"Done" forState:UIControlStateNormal];
+        button.frame = CGRectMake(0, 0,80, 40);
+        [doneButtonContainerView addSubview:button];
+        _settingsView.bottomView = [[UIView alloc] initWithFrame:CGRectMake(0,0,[[UIScreen mainScreen] bounds].size.width,(0.428*[[UIScreen mainScreen] bounds].size.width))];
+        [_settingsView.bottomView addSubview:doneButtonContainerView];
+        
         [_settingsView.topView addSubview:tableHeaderView];
+        [_settingsView addSubview:_settingsView.bottomView];
     }
-    _settingsView.alpha =
+    _settingsView.hidden = NO;
     return _settingsView;
+}
+-(HPSettingsTableViewController *)tableViewController
+{
+    if (!_tableViewController) {
+        _tableViewController = [[HPSettingsTableViewController alloc] initWithStyle:UITableViewStyleGrouped];
+    }
+    return _tableViewController;
 }
 -(HPControllerView *)offsetControlView 
 {

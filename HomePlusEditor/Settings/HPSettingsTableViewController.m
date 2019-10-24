@@ -28,6 +28,7 @@ const int RESET_VALUES = 1;
 
     UIWindow *window = UIApplication.sharedApplication.keyWindow;
     CGFloat topPadding = window.safeAreaInsets.top;
+
     //CGFloat bottomPadding = window.safeAreaInsets.bottom;
     
     //self.tableView.frame = CGRectMake(self.tableView.frame.origin.x, self.tableView.frame.origin.y+topPadding, self.tableView.frame.size.width, self.tableView.frame.size.height-topPadding);
@@ -48,12 +49,11 @@ const int RESET_VALUES = 1;
         bg.backgroundColor = [UIColor blackColor];
     }
 
-    UIView *tableHeaderView = [[UIView alloc] initWithFrame:CGRectMake(0,0,[[UIScreen mainScreen] bounds].size.width,(0.428*[[UIScreen mainScreen] bounds].size.width)-topPadding)];
+    UIView *tableHeaderView = [[UIView alloc] initWithFrame:CGRectMake(0,0,[[UIScreen mainScreen] bounds].size.width,(0.428*[[UIScreen mainScreen] bounds].size.width)-topPadding-20)];
     self.tableView.tableHeaderView = tableHeaderView;
     self.tableView.backgroundColor = [UIColor clearColor];
     self.tableView.backgroundView = bg;
 
-    self.tableView.delegate = self;
     self.navigationController.navigationBar.barTintColor = [UIColor blackColor];
     self.navigationController.navigationBar.translucent = NO;
     NSDictionary *attributes = @{
@@ -64,6 +64,8 @@ const int RESET_VALUES = 1;
     [self.navigationController.navigationBar setTitleTextAttributes: attributes];
 
     self.tableView.translatesAutoresizingMaskIntoConstraints = NO;
+
+    [self.tableView registerClass:[UITableViewCell class] forCellReuseIdentifier:@"Cell"];
 }
 
 #pragma mark - 
@@ -106,7 +108,7 @@ const int RESET_VALUES = 1;
             sectionName = @"";
             break;
     }    
-    return sectionName;
+    return @"Reset";
 }
 - (UITableViewCell *)tableView:(UITableView *)tableView cellForRowAtIndexPath:(NSIndexPath *)indexPath
 {
@@ -133,7 +135,7 @@ const int RESET_VALUES = 1;
     cell.detailTextLabel.textColor = [UIColor whiteColor];//[prefs colorForKey:@"textTint"];
 
     cell.clipsToBounds = YES;
-
+    cell.hidden = NO;
 
     return cell;
 }

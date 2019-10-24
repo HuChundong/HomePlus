@@ -44,6 +44,7 @@
 @property (nonatomic, readonly, strong) HPControllerView *settingsView;
 @property (nonatomic, readonly, strong) UIView *tapBackView;
 @property (nonatomic, readonly, strong) HPEditorViewNavigationTabBar *tabBar;
+@property (nonatomic, readonly, strong) HPSettingsTableViewController *tableViewController;
 
 @property (nonatomic, retain) NSMutableArray *rootIconListViewsToUpdate;
 
