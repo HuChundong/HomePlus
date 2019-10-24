@@ -1,7 +1,7 @@
 Package: me.kritanta.homeplus
 Name: HomePlus
 Depends: mobilesubstrate
-Version: 0.0.6
+Version: 0.0.7
 Architecture: iphoneos-arm
 Description: An awesome MobileSubstrate tweak!
 Maintainer: Kritanta
