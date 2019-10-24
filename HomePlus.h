@@ -4,6 +4,7 @@
 @property (nonatomic, assign) CGFloat customLeftOffset;
 @property (nonatomic, assign) CGFloat customSideInset;
 @property (nonatomic, assign) CGFloat customVerticalSpacing;
+@property (nonatomic, assign) BOOL configured;
 -(void)updateTopInset:(CGFloat)arg1;
 -(void)updateSideInset:(CGFloat)arg1;
 

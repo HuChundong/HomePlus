@@ -251,21 +251,28 @@ NSDictionary *prefs = nil;
 %property (nonatomic, assign) CGFloat customLeftOffset;
 %property (nonatomic, assign) CGFloat customVerticalSpacing;
 %property (nonatomic, assign) CGFloat customSideInset;
+%property (nonatomic, assign) BOOL configured;
 
-
+/*
 -(id)initWithModel:(id)arg1 orientation:(id)arg2 viewMap:(id)arg3 {
     id o = %orig(arg1, arg2, arg3);
-    self.customTopInset = [o topIconInset];
-    self.customSideInset = [o sideIconInset];
-    [[[EditorManager sharedManager] editorViewController] addRootIconListViewToUpdate:self];
-	[[NSNotificationCenter defaultCenter] addObserver:self selector:@selector(recieveNotification:) name:kEditingModeEnabledNotificationName object:nil];
-	[[NSNotificationCenter defaultCenter] addObserver:self selector:@selector(recieveNotification:) name:kEditingModeDisabledNotificationName object:nil];
-    self.customTopInset = [[NSUserDefaults standardUserDefaults] floatForKey:@"customTopInset"] ?:0.0;
-    self.customLeftOffset = [[NSUserDefaults standardUserDefaults] floatForKey:@"customLeftOffset"] ?:0.0;
-    self.customSideInset = [[NSUserDefaults standardUserDefaults] floatForKey:@"customSideInset"] ?:0.0;
-    self.customVerticalSpacing = [[NSUserDefaults standardUserDefaults] floatForKey:@"customVerticalSpacing"] ?:0.0;
-    [self layoutIconsNow];
+
     return o;
+}
+*/
+-(void)layoutSubviews {
+    %orig;
+    if (!self.configured) {
+        [[[EditorManager sharedManager] editorViewController] addRootIconListViewToUpdate:self];
+        [[NSNotificationCenter defaultCenter] addObserver:self selector:@selector(recieveNotification:) name:kEditingModeEnabledNotificationName object:nil];
+        [[NSNotificationCenter defaultCenter] addObserver:self selector:@selector(recieveNotification:) name:kEditingModeDisabledNotificationName object:nil];
+        self.customTopInset = [[NSUserDefaults standardUserDefaults] floatForKey:@"customTopInset"] ?:0.0;
+        self.customLeftOffset = [[NSUserDefaults standardUserDefaults] floatForKey:@"customLeftOffset"] ?:0.0;
+        self.customSideInset = [[NSUserDefaults standardUserDefaults] floatForKey:@"customSideInset"] ?:0.0;
+        self.customVerticalSpacing = [[NSUserDefaults standardUserDefaults] floatForKey:@"customVerticalSpacing"] ?:0.0;
+        [self layoutIconsNow];
+        self.configured = YES;
+    }
 }
 
 %new
@@ -374,21 +381,26 @@ NSDictionary *prefs = nil;
 
 %end
 
-@interface SBCoverSheetWindow : UIView
-@end
+@interface UIStatusBar : UIView 
+@end 
 
-%hook SBCoverSheetWindow
 
--(void)setHidden:(BOOL)arg 
+
+%hook UIStatusBar
+-(void)layoutSubviews
 {
-    if (arg) {
-        [[NSNotificationCenter defaultCenter] postNotificationName:kDeviceIsUnlocked object:nil];
-    } else {
-        [[NSNotificationCenter defaultCenter] postNotificationName:kDeviceIsLocked object:nil];
-    }
-    %orig(arg);
+    //gross 
+    %orig;
+    self.userInteractionEnabled = NO;
 }
-
+-(void)setUserInteractionEnabled:(BOOL)arg1 {
+    arg1 = NO;
+    %orig(NO);
+}
+-(BOOL)userInteractionEnabled
+{
+    return NO;
+}
 %end
 
 @interface UIStatusBar_Modern : UIView
