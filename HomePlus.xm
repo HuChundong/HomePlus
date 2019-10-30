@@ -132,9 +132,10 @@ NSDictionary *prefs = nil;
 %new 
 -(void)createEditorView
 {
+    
     HPEditorWindow *view = [[EditorManager sharedManager] editorView];
     [[[UIApplication sharedApplication] keyWindow] addSubview:view];
-
+    /*
     self.hp_hitbox_window = [[HPHitboxWindow alloc] initWithFrame:CGRectMake(0, 0, 110, 40)];
 
     self.hp_hitbox = [[HPHitboxView alloc] init];
@@ -155,6 +156,7 @@ NSDictionary *prefs = nil;
     [self.hp_hitbox_window addSubview:self.hp_hitbox];
     [[[UIApplication sharedApplication] keyWindow] addSubview:self.hp_hitbox_window];
     self.hp_hitbox_window.hidden = NO;
+    */
 }
 
 
@@ -421,6 +423,72 @@ NSDictionary *prefs = nil;
 {
     return NO;
 }
+%end
+
+%hook FBSystemGestureView
+
+%property (nonatomic, assign) BOOL hitboxViewExists;
+%property (nonatomic, retain) HPHitboxView *hp_hitbox;
+%property (nonatomic, retain) HPHitboxWindow *hp_hitbox_window;
+
+%new
+-(void)toggleEditingMode
+{
+    if (![(SpringBoard*)[UIApplication sharedApplication] isShowingHomescreen]) {
+        return;
+    }
+    BOOL enabled = !_pfEditingEnabled;
+
+    NSLog(@"%@%@", kUniqueLogIdentifier, @": Editing toggled");
+    if (enabled)
+    {
+        AudioServicesPlaySystemSound(1520);
+        AudioServicesPlaySystemSound(1520);
+        [[NSNotificationCenter defaultCenter] postNotificationName:kDisableWiggleTrigger object:nil];
+        [[NSNotificationCenter defaultCenter] postNotificationName:kEditingModeEnabledNotificationName object:nil];
+        NSLog(@"%@%@", kUniqueLogIdentifier,  @": Sent Enable Notification");
+    }
+    else 
+    {
+        AudioServicesPlaySystemSound(1520);
+        AudioServicesPlaySystemSound(1520);
+        [[NSNotificationCenter defaultCenter] postNotificationName:kEditingModeDisabledNotificationName object:nil];
+        NSLog(@"%@%@", kUniqueLogIdentifier, @": Sent Disable Notification");
+    }
+    _pfEditingEnabled = enabled;
+}
+%new 
+-(void)createEditorView
+{
+    self.hp_hitbox_window = [[HPHitboxWindow alloc] initWithFrame:CGRectMake(0, 0, 110, 40)];
+
+    self.hp_hitbox = [[HPHitboxView alloc] init];
+    self.hp_hitbox.backgroundColor = [UIColor.lightGrayColor colorWithAlphaComponent:0.001];
+    [self.hp_hitbox setValue:@NO forKey:@"deliversTouchesForGesturesToSuperview"];
+
+    UISwipeGestureRecognizer *swipeDownGesture = [[UISwipeGestureRecognizer alloc] initWithTarget:self action:@selector(toggleEditingMode)];
+    [swipeDownGesture setDirection:UISwipeGestureRecognizerDirectionDown];
+    [self.hp_hitbox addGestureRecognizer: swipeDownGesture];
+
+    UISwipeGestureRecognizer *swipeUpGesture = [[UISwipeGestureRecognizer alloc] initWithTarget:self action:@selector(toggleEditingMode)];
+    [swipeUpGesture setDirection:UISwipeGestureRecognizerDirectionUp];
+    [self.hp_hitbox addGestureRecognizer: swipeUpGesture];
+
+    CGSize hitboxSize = CGSizeMake(110, 40);
+
+    self.hp_hitbox.frame = CGRectMake(0, 0, hitboxSize.width, hitboxSize.height);
+    [self.hp_hitbox_window addSubview:self.hp_hitbox];
+    [self addSubview:self.hp_hitbox_window];
+    self.hp_hitbox_window.hidden = NO;
+}
+
+-(void)layoutSubviews {
+    %orig;
+    if (!self.hp_hitbox_window) {
+        [self createEditorView];
+    }
+}
+
 %end
 
 #pragma mark Preferences

@@ -28,10 +28,20 @@
 
 @end 
 
+@interface FBSystemGestureView : UIView
+-(void)createEditorView;
+@property (nonatomic, retain) HPHitboxView *hp_hitbox;
+@property (nonatomic, retain) HPHitboxWindow *hp_hitbox_window;
+@end
+
 @interface SBHomeScreenWindow : UIView
 -(void)createEditorView;
 @property (nonatomic, retain) HPHitboxView *hp_hitbox;
 @property (nonatomic, retain) HPHitboxWindow *hp_hitbox_window;
+@end
+
+@interface SpringBoard : UIApplication
+-(BOOL)isShowingHomescreen;
 @end
 
 @interface _SBWallpaperWindow : UIView 
