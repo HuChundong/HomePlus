@@ -1,3 +1,17 @@
+//
+// HomePlus.xm
+// HomePlus
+//
+// Collection of the hooks needed to get this tweak working
+//
+// Pragma marks are formatted to look best in VSCode w/ mark jump
+//
+// Created Oct 2019
+// Author: Kritanta
+//
+
+
+
 #pragma mark Imports
 
 #include <UIKit/UIKit.h>
@@ -33,25 +47,33 @@ CGFloat customSideInset = 0;
 
 NSDictionary *prefs = nil;
 
-# pragma mark Headers
-
+# pragma mark Implementations
 
 @implementation HPHitboxView
+-(BOOL)deliversTouchesForGesturesToSuperview
+{
+    return (![(SpringBoard*)[UIApplication sharedApplication] isShowingHomescreen]);
+}
 @end
 
 @implementation HPHitboxWindow
 @end
-
-
-#pragma mark SBHomeScreenWindow
+#pragma mark 
+#pragma mark - Tweak -----
+#pragma mark 
+#pragma mark -- SBHomeScreenWindow
 
 %hook SBHomeScreenWindow
 
 %property (nonatomic, retain) HPHitboxView *hp_hitbox;
 %property (nonatomic, retain) HPHitboxWindow *hp_hitbox_window;
-
 -(id)_initWithScreen:(id)arg1 layoutStrategy:(id)arg2 debugName:(id)arg3 rootViewController:(id)arg4 scene:(id)arg5
 {
+    /* 
+     * This is the initialization method typically used for SBHomeScreenWindow
+     * 
+     * Add notification listeners and create managers after the class is initialized normally
+    */
     id o = %orig(arg1, arg2, arg3, arg4, arg5);
 
 	[[NSNotificationCenter defaultCenter] addObserver:self selector:@selector(recieveNotification:) name:kEditingModeEnabledNotificationName object:nil];
@@ -88,7 +110,6 @@ NSDictionary *prefs = nil;
         }
     }   
     CGFloat cR = notched ?40:0;
-
     
     NSLog(@"%@%@", kUniqueLogIdentifier, @": SBHSW Notification Recieved");
     if (enabled) {
@@ -107,32 +128,13 @@ NSDictionary *prefs = nil;
     }];
 }
 
-%new
--(void)toggleEditingMode
-{
-    BOOL enabled = !_pfEditingEnabled;
-
-    NSLog(@"%@%@", kUniqueLogIdentifier, @": Editing toggled");
-    if (enabled)
-    {
-        AudioServicesPlaySystemSound(1520);
-        AudioServicesPlaySystemSound(1520);
-        [[NSNotificationCenter defaultCenter] postNotificationName:kDisableWiggleTrigger object:nil];
-        [[NSNotificationCenter defaultCenter] postNotificationName:kEditingModeEnabledNotificationName object:nil];
-        NSLog(@"%@%@", kUniqueLogIdentifier,  @": Sent Enable Notification");
-    }
-    else 
-    {
-        AudioServicesPlaySystemSound(1520);
-        AudioServicesPlaySystemSound(1520);
-        [[NSNotificationCenter defaultCenter] postNotificationName:kEditingModeDisabledNotificationName object:nil];
-        NSLog(@"%@%@", kUniqueLogIdentifier, @": Sent Disable Notification");
-    }
-    _pfEditingEnabled = enabled;
-}
 %new 
 -(void)createManagers
 {
+    /*
+     * We create the managers in this particular class because, at the time of initalization, the keyWindow is in the
+     *      best location for adding the editor view as a subview.
+    */
     HPEditorWindow *view = [[EditorManager sharedManager] editorView];
     [[[UIApplication sharedApplication] keyWindow] addSubview:view];
 
@@ -142,11 +144,15 @@ NSDictionary *prefs = nil;
 
 %end
 
-#pragma mark Wallpaper View
+#pragma mark 
+#pragma mark -- _SBWallpaperWindow
 
 %hook _SBWallpaperWindow 
 -(id)_initWithScreen:(id)arg1 layoutStrategy:(id)arg2 debugName:(id)arg3 rootViewController:(id)arg4 scene:(id)arg5
 {
+    /*
+     * Solely for scaling the wallpaper with the rest of the view
+    */
     id o = %orig(arg1, arg2, arg3, arg4, arg5);
 
 	[[NSNotificationCenter defaultCenter] addObserver:self selector:@selector(recieveNotification:) name:kEditingModeEnabledNotificationName object:nil];
@@ -194,9 +200,14 @@ NSDictionary *prefs = nil;
 }
 %end
 
+#pragma mark 
+#pragma mark -- Floaty Dock Thing
 
 %hook SBMainScreenActiveInterfaceOrientationWindow
 
+/* 
+ * Floaty Dock scaling.
+*/
 -(id)_initWithScreen:(id)arg1 layoutStrategy:(id)arg2 debugName:(id)arg3 rootViewController:(id)arg4 scene:(id)arg5
 {
     id o = %orig(arg1, arg2, arg3, arg4, arg5);
@@ -207,6 +218,7 @@ NSDictionary *prefs = nil;
 
     return o;
 }
+
 %new
 -(void)recieveNotification:(NSNotification *)notification
 {
@@ -238,6 +250,7 @@ NSDictionary *prefs = nil;
     NSLog(@"%@%@", kUniqueLogIdentifier, @": Notification Recieved in SBWW");
     if (enabled) 
         self.layer.cornerRadius = enabled ? cR : 0;
+
     [UIView animateWithDuration:.2 animations:^{
         self.transform = (enabled ? CGAffineTransformMakeScale(_pfEditingScale, _pfEditingScale) : CGAffineTransformIdentity);
     } completion:^(BOOL finished) {
@@ -245,9 +258,9 @@ NSDictionary *prefs = nil;
     }];
 }
 %end
-@interface SBIconView : UIView
-@property (nonatomic, retain) UIView *labelView;
-@end
+
+
+#pragma mark Icon Handling
 %hook SBIconView 
 -(void)layoutSubviews
 {
@@ -255,34 +268,20 @@ NSDictionary *prefs = nil;
     self.labelView.hidden = ![[HPManager sharedManager] currentLoadoutShouldShowIconLabels];
 }
 %end
-@interface SBEditingDoneButton : UIButton
-@end
-@interface SBRootFolderView
-@property (nonatomic, retain) SBEditingDoneButton *doneButton;
-@end
-@interface SBRootFolderController
--(void)doneButtonTriggered:(id)button; 
-@property (nonatomic, retain) SBRootFolderView *contentView;
-@end
+
 %hook SBRootFolderController
--(void)viewDidLoad {
+/*
+ * Disable Icon wiggle upon loading edit view.
+*/
+-(void)viewDidLoad
+{
     %orig;
     [[NSNotificationCenter defaultCenter] addObserver:self selector:@selector(disableWiggle:) name:kDisableWiggleTrigger object:nil];
 }
 %new 
--(void)disableWiggle:(NSNotification *)notification {
-    [self doneButtonTriggered:self.contentView.doneButton];
-}
-%end
-%hook SBRootFolderView
-- (void)setEditing:(_Bool)arg1 animated:(_Bool)arg2 
+-(void)disableWiggle:(NSNotification *)notification 
 {
-    %orig(arg1, arg2);
-    if (arg1) {
-        [[NSNotificationCenter defaultCenter] postNotificationName:kWiggleActive object:nil];
-    } else {
-        [[NSNotificationCenter defaultCenter] postNotificationName:kWiggleInactive object:nil];
-    }
+    [self doneButtonTriggered:self.contentView.doneButton];
 }
 %end
 
@@ -353,7 +352,8 @@ NSDictionary *prefs = nil;
     return [[HPManager sharedManager] currentLoadoutTopInset];
 }
 
-+(NSUInteger)iconColumnsForInterfaceOrientation:(NSInteger)arg1{
++(NSUInteger)iconColumnsForInterfaceOrientation:(NSInteger)arg1
+{
 	NSInteger x = %orig(arg1);
     NSUserDefaults *userDefaults = [NSUserDefaults standardUserDefaults];
     [userDefaults setInteger:x
@@ -361,7 +361,8 @@ NSDictionary *prefs = nil;
 	return [[HPManager sharedManager] currentLoadoutColumns];
 }
 
-+(NSUInteger)iconRowsForInterfaceOrientation:(NSInteger)arg1{
++(NSUInteger)iconRowsForInterfaceOrientation:(NSInteger)arg1
+{
 	NSInteger x = %orig(arg1);
     NSUserDefaults *userDefaults = [NSUserDefaults standardUserDefaults];
     [userDefaults setInteger:x
@@ -427,7 +428,8 @@ NSDictionary *prefs = nil;
     self.hp_hitbox_window.hidden = NO;
 }
 
--(void)layoutSubviews {
+-(void)layoutSubviews
+{
     %orig;
     if (!self.hp_hitbox_window) {
         [self createEditorView];

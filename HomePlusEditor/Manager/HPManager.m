@@ -1,16 +1,15 @@
+//
+// HPManager.m
+// HomePlus
+//
+// Handles values for the customizations made.
+//
+// Created Oct 2019
+// Author: Kritanta
+//
+
 #include "HPManager.h"
 @implementation HPManager
-/*
-
-@property (nonatomic, assign) NSUInteger currentColumns;
-@property (nonatomic, assign) NSUInteger currentRows;
-@property (nonatomic, assign) CGFloat currentTopInset;
-@property (nonatomic, assign) CGFloat currentLeftInset;
-@property (nonatomic, assign) CGFloat currentVSpacing;
-@property (nonatomic, assign) CGFloat currentHSpacing;
-
-*/
-
 
 +(instancetype)sharedManager
 {

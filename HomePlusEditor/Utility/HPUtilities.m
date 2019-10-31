@@ -2,11 +2,11 @@
 // HPUtilities.m
 // HomePlus
 //
-// Stores Images and methods that I use a lot. 
+// Stores Images and methods that I use a lot. (Right now it's just images)
 // Pretty big file, be careful opening. 
 // 
 // Created Oct 2019 
-// Authors: Kritanta, Calico
+// Authors: Kritanta
 //
 
 #include <UIKit/UIKit.h>

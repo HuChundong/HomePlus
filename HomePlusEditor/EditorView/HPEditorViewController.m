@@ -7,7 +7,7 @@
 //      once the editor view is activated.
 // 
 // Created Oct 2019 
-// Authors: Kritanta, Calico
+// Authors: Kritanta
 //
 
 #include "HPEditorViewController.h"
@@ -401,7 +401,7 @@
         self.rowsSlider.maximumValue = 14;
         self.rowsSlider.continuous = YES;
         self.rowsSlider.value = (CGFloat)[[HPManager sharedManager] currentLoadoutRows];
-        //TODO: FIGURE OUT WTF TO DO WITH ROWS[_iconCountControlView addSubview:_iconCountControlView.topView];
+        [_iconCountControlView addSubview:_iconCountControlView.topView];
         [_iconCountControlView.topView addSubview:topLabel];
         [_iconCountControlView.topView addSubview:self.rowsSlider];
         self.topIconCountValueInput.text = [NSString stringWithFormat:@"%.0f", self.rowsSlider.value];
@@ -553,7 +553,8 @@
     [self.rootIconListViewsToUpdate addObject:view];
 }
 
--(void)resetAllValuesToDefaults {
+-(void)resetAllValuesToDefaults 
+{
     [[self.view subviews]
         makeObjectsPerformSelector:@selector(removeFromSuperview)];
     _spacingControlView = nil;

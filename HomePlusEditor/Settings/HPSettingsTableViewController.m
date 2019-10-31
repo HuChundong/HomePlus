@@ -1,3 +1,14 @@
+//
+// HPSettingsTableViewController.m
+// HomePlus
+//
+// Settings (UITable)View Controller. Load stuff and call changes here. 
+//
+// Created Oct 2019
+// Author: Kritanta
+//
+
+
 #include "HPSettingsTableViewController.h"
 #include <UIKit/UIKit.h>
 #include "EditorManager.h"

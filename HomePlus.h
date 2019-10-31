@@ -1,4 +1,3 @@
-
 @interface SBRootIconListView : UIView
 @property (nonatomic, assign) CGFloat customTopInset;
 @property (nonatomic, assign) CGFloat customLeftOffset;
@@ -24,12 +23,8 @@
 
 
 @interface HPHitboxView : UIView 
-
 @end 
-
-
 @interface HPHitboxWindow : UIWindow 
-
 @end 
 
 @interface FBSystemGestureView : UIView
@@ -52,4 +47,20 @@
 @end
 
 @interface SBMainScreenActiveInterfaceOrientationWindow : UIView
+@end
+
+
+@interface SBIconView : UIView
+@property (nonatomic, retain) UIView *labelView;
+@end
+
+
+@interface SBEditingDoneButton : UIButton
+@end
+@interface SBRootFolderView
+@property (nonatomic, retain) SBEditingDoneButton *doneButton;
+@end
+@interface SBRootFolderController
+-(void)doneButtonTriggered:(id)button; 
+@property (nonatomic, retain) SBRootFolderView *contentView;
 @end

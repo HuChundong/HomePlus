@@ -1,3 +1,14 @@
+//
+// EditorManager.m
+// HomePlus
+//
+// Manager for the Editor Views. Creates the editor and hides/shows it
+//
+// Created Oct 2019
+// Author: Kritanta
+//
+
+
 #include "EditorManager.h"
 #include "HPEditorWindow.h"
 #include "HPEditorViewController.h"
