@@ -18,6 +18,8 @@
     IBOutlet OBSlider *sideOffsetSlider;
     IBOutlet OBSlider *horizontalSpacingSlider;
     IBOutlet OBSlider *verticalSpacingSlider;
+    IBOutlet OBSlider *rowsSlider;
+    IBOutlet OBSlider *columnsSlider;
 }
 
 @property (nonatomic, strong) id <HPEditorViewControllerDelegate> delegate;
@@ -39,6 +41,15 @@
 
 @property (nonatomic, retain) UITextField *topSpacingValueInput;
 @property (nonatomic, retain) UITextField *bottomSpacingValueInput;
+
+
+@property (nonatomic, readonly, strong) HPControllerView *iconCountControlView;
+
+@property (nonatomic, retain) IBOutlet OBSlider *rowsSlider;
+@property (nonatomic, retain) IBOutlet OBSlider *columnsSlider;
+
+@property (nonatomic, retain) UITextField *topIconCountValueInput;
+@property (nonatomic, retain) UITextField *bottomIconCountValueInput;
 
 
 @property (nonatomic, readonly, strong) HPControllerView *settingsView;

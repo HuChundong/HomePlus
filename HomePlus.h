@@ -4,6 +4,8 @@
 @property (nonatomic, assign) CGFloat customLeftOffset;
 @property (nonatomic, assign) CGFloat customSideInset;
 @property (nonatomic, assign) CGFloat customVerticalSpacing;
+@property (nonatomic, assign) CGFloat customRows;
+@property (nonatomic, assign) CGFloat customColumns;
 @property (nonatomic, assign) BOOL configured;
 -(void)updateTopInset:(CGFloat)arg1;
 -(void)updateSideInset:(CGFloat)arg1;
@@ -12,6 +14,8 @@
 -(void)updateVerticalSpacing:(CGFloat)arg1;
 -(void)updateLeftOffset:(CGFloat)arg1;
 -(void)recieveNotification:(NSNotification *)notification;
+-(void)updateCustomRows:(CGFloat)arg1;
+-(void)updateCustomColumns:(CGFloat)arg1;
 -(void)layoutIconsNow;
 // ext
 -(CGFloat)sideIconInset;
@@ -35,7 +39,7 @@
 @end
 
 @interface SBHomeScreenWindow : UIView
--(void)createEditorView;
+-(void)createManagers;
 @property (nonatomic, retain) HPHitboxView *hp_hitbox;
 @property (nonatomic, retain) HPHitboxWindow *hp_hitbox_window;
 @end
@@ -45,4 +49,7 @@
 @end
 
 @interface _SBWallpaperWindow : UIView 
+@end
+
+@interface SBMainScreenActiveInterfaceOrientationWindow : UIView
 @end

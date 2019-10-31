@@ -2,6 +2,7 @@
 
 #include <UIKit/UIKit.h>
 #include "EditorManager.h"
+#include "HPManager.h"
 #include "HomePlus.h"
 #import <AudioToolbox/AudioToolbox.h>
 
@@ -57,7 +58,7 @@ NSDictionary *prefs = nil;
 	[[NSNotificationCenter defaultCenter] addObserver:self selector:@selector(recieveNotification:) name:kEditingModeDisabledNotificationName object:nil];
     NSLog(@"%@%@", kUniqueLogIdentifier, @": Initialized SBHomeScreenWindow and added Observers");
 
-    [self createEditorView];
+    [self createManagers];
     return o;
 }
 
@@ -130,33 +131,12 @@ NSDictionary *prefs = nil;
     _pfEditingEnabled = enabled;
 }
 %new 
--(void)createEditorView
+-(void)createManagers
 {
-    
     HPEditorWindow *view = [[EditorManager sharedManager] editorView];
     [[[UIApplication sharedApplication] keyWindow] addSubview:view];
-    /*
-    self.hp_hitbox_window = [[HPHitboxWindow alloc] initWithFrame:CGRectMake(0, 0, 110, 40)];
 
-    self.hp_hitbox = [[HPHitboxView alloc] init];
-    self.hp_hitbox.backgroundColor = [UIColor.lightGrayColor colorWithAlphaComponent:0.001];
-    [self.hp_hitbox setValue:@NO forKey:@"deliversTouchesForGesturesToSuperview"];
-
-    UISwipeGestureRecognizer *swipeDownGesture = [[UISwipeGestureRecognizer alloc] initWithTarget:self action:@selector(toggleEditingMode)];
-    [swipeDownGesture setDirection:UISwipeGestureRecognizerDirectionDown];
-    [self.hp_hitbox addGestureRecognizer: swipeDownGesture];
-
-    UISwipeGestureRecognizer *swipeUpGesture = [[UISwipeGestureRecognizer alloc] initWithTarget:self action:@selector(toggleEditingMode)];
-    [swipeUpGesture setDirection:UISwipeGestureRecognizerDirectionUp];
-    [self.hp_hitbox addGestureRecognizer: swipeUpGesture];
-
-    CGSize hitboxSize = CGSizeMake(110, 40);
-
-    self.hp_hitbox.frame = CGRectMake(0, 0, hitboxSize.width, hitboxSize.height);
-    [self.hp_hitbox_window addSubview:self.hp_hitbox];
-    [[[UIApplication sharedApplication] keyWindow] addSubview:self.hp_hitbox_window];
-    self.hp_hitbox_window.hidden = NO;
-    */
+    HPManager *manager = [HPManager sharedManager];
 }
 
 
@@ -165,7 +145,6 @@ NSDictionary *prefs = nil;
 #pragma mark Wallpaper View
 
 %hook _SBWallpaperWindow 
-
 -(id)_initWithScreen:(id)arg1 layoutStrategy:(id)arg2 debugName:(id)arg3 rootViewController:(id)arg4 scene:(id)arg5
 {
     id o = %orig(arg1, arg2, arg3, arg4, arg5);
@@ -176,7 +155,6 @@ NSDictionary *prefs = nil;
 
     return o;
 }
-
 %new
 -(void)recieveNotification:(NSNotification *)notification
 {
@@ -214,7 +192,68 @@ NSDictionary *prefs = nil;
         self.layer.cornerRadius = enabled ? cR : 0;
     }];
 }
+%end
 
+
+%hook SBMainScreenActiveInterfaceOrientationWindow
+
+-(id)_initWithScreen:(id)arg1 layoutStrategy:(id)arg2 debugName:(id)arg3 rootViewController:(id)arg4 scene:(id)arg5
+{
+    id o = %orig(arg1, arg2, arg3, arg4, arg5);
+
+	[[NSNotificationCenter defaultCenter] addObserver:self selector:@selector(recieveNotification:) name:kEditingModeEnabledNotificationName object:nil];
+	[[NSNotificationCenter defaultCenter] addObserver:self selector:@selector(recieveNotification:) name:kEditingModeDisabledNotificationName object:nil];
+    NSLog(@"%@%@", kUniqueLogIdentifier, @": Initialized _SBWallpaperWindow and added Observers");
+
+    return o;
+}
+%new
+-(void)recieveNotification:(NSNotification *)notification
+{
+    BOOL enabled = ([[notification name] isEqualToString:kEditingModeEnabledNotificationName]);
+    _pfEditingEnabled = enabled;
+    BOOL notched = NO;
+
+    if([[UIDevice currentDevice] userInterfaceIdiom] == UIUserInterfaceIdiomPhone) {
+        switch ((int)[[UIScreen mainScreen] nativeBounds].size.height) {
+            case 2436:
+                notched = YES;
+                break;
+
+            case 2688:
+                notched = YES;
+                break;
+
+            case 1792:
+                notched = YES;
+                break;
+
+            default:
+                notched = NO;
+                break;
+        }
+    }   
+    CGFloat cR = notched ?40:0;
+
+    NSLog(@"%@%@", kUniqueLogIdentifier, @": Notification Recieved in SBWW");
+    if (enabled) 
+        self.layer.cornerRadius = enabled ? cR : 0;
+    [UIView animateWithDuration:.2 animations:^{
+        self.transform = (enabled ? CGAffineTransformMakeScale(_pfEditingScale, _pfEditingScale) : CGAffineTransformIdentity);
+    } completion:^(BOOL finished) {
+        self.layer.cornerRadius = enabled ? cR : 0;
+    }];
+}
+%end
+@interface SBIconView : UIView
+@property (nonatomic, retain) UIView *labelView;
+@end
+%hook SBIconView 
+-(void)layoutSubviews
+{
+    %orig;
+    self.labelView.hidden = ![[HPManager sharedManager] currentLoadoutShouldShowIconLabels];
+}
 %end
 @interface SBEditingDoneButton : UIButton
 @end
@@ -249,10 +288,6 @@ NSDictionary *prefs = nil;
 
 %hook SBRootIconListView 
 
-%property (nonatomic, assign) CGFloat customTopInset;
-%property (nonatomic, assign) CGFloat customLeftOffset;
-%property (nonatomic, assign) CGFloat customVerticalSpacing;
-%property (nonatomic, assign) CGFloat customSideInset;
 %property (nonatomic, assign) BOOL configured;
 
 /*
@@ -262,16 +297,13 @@ NSDictionary *prefs = nil;
     return o;
 }
 */
--(void)layoutSubviews {
+-(void)layoutSubviews 
+{
     %orig;
     if (!self.configured) {
         [[[EditorManager sharedManager] editorViewController] addRootIconListViewToUpdate:self];
         [[NSNotificationCenter defaultCenter] addObserver:self selector:@selector(recieveNotification:) name:kEditingModeEnabledNotificationName object:nil];
         [[NSNotificationCenter defaultCenter] addObserver:self selector:@selector(recieveNotification:) name:kEditingModeDisabledNotificationName object:nil];
-        self.customTopInset = [[NSUserDefaults standardUserDefaults] floatForKey:@"customTopInset"] ?:0.0;
-        self.customLeftOffset = [[NSUserDefaults standardUserDefaults] floatForKey:@"customLeftOffset"] ?:0.0;
-        self.customSideInset = [[NSUserDefaults standardUserDefaults] floatForKey:@"customSideInset"] ?:0.0;
-        self.customVerticalSpacing = [[NSUserDefaults standardUserDefaults] floatForKey:@"customVerticalSpacing"] ?:0.0;
         [self layoutIconsNow];
         self.configured = YES;
     }
@@ -282,146 +314,59 @@ NSDictionary *prefs = nil;
 {
     BOOL enabled = ([[notification name] isEqualToString:kEditingModeEnabledNotificationName]);
     if (!enabled) {
-        NSUserDefaults *userDefaults = [NSUserDefaults standardUserDefaults];
-
-        [userDefaults setFloat:self.customTopInset
-                        forKey:@"customTopInset"];
-        [userDefaults setFloat:self.customLeftOffset
-                        forKey:@"customLeftOffset"];
-        [userDefaults setFloat:self.customSideInset
-                        forKey:@"customSideInset"];
-        [userDefaults setFloat:self.customVerticalSpacing
-                        forKey:@"customVerticalSpacing"];
-        // – setBool:forKey:
-        // – setFloat:forKey:  
-        // in your case 
-        [userDefaults synchronize];
-    } else {
-        self.customTopInset = [[NSUserDefaults standardUserDefaults] floatForKey:@"customTopInset"] ?:0.0;
-        self.customLeftOffset = [[NSUserDefaults standardUserDefaults] floatForKey:@"customLeftOffset"] ?:0.0;
-        self.customVerticalSpacing = [[NSUserDefaults standardUserDefaults] floatForKey:@"customVerticalSpacing"] ?:0.0;
-        self.customSideInset = [[NSUserDefaults standardUserDefaults] floatForKey:@"customSideInset"] ?:0.0;
-        [self layoutIconsNow];
-        [self updateLeftOffset:self.customLeftOffset];
+        [[HPManager sharedManager] saveCurrentLoadoutName];
+        [[HPManager sharedManager] saveCurrentLoadout];
     }
 }
+
 %new
 -(void)resetValuesToDefaults 
 {
-    NSUserDefaults *userDefaults = [NSUserDefaults standardUserDefaults];
-    self.customTopInset = [[NSUserDefaults standardUserDefaults] floatForKey:@"defaultTopInset"] ?:0.0;
-    self.customLeftOffset = 0.0;
-    self.customVerticalSpacing = [[NSUserDefaults standardUserDefaults] floatForKey:@"defaultVerticalSpacing"] ?:0.0;
-    self.customSideInset = [[NSUserDefaults standardUserDefaults] floatForKey:@"defaultSideInset"] ?:0.0;
-
-    [userDefaults setFloat:self.customTopInset
-                    forKey:@"customTopInset"];
-    [userDefaults setFloat:self.customLeftOffset
-                    forKey:@"customLeftOffset"];
-    [userDefaults setFloat:self.customSideInset
-                    forKey:@"customSideInset"];
-    [userDefaults setFloat:self.customVerticalSpacing
-                    forKey:@"customVerticalSpacing"];
     [self layoutIconsNow];
     _pfEditingEnabled = NO;
 }
-%new 
--(void)updateTopInset:(CGFloat)arg1
-{
-    self.customTopInset = arg1;
-    [self layoutIconsNow];
-}
-%new 
--(void)updateLeftOffset:(CGFloat)arg1
-{
-    self.transform = CGAffineTransformIdentity;
-    self.transform = CGAffineTransformMakeTranslation(arg1,0);
-    self.customLeftOffset = arg1;
-}
--(void)setTransform:(CGAffineTransform)transform {
-    transform = CGAffineTransformIdentity;
-    %orig(CGAffineTransformIdentity);
-    transform = CGAffineTransformMakeTranslation(self.customLeftOffset,0);
-    %orig(CGAffineTransformMakeTranslation(self.customLeftOffset,0));
-}
-%new 
--(void)updateVerticalSpacing:(CGFloat)arg1 
-{
-    self.customVerticalSpacing = arg1;
-    [self layoutIconsNow];
-}
-%new
--(void)updateSideInset:(CGFloat)arg1
-{
-    self.customSideInset = arg1;
-    [self layoutIconsNow];
-}
+
 -(CGFloat)verticalIconPadding 
 {
     CGFloat x = %orig;
     NSUserDefaults *userDefaults = [NSUserDefaults standardUserDefaults];
     [userDefaults setFloat:x
-                  forKey:@"defaultVerticalSpacing"];
-    return self.customVerticalSpacing;
+                  forKey:@"defaultVSpacing"];
+    return [[HPManager sharedManager] currentLoadoutVerticalSpacing];
 }
+
 -(CGFloat)sideIconInset
 {   
     CGFloat x = %orig;
     NSUserDefaults *userDefaults = [NSUserDefaults standardUserDefaults];
     [userDefaults setFloat:x
-                  forKey:@"defaultSideInset"];
-    return self.customSideInset;
+                  forKey:@"defaultHSpacing"];
+    return [[HPManager sharedManager] currentLoadoutHorizontalSpacing];
 }
+
 -(CGFloat)topIconInset
 {
     CGFloat x = %orig;
     NSUserDefaults *userDefaults = [NSUserDefaults standardUserDefaults];
     [userDefaults setFloat:x
                   forKey:@"defaultTopInset"];
-    return self.customTopInset;
+    return [[HPManager sharedManager] currentLoadoutTopInset];
 }
 
-%end
-
-@interface UIStatusBar : UIView 
-@end 
-
-
-
-%hook UIStatusBar
--(void)layoutSubviews
-{
-    //gross 
-    %orig;
-    self.userInteractionEnabled = NO;
++(NSUInteger)iconColumnsForInterfaceOrientation:(NSInteger)arg1{
+	NSInteger x = %orig(arg1);
+    NSUserDefaults *userDefaults = [NSUserDefaults standardUserDefaults];
+    [userDefaults setInteger:x
+                  forKey:@"defaultColumns"];
+	return [[HPManager sharedManager] currentLoadoutColumns];
 }
--(void)setUserInteractionEnabled:(BOOL)arg1 {
-    arg1 = NO;
-    %orig(NO);
-}
--(BOOL)userInteractionEnabled
-{
-    return NO;
-}
-%end
 
-@interface UIStatusBar_Modern : UIView
-@end 
-
-%hook UIStatusBar_Modern
--(void)layoutSubviews
-{
-    //gross 
-    %orig;
-    self.userInteractionEnabled = NO;
-}
--(void)setUserInteractionEnabled:(BOOL)arg1 {
-    arg1 = NO;
-    %orig(NO);
-}
--(BOOL)userInteractionEnabled
-{
-    return NO;
++(NSUInteger)iconRowsForInterfaceOrientation:(NSInteger)arg1{
+	NSInteger x = %orig(arg1);
+    NSUserDefaults *userDefaults = [NSUserDefaults standardUserDefaults];
+    [userDefaults setInteger:x
+                  forKey:@"defaultRows"];
+	return [[HPManager sharedManager] currentLoadoutRows];
 }
 %end
 
@@ -460,7 +405,7 @@ NSDictionary *prefs = nil;
 %new 
 -(void)createEditorView
 {
-    self.hp_hitbox_window = [[HPHitboxWindow alloc] initWithFrame:CGRectMake(0, 0, 110, 40)];
+    self.hp_hitbox_window = [[HPHitboxWindow alloc] initWithFrame:CGRectMake(0, 0, 60, 20)];
 
     self.hp_hitbox = [[HPHitboxView alloc] init];
     self.hp_hitbox.backgroundColor = [UIColor.lightGrayColor colorWithAlphaComponent:0.001];
@@ -474,7 +419,7 @@ NSDictionary *prefs = nil;
     [swipeUpGesture setDirection:UISwipeGestureRecognizerDirectionUp];
     [self.hp_hitbox addGestureRecognizer: swipeUpGesture];
 
-    CGSize hitboxSize = CGSizeMake(110, 40);
+    CGSize hitboxSize = CGSizeMake(60, 20);
 
     self.hp_hitbox.frame = CGRectMake(0, 0, hitboxSize.width, hitboxSize.height);
     [self.hp_hitbox_window addSubview:self.hp_hitbox];

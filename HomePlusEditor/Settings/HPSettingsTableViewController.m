@@ -2,6 +2,7 @@
 #include <UIKit/UIKit.h>
 #include "EditorManager.h"
 #include "HPUtilities.h"
+#include "HPManager.h"
 
 const int RESET_VALUES = 1;
 
@@ -90,7 +91,7 @@ const int RESET_VALUES = 1;
 
 - (NSInteger)numberOfSectionsInTableView:(UITableView *)tableView
 {
-    return 1;
+    return 2;
 }
 
 - (NSInteger)tableView:(UITableView *)tableView numberOfRowsInSection:(NSInteger)section
@@ -102,51 +103,97 @@ const int RESET_VALUES = 1;
     NSString *sectionName;
     switch (section) {
         case 0:
+            sectionName = NSLocalizedString(@"Icons", @"Icons");
+            break;
+        case 1:
             sectionName = NSLocalizedString(@"Reset", @"Reset");
             break;
         default:
             sectionName = @"";
             break;
     }    
-    return @"Reset";
+    return sectionName;
 }
 - (UITableViewCell *)tableView:(UITableView *)tableView cellForRowAtIndexPath:(NSIndexPath *)indexPath
 {
-    static NSString *CellIdentifier = @"Cell";
-    UITableViewCell *cell = [tableView dequeueReusableCellWithIdentifier:CellIdentifier];
-    if (!cell) {
-        cell = [[UITableViewCell alloc] initWithStyle:UITableViewCellStyleDefault reuseIdentifier:CellIdentifier];
-        cell.accessoryType = UITableViewCellAccessoryDisclosureIndicator;
-        cell.textLabel.font = [UIFont systemFontOfSize:16.0];
+    switch( [indexPath section] ) {
+        case 0: {
+            switch ( [indexPath row] ){
+                case 0: {
+                    UITableViewCell *cell = [tableView dequeueReusableCellWithIdentifier:@"SwitchCell"];
+                    if( cell == nil ) {
+                        cell = [[UITableViewCell alloc] initWithFrame:CGRectZero reuseIdentifier:@"SwitchCell"];
+                        cell.textLabel.text = @"Show Icon Labels";
+                        cell.selectionStyle = UITableViewCellSelectionStyleNone;
+                        UISwitch *switchView = [[UISwitch alloc] initWithFrame:CGRectZero];
+                        cell.accessoryView = switchView;
+                        [switchView setOn:[[HPManager sharedManager] currentLoadoutShouldShowIconLabels] animated:NO];
+                        [switchView addTarget:self action:@selector(iconLabelSwitchChanged:) forControlEvents:UIControlEventValueChanged];
+
+                        [cell.layer setCornerRadius:10];
+
+                        [cell setBackgroundColor: [UIColor colorWithRed:10.0/255.0 green:10.0/255.0 blue:10.0/255.0 alpha:0.7]];//rgb(38, 37, 42)];
+                        //Border Color and Width
+                        [cell.layer setBorderColor:[UIColor blackColor].CGColor];
+                        [cell.layer setBorderWidth:0];
+
+                        //Set Text Col
+                        cell.textLabel.textColor = [UIColor whiteColor];//[prefs colorForKey:@"textTint"];
+                        cell.detailTextLabel.textColor = [UIColor whiteColor];//[prefs colorForKey:@"textTint"];
+
+                        cell.clipsToBounds = YES;
+                        }
+                        return cell;
+                }
+            }
+            
+        }
+        case 1: {
+            switch ( [indexPath row] ) {
+                case 0: {
+                    static NSString *CellIdentifier = @"Cell";
+                    UITableViewCell *cell = [tableView dequeueReusableCellWithIdentifier:CellIdentifier];
+                    if (!cell) {
+                        cell = [[UITableViewCell alloc] initWithStyle:UITableViewCellStyleDefault reuseIdentifier:CellIdentifier];
+                        cell.accessoryType = UITableViewCellAccessoryDisclosureIndicator;
+                        cell.textLabel.font = [UIFont systemFontOfSize:16.0];
+                    }
+                    
+                    cell.textLabel.text = [self titleForRowAtIndexPath:indexPath];
+                    
+                    [cell.layer setCornerRadius:10];
+
+                    [cell setBackgroundColor: [UIColor colorWithRed:10.0/255.0 green:10.0/255.0 blue:10.0/255.0 alpha:0.7]];//rgb(38, 37, 42)];
+                    //Border Color and Width
+                    [cell.layer setBorderColor:[UIColor blackColor].CGColor];
+                    [cell.layer setBorderWidth:0];
+
+                    //Set Text Col
+                    cell.textLabel.textColor = [UIColor whiteColor];//[prefs colorForKey:@"textTint"];
+                    cell.detailTextLabel.textColor = [UIColor whiteColor];//[prefs colorForKey:@"textTint"];
+
+                    cell.clipsToBounds = YES;
+                    cell.hidden = NO;
+
+                    return cell;
+                }
+            }
+        }
+        break;
     }
-
-    cell.textLabel.text = [self titleForRowAtIndexPath:indexPath];
-    
-
-    [cell.layer setCornerRadius:10];
-
-    [cell setBackgroundColor: [UIColor colorWithRed:10.0/255.0 green:10.0/255.0 blue:10.0/255.0 alpha:0.7]];//rgb(38, 37, 42)];
-    //Border Color and Width
-    [cell.layer setBorderColor:[UIColor blackColor].CGColor];
-    [cell.layer setBorderWidth:0];
-
-    //Set Text Col
-    cell.textLabel.textColor = [UIColor whiteColor];//[prefs colorForKey:@"textTint"];
-    cell.detailTextLabel.textColor = [UIColor whiteColor];//[prefs colorForKey:@"textTint"];
-
-    cell.clipsToBounds = YES;
-    cell.hidden = NO;
-
-    return cell;
+    return nil;
 }
 
-
+-(void)iconLabelSwitchChanged:(id)sender {
+    UISwitch *switchControl = sender;
+    [[HPManager sharedManager] setCurrentLoadoutShouldShowIconLabels:switchControl.on];
+}
 
 #pragma mark - Table View Delegate
 
 - (void)tableView:(UITableView *)tableView didSelectRowAtIndexPath:(NSIndexPath *)indexPath
 {
-    if (indexPath.row == 0) [[EditorManager sharedManager] resetAllValuesToDefaults];
+    if (indexPath.section == 1 && indexPath.row == 0) [[EditorManager sharedManager] resetAllValuesToDefaults];
 }
 
 - (void)tableView:(UITableView *)tableView willDisplayHeaderView:(UIView *)view forSection:(NSInteger)section

@@ -13,6 +13,7 @@
 #include "HPEditorViewController.h"
 #include "HomePlus.h"
 #include "EditorManager.h"
+#include "HPManager.h"
 #include "HPUtilities.h"
 #include "HPSettingsTableViewController.h"
 #include "HPEditorViewNavigationTabBar.h"
@@ -27,6 +28,7 @@
 @interface HPEditorViewController () 
 @property (nonatomic, readwrite, strong) HPControllerView *offsetControlView;
 @property (nonatomic, readwrite, strong) HPControllerView *spacingControlView;
+@property (nonatomic, readwrite, strong) HPControllerView *iconCountControlView;
 @property (nonatomic, readwrite, strong) HPControllerView *settingsView;
 @property (nonatomic, readwrite, strong) HPEditorViewNavigationTabBar *tabBar;
 
@@ -40,6 +42,7 @@
 
 @property (nonatomic, retain) UIButton *offsetButton;
 @property (nonatomic, retain) UIButton *spacerButton;
+@property (nonatomic, retain) UIButton *iconCountButton;
 @property (nonatomic, retain) UIButton *settingsButton;
 @property (nonatomic, retain) UIButton *settingsDoneButton;
 
@@ -64,15 +67,14 @@
 {
     [super viewDidLoad];
 
-
-
     [self.view addSubview:[self offsetControlView]];
     [self.view addSubview:[self spacingControlView]];
+    [self.view addSubview:[self iconCountControlView]];
     [self.view addSubview:[self settingsView]];
     [self loadControllerView:[self offsetControlView]];
     [self spacingControlView].alpha = 0;
+    [self iconCountControlView].alpha = 0;
     [self settingsView].alpha = 0;
-
 
     self.offsetButton = [UIButton buttonWithType:UIButtonTypeCustom];
     [self.offsetButton addTarget:self 
@@ -100,6 +102,19 @@
     [self.view addSubview:self.spacerButton];
 
 
+    self.iconCountButton = [UIButton buttonWithType:UIButtonTypeCustom];
+    [self.iconCountButton addTarget:self 
+            action:@selector(handleIconCountButtonPress:)
+            forControlEvents:UIControlEventTouchUpInside];
+    [self.iconCountButton addTarget:self
+            action:@selector(buttonPressDown:)
+            forControlEvents:UIControlEventTouchDown];
+    UIImage *iCImage = [HPUtilities iconCountImage];
+    [self.iconCountButton setImage:iCImage forState:UIControlStateNormal];
+    self.iconCountButton.frame = CGRectMake([[UIScreen mainScreen] bounds].size.width - 47.5,((0.197) * [[UIScreen mainScreen] bounds].size.height) + 80, 40.0, 40.0);
+    self.iconCountButton.alpha = 0.7;
+    [self.view addSubview:self.iconCountButton];
+
     self.settingsButton = [UIButton buttonWithType:UIButtonTypeCustom];
     [self.settingsButton addTarget:self 
             action:@selector(handleSettingsButtonPress:)
@@ -109,7 +124,7 @@
             forControlEvents:UIControlEventTouchDown];
     UIImage *settingsImage = [HPUtilities settingsImage];
     [self.settingsButton setImage:settingsImage forState:UIControlStateNormal];
-    self.settingsButton.frame = CGRectMake([[UIScreen mainScreen] bounds].size.width - 47.5,((0.197) * [[UIScreen mainScreen] bounds].size.height) + 80, 40.0, 40.0);
+    self.settingsButton.frame = CGRectMake([[UIScreen mainScreen] bounds].size.width - 47.5,((0.197) * [[UIScreen mainScreen] bounds].size.height) + 120, 40.0, 40.0);
     self.settingsButton.alpha = 0.7;
     [self.view addSubview:self.settingsButton];
 
@@ -131,6 +146,7 @@
         self.settingsButton.alpha = 0;
         self.spacerButton.alpha = 0;
         self.offsetButton.alpha = 0;
+        self.iconCountButton.alpha = 0;
     }];
     self.activeButton = sender;
     self.tapBackView.hidden = YES;
@@ -140,8 +156,10 @@
     [UIView animateWithDuration:.2 animations:^{
         self.settingsButton.alpha = 0.7;
         self.spacerButton.alpha = 0.7;
+        self.iconCountButton.alpha = 0.7;
         self.offsetButton.alpha = 1;
     }];
+    self.tapBackView.hidden = NO;
     [self loadControllerView:[self offsetControlView]];
 }
 -(void)handleOffsetButtonPress:(UIButton*)sender 
@@ -156,6 +174,15 @@
 -(void)handleSpacerButtonPress:(UIButton*)sender 
 {
     [self loadControllerView:[self spacingControlView]];
+    [UIView animateWithDuration:.2 animations:^{
+        sender.alpha = 1;
+    }];
+    self.activeButton = sender;
+    self.tapBackView.hidden = NO;
+}
+-(void)handleIconCountButtonPress:(UIButton*)sender 
+{
+    [self loadControllerView:[self iconCountControlView]];
     [UIView animateWithDuration:.2 animations:^{
         sender.alpha = 1;
     }];
@@ -277,7 +304,7 @@
         self.topOffsetSlider.minimumValue = 0.0;
         self.topOffsetSlider.maximumValue = [[UIScreen mainScreen] bounds].size.height;
         self.topOffsetSlider.continuous = YES;
-        self.topOffsetSlider.value = [[NSUserDefaults standardUserDefaults] floatForKey:@"customTopInset"] ?:28.0;
+        self.topOffsetSlider.value = [[HPManager sharedManager] currentLoadoutTopInset];
         [_offsetControlView addSubview:_offsetControlView.topView];
         [_offsetControlView.topView addSubview:topLabel];
         [_offsetControlView.topView addSubview:self.topOffsetSlider];
@@ -322,7 +349,7 @@
         self.sideOffsetSlider.minimumValue = -400.0;
         self.sideOffsetSlider.maximumValue = 400.0;
         self.sideOffsetSlider.continuous = YES;
-        self.sideOffsetSlider.value = [[NSUserDefaults standardUserDefaults] floatForKey:@"customLeftOffset"] ?:0.0;
+        self.sideOffsetSlider.value = [[HPManager sharedManager] currentLoadoutLeftInset];
         [_offsetControlView addSubview:_offsetControlView.bottomView];
         [_offsetControlView.bottomView addSubview:sideLabel];
         [_offsetControlView.bottomView addSubview:self.sideOffsetSlider];
@@ -331,6 +358,102 @@
     }
     return _offsetControlView;
 }
+
+
+-(HPControllerView *)iconCountControlView
+{
+    if (!_iconCountControlView) {
+        _iconCountControlView = [[HPControllerView alloc] initWithFrame:[[UIScreen mainScreen] bounds]];
+
+        _iconCountControlView.topView =[[UIView alloc] initWithFrame:
+                CGRectMake((.146 * [[UIScreen mainScreen] bounds].size.width), (0.036) * [[UIScreen mainScreen] bounds].size.height, (.706 * [[UIScreen mainScreen] bounds].size.width), (0.123 * [[UIScreen mainScreen] bounds].size.height))];
+
+        UILabel *topLabel = [[UILabel alloc] initWithFrame:CGRectMake(0, 0, (0.706) * [[UIScreen mainScreen] bounds].size.width, (0.0615) * [[UIScreen mainScreen] bounds].size.height)];
+        [topLabel setText:@"Rows: "];
+        topLabel.textColor=[UIColor whiteColor];
+        topLabel.textAlignment=NSTextAlignmentCenter;
+
+        self.topIconCountValueInput =[[UITextField alloc] initWithFrame:CGRectMake((0.613) * [[UIScreen mainScreen] bounds].size.width, (0.0369) * [[UIScreen mainScreen] bounds].size.height, (0.1333) * [[UIScreen mainScreen] bounds].size.width, (0.0369) * [[UIScreen mainScreen] bounds].size.height)];
+        [self.topIconCountValueInput addTarget:self
+                action:@selector(topIconCountValueDidChange:)
+                forControlEvents:UIControlEventEditingChanged];
+        self.topIconCountValueInput.keyboardType = UIKeyboardTypeNumberPad;
+        self.topIconCountValueInput.textColor = [UIColor whiteColor];
+
+        UIToolbar* keyboardToolbar = [[UIToolbar alloc] init];
+
+        [keyboardToolbar sizeToFit];
+        UIBarButtonItem *flexBarButton = [[UIBarButtonItem alloc]
+                                        initWithBarButtonSystemItem:UIBarButtonSystemItemFlexibleSpace
+                                        target:nil action:nil];
+        UIBarButtonItem *doneBarButton = [[UIBarButtonItem alloc]
+                                        initWithBarButtonSystemItem:UIBarButtonSystemItemDone
+                                        target:self.topIconCountValueInput action:@selector(resignFirstResponder)];
+        keyboardToolbar.items = @[flexBarButton, doneBarButton];
+        self.topIconCountValueInput.inputAccessoryView = keyboardToolbar;
+
+        self.rowsSlider = [[OBSlider alloc] initWithFrame:CGRectMake(0, 30, 220, 50)];
+        [self.rowsSlider addTarget:self action:@selector(rowsSliderChanged:) forControlEvents:UIControlEventValueChanged];
+        [self.rowsSlider setBackgroundColor:[UIColor clearColor]];
+        self.rowsSlider.maximumTrackTintColor = [UIColor colorWithWhite:1.0 alpha:0.2];
+        self.rowsSlider.minimumTrackTintColor = [UIColor colorWithWhite:1.0 alpha: 0.9];
+        self.rowsSlider.minimumValue = 1;
+        self.rowsSlider.maximumValue = 14;
+        self.rowsSlider.continuous = YES;
+        self.rowsSlider.value = (CGFloat)[[HPManager sharedManager] currentLoadoutRows];
+        //TODO: FIGURE OUT WTF TO DO WITH ROWS[_iconCountControlView addSubview:_iconCountControlView.topView];
+        [_iconCountControlView.topView addSubview:topLabel];
+        [_iconCountControlView.topView addSubview:self.rowsSlider];
+        self.topIconCountValueInput.text = [NSString stringWithFormat:@"%.0f", self.rowsSlider.value];
+        [_iconCountControlView.topView addSubview:self.topIconCountValueInput];
+
+
+        _iconCountControlView.bottomView = [[UIView alloc] initWithFrame:CGRectMake((0.146) * [[UIScreen mainScreen] bounds].size.width, (0.862) * [[UIScreen mainScreen] bounds].size.height, (0.706) * [[UIScreen mainScreen] bounds].size.width, (0.123) * [[UIScreen mainScreen] bounds].size.height)];
+
+
+        UILabel *sideLabel =  [[UILabel alloc] initWithFrame:CGRectMake(0, 0, (0.706) * [[UIScreen mainScreen] bounds].size.width, 50)];
+        [sideLabel setText:@"Columns: "];
+        sideLabel.textColor=[UIColor whiteColor];
+        sideLabel.textAlignment=NSTextAlignmentCenter;
+
+
+        self.bottomIconCountValueInput = [[UITextField alloc] initWithFrame:CGRectMake((0.613) * [[UIScreen mainScreen] bounds].size.width, (0.0369) * [[UIScreen mainScreen] bounds].size.height, 50, 30)];
+        [self.bottomIconCountValueInput addTarget:self
+                action:@selector(bottomIconCountValueDidChange:)
+                forControlEvents:UIControlEventEditingChanged];
+        self.bottomIconCountValueInput.keyboardType = UIKeyboardTypeNumberPad;
+        self.bottomIconCountValueInput.textColor = [UIColor whiteColor];
+
+        UIToolbar* bkeyboardToolbar = [[UIToolbar alloc] init];
+
+        [bkeyboardToolbar sizeToFit];
+        UIBarButtonItem *bflexBarButton = [[UIBarButtonItem alloc]
+                                        initWithBarButtonSystemItem:UIBarButtonSystemItemFlexibleSpace
+                                        target:nil action:nil];
+        UIBarButtonItem *bdoneBarButton = [[UIBarButtonItem alloc]
+                                        initWithBarButtonSystemItem:UIBarButtonSystemItemDone
+                                        target:self.bottomIconCountValueInput action:@selector(resignFirstResponder)];
+        bkeyboardToolbar.items = @[bflexBarButton, bdoneBarButton];
+        self.bottomIconCountValueInput.inputAccessoryView = bkeyboardToolbar;
+
+        self.columnsSlider =[[OBSlider alloc] initWithFrame:CGRectMake(0, (0.0369) * [[UIScreen mainScreen] bounds].size.height, (0.586) * [[UIScreen mainScreen] bounds].size.width, 50)];
+        [self.columnsSlider addTarget:self action:@selector(columnsSliderChanged:) forControlEvents:UIControlEventValueChanged];
+        [self.columnsSlider setBackgroundColor:[UIColor clearColor]];
+        self.columnsSlider.maximumTrackTintColor = [UIColor colorWithWhite:1.0 alpha:0.2];
+        self.columnsSlider.minimumTrackTintColor = [UIColor colorWithWhite:1.0 alpha: 0.9];
+        self.columnsSlider.minimumValue = 1.0;
+        self.columnsSlider.maximumValue = 14.0;
+        self.columnsSlider.continuous = YES;
+        self.columnsSlider.value = (CGFloat)[[HPManager sharedManager] currentLoadoutColumns];
+        [_iconCountControlView addSubview:_iconCountControlView.bottomView];
+        self.bottomIconCountValueInput.text = [NSString stringWithFormat:@"%.0f", self.columnsSlider.value];
+        [_iconCountControlView.bottomView addSubview:sideLabel];
+        [_iconCountControlView.bottomView addSubview:self.columnsSlider];
+        [_iconCountControlView.bottomView addSubview:self.bottomIconCountValueInput];
+    }
+    return _iconCountControlView;
+}
+
 -(HPControllerView *)spacingControlView
 {
     if (!_spacingControlView) {
@@ -371,12 +494,12 @@
         self.verticalSpacingSlider.minimumValue = -100.0;
         self.verticalSpacingSlider.maximumValue = 200.0;
         self.verticalSpacingSlider.continuous = YES;
-        self.verticalSpacingSlider.value = [[NSUserDefaults standardUserDefaults] floatForKey:@"customVerticalSpacing"] ?:28.0;
+        self.verticalSpacingSlider.value = [[HPManager sharedManager] currentLoadoutVerticalSpacing];
         [_spacingControlView addSubview:_spacingControlView.topView];
         [_spacingControlView.topView addSubview:topLabel];
         [_spacingControlView.topView addSubview:self.verticalSpacingSlider];
         self.topSpacingValueInput.text = [NSString stringWithFormat:@"%.0f", self.verticalSpacingSlider.value];
-        [_spacingControlView.topView addSubview:topSpacingValueInput];
+        [_spacingControlView.topView addSubview:self.topSpacingValueInput];
 
 
         _spacingControlView.bottomView = [[UIView alloc] initWithFrame:CGRectMake((0.146) * [[UIScreen mainScreen] bounds].size.width, (0.862) * [[UIScreen mainScreen] bounds].size.height, (0.706) * [[UIScreen mainScreen] bounds].size.width, (0.123) * [[UIScreen mainScreen] bounds].size.height)];
@@ -415,7 +538,7 @@
         self.horizontalSpacingSlider.minimumValue = 0.0;
         self.horizontalSpacingSlider.maximumValue = 600.0;
         self.horizontalSpacingSlider.continuous = YES;
-        self.horizontalSpacingSlider.value = [[NSUserDefaults standardUserDefaults] floatForKey:@"customSideInset"] ?:0.0;
+        self.horizontalSpacingSlider.value = [[HPManager sharedManager] currentLoadoutHorizontalSpacing];
         [_spacingControlView addSubview:_spacingControlView.bottomView];
         self.bottomSpacingValueInput.text = [NSString stringWithFormat:@"%.0f", self.horizontalSpacingSlider.value];
         [_spacingControlView.bottomView addSubview:sideLabel];
@@ -436,6 +559,7 @@
     _spacingControlView = nil;
     _offsetControlView = nil;
     _settingsView = nil;
+    _iconCountControlView = nil;
     for (SBRootIconListView *view in self.rootIconListViewsToUpdate) {
         [view resetValuesToDefaults];
     }
@@ -473,35 +597,65 @@
         [view updateSideInset:[self.horizontalSpacingSlider value]];
     }
 }
+-(void)topIconCountValueDidChange:(UITextField *)textField
+{
+    self.rowsSlider.value = [[textField text] floatValue];
+    [self rowsSliderChanged:self.rowsSlider];
+}
+-(void)bottomIconCountValueDidChange:(UITextField *)textField 
+{
+    self.columnsSlider.value = [[textField text] floatValue];
+    [self columnsSliderChanged:self.columnsSlider];
+}
 # pragma mark Spacing Sliders
 
 -(void)verticalSpacingSliderChanged:(OBSlider *)sender
 {
+    [[HPManager sharedManager] setCurrentLoadoutVerticalSpacing: [sender value]];
     for (SBRootIconListView *view in self.rootIconListViewsToUpdate) {
-        [view updateVerticalSpacing:[sender value]];
+        [view layoutIconsNow];
     }    
     self.topSpacingValueInput.text = [NSString stringWithFormat:@"%.0f", sender.value];
 }
 -(void)horizontalSpacingSliderChanged:(OBSlider *)sender
 {
+    [[HPManager sharedManager] setCurrentLoadoutHorizontalSpacing: [sender value]];
     for (SBRootIconListView *view in self.rootIconListViewsToUpdate) {
-        [view updateSideInset:[sender value]];
+        [view layoutIconsNow];
     }
     self.bottomSpacingValueInput.text = [NSString stringWithFormat:@"%.0f", sender.value];
 }
 -(void)topOffsetSliderChanged:(OBSlider *)sender
 {
+    [[HPManager sharedManager] setCurrentLoadoutTopInset: [sender value]];
     for (SBRootIconListView *view in self.rootIconListViewsToUpdate) {
-        [view updateTopInset:[sender value]];
+        [view layoutIconsNow];
     }    
     self.topOffsetValueInput.text = [NSString stringWithFormat:@"%.0f", sender.value];
 }
 -(void)sideOffsetSliderChanged:(OBSlider *)sender
 {
+    [[HPManager sharedManager] setCurrentLoadoutLeftInset: [sender value]];
     for (SBRootIconListView *view in self.rootIconListViewsToUpdate) {
-        [view updateLeftOffset:[sender value]];
+        [view layoutIconsNow];
     }    
     self.bottomOffsetValueInput.text = [NSString stringWithFormat:@"%.0f", sender.value];
+}
+-(void)rowsSliderChanged:(OBSlider *)sender
+{
+    [[HPManager sharedManager] setCurrentLoadoutRows: (NSInteger)(floor([sender value]))];
+    for (SBRootIconListView *view in self.rootIconListViewsToUpdate) {
+        [view layoutIconsNow];
+    }    
+    self.topIconCountValueInput.text = [NSString stringWithFormat:@"%.0f", (CGFloat)((NSInteger)(floor([sender value])))];
+}
+-(void)columnsSliderChanged:(OBSlider *)sender
+{
+    [[HPManager sharedManager] setCurrentLoadoutColumns: (NSInteger)(floor([sender value]))];
+    for (SBRootIconListView *view in self.rootIconListViewsToUpdate) {
+        [view layoutIconsNow];
+    }    
+    self.bottomIconCountValueInput.text = [NSString stringWithFormat:@"%.0f", (CGFloat)((NSInteger)(floor([sender value])))];
 }
 
 
