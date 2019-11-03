@@ -134,11 +134,11 @@ const int RESET_VALUES = 1;
                     UITableViewCell *cell = [tableView dequeueReusableCellWithIdentifier:@"SwitchCell"];
                     if( cell == nil ) {
                         cell = [[UITableViewCell alloc] initWithFrame:CGRectZero reuseIdentifier:@"SwitchCell"];
-                        cell.textLabel.text = @"Show Icon Labels";
+                        cell.textLabel.text = @"Hide Icon Labels";
                         cell.selectionStyle = UITableViewCellSelectionStyleNone;
                         UISwitch *switchView = [[UISwitch alloc] initWithFrame:CGRectZero];
                         cell.accessoryView = switchView;
-                        [switchView setOn:[[HPManager sharedManager] currentLoadoutShouldShowIconLabels] animated:NO];
+                        [switchView setOn:![[HPManager sharedManager] currentLoadoutShouldShowIconLabels] animated:NO];
                         [switchView addTarget:self action:@selector(iconLabelSwitchChanged:) forControlEvents:UIControlEventValueChanged];
 
                         [cell.layer setCornerRadius:10];
@@ -197,7 +197,7 @@ const int RESET_VALUES = 1;
 
 -(void)iconLabelSwitchChanged:(id)sender {
     UISwitch *switchControl = sender;
-    [[HPManager sharedManager] setCurrentLoadoutShouldShowIconLabels:switchControl.on];
+    [[HPManager sharedManager] setCurrentLoadoutShouldShowIconLabels:!switchControl.on];
 }
 
 #pragma mark - Table View Delegate

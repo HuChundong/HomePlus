@@ -6,6 +6,7 @@
 @property (nonatomic, assign) CGFloat customRows;
 @property (nonatomic, assign) CGFloat customColumns;
 @property (nonatomic, assign) BOOL configured;
+- (void)setIconsLabelAlpha:(double)arg1;
 -(void)updateTopInset:(CGFloat)arg1;
 -(void)updateSideInset:(CGFloat)arg1;
 
@@ -28,7 +29,7 @@
 @end 
 
 @interface FBSystemGestureView : UIView
--(void)createEditorView;
+-(void)createHitboxView;
 @property (nonatomic, retain) HPHitboxView *hp_hitbox;
 @property (nonatomic, retain) HPHitboxWindow *hp_hitbox_window;
 @end

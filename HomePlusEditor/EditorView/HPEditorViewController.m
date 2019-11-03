@@ -573,30 +573,22 @@
 -(void)topOffsetValueDidChange :(UITextField *) textField
 {
     self.topOffsetSlider.value = [[textField text] floatValue];
-    for (SBRootIconListView *view in self.rootIconListViewsToUpdate) {
-        [view updateTopInset:[self.topOffsetSlider value]];
-    }   
+    [self topOffsetSliderChanged:self.topOffsetSlider];
 }
 -(void)bottomOffsetValueDidChange:(UITextField *)textField
 {
     self.sideOffsetSlider.value = [[textField text] floatValue];
-    for (SBRootIconListView *view in self.rootIconListViewsToUpdate) {
-        [view updateLeftOffset:[self.sideOffsetSlider value]];
-    }  
+    [self sideOffsetSliderChanged:self.sideOffsetSlider];
 }
 -(void)topSpacingValueDidChange:(UITextField *)textField
 {
     self.verticalSpacingSlider.value = [[textField text] floatValue];
-    for (SBRootIconListView *view in self.rootIconListViewsToUpdate) {
-        [view updateVerticalSpacing:[self.verticalSpacingSlider value]];
-    }
+    [self verticalSpacingSliderChanged:self.verticalSpacingSlider];
 }
 -(void)bottomSpacingValueDidChange:(UITextField *)textField 
 {
     self.horizontalSpacingSlider.value = [[textField text] floatValue];
-    for (SBRootIconListView *view in self.rootIconListViewsToUpdate) {
-        [view updateSideInset:[self.horizontalSpacingSlider value]];
-    }
+    [self horizontalSpacingSliderChanged:self.horizontalSpacingSlider];
 }
 -(void)topIconCountValueDidChange:(UITextField *)textField
 {

@@ -38,6 +38,8 @@
 #define kSettingsPath @"/var/mobile/Library/Preferences/me.kritanta.homeplusprefs.plist"
 
 #pragma mark Global Values
+static BOOL _pfTweakEnabled = YES;
+// static BOOL _pfBatterySaver = NO;
 static BOOL _pfEditingEnabled = NO;
 static CGFloat _pfEditingScale = 0.7;
 
@@ -75,6 +77,8 @@ NSDictionary *prefs = nil;
      * Add notification listeners and create managers after the class is initialized normally
     */
     id o = %orig(arg1, arg2, arg3, arg4, arg5);
+
+    if (!_pfTweakEnabled) return o;
 
 	[[NSNotificationCenter defaultCenter] addObserver:self selector:@selector(recieveNotification:) name:kEditingModeEnabledNotificationName object:nil];
 	[[NSNotificationCenter defaultCenter] addObserver:self selector:@selector(recieveNotification:) name:kEditingModeDisabledNotificationName object:nil];
@@ -135,6 +139,7 @@ NSDictionary *prefs = nil;
      * We create the managers in this particular class because, at the time of initalization, the keyWindow is in the
      *      best location for adding the editor view as a subview.
     */
+    if (!_pfTweakEnabled) return;
     HPEditorWindow *view = [[EditorManager sharedManager] editorView];
     [[[UIApplication sharedApplication] keyWindow] addSubview:view];
 
@@ -154,6 +159,8 @@ NSDictionary *prefs = nil;
      * Solely for scaling the wallpaper with the rest of the view
     */
     id o = %orig(arg1, arg2, arg3, arg4, arg5);
+    
+    if (!_pfTweakEnabled) return o;
 
 	[[NSNotificationCenter defaultCenter] addObserver:self selector:@selector(recieveNotification:) name:kEditingModeEnabledNotificationName object:nil];
 	[[NSNotificationCenter defaultCenter] addObserver:self selector:@selector(recieveNotification:) name:kEditingModeDisabledNotificationName object:nil];
@@ -256,18 +263,10 @@ NSDictionary *prefs = nil;
     } completion:^(BOOL finished) {
         self.layer.cornerRadius = enabled ? cR : 0;
     }];
+
 }
 %end
 
-
-#pragma mark Icon Handling
-%hook SBIconView 
--(void)layoutSubviews
-{
-    %orig;
-    self.labelView.hidden = ![[HPManager sharedManager] currentLoadoutShouldShowIconLabels];
-}
-%end
 
 %hook SBRootFolderController
 /*
@@ -284,6 +283,8 @@ NSDictionary *prefs = nil;
     [self doneButtonTriggered:self.contentView.doneButton];
 }
 %end
+
+#pragma mark -- SBRootIconListView
 
 %hook SBRootIconListView 
 
@@ -324,14 +325,28 @@ NSDictionary *prefs = nil;
     [self layoutIconsNow];
     _pfEditingEnabled = NO;
 }
-
+-(void)layoutIconsNow {
+    %orig;
+    if (!_pfTweakEnabled) return;
+    double labelAlpha = [[HPManager sharedManager] currentLoadoutShouldShowIconLabels] ? 1.0 : 0.0;
+    [self setIconsLabelAlpha:labelAlpha];
+}
+-(void)setIconsLabelAlpha:(double)arg1 {
+    if (!_pfTweakEnabled) 
+    {
+        %orig(arg1);
+        return;
+    }
+    double labelAlpha = [[HPManager sharedManager] currentLoadoutShouldShowIconLabels] ? arg1 : 0.0;
+    %orig(labelAlpha);
+}
 -(CGFloat)verticalIconPadding 
 {
     CGFloat x = %orig;
     NSUserDefaults *userDefaults = [NSUserDefaults standardUserDefaults];
     [userDefaults setFloat:x
                   forKey:@"defaultVSpacing"];
-    return [[HPManager sharedManager] currentLoadoutVerticalSpacing];
+    return _pfTweakEnabled ? [[HPManager sharedManager] currentLoadoutVerticalSpacing] : x;
 }
 
 -(CGFloat)sideIconInset
@@ -340,7 +355,7 @@ NSDictionary *prefs = nil;
     NSUserDefaults *userDefaults = [NSUserDefaults standardUserDefaults];
     [userDefaults setFloat:x
                   forKey:@"defaultHSpacing"];
-    return [[HPManager sharedManager] currentLoadoutHorizontalSpacing];
+    return _pfTweakEnabled ? [[HPManager sharedManager] currentLoadoutHorizontalSpacing] : x;
 }
 
 -(CGFloat)topIconInset
@@ -349,7 +364,7 @@ NSDictionary *prefs = nil;
     NSUserDefaults *userDefaults = [NSUserDefaults standardUserDefaults];
     [userDefaults setFloat:x
                   forKey:@"defaultTopInset"];
-    return [[HPManager sharedManager] currentLoadoutTopInset];
+    return _pfTweakEnabled ? [[HPManager sharedManager] currentLoadoutTopInset] : x;
 }
 
 +(NSUInteger)iconColumnsForInterfaceOrientation:(NSInteger)arg1
@@ -358,7 +373,7 @@ NSDictionary *prefs = nil;
     NSUserDefaults *userDefaults = [NSUserDefaults standardUserDefaults];
     [userDefaults setInteger:x
                   forKey:@"defaultColumns"];
-	return [[HPManager sharedManager] currentLoadoutColumns];
+	return _pfTweakEnabled ? [[HPManager sharedManager] currentLoadoutColumns] : x;
 }
 
 +(NSUInteger)iconRowsForInterfaceOrientation:(NSInteger)arg1
@@ -367,8 +382,32 @@ NSDictionary *prefs = nil;
     NSUserDefaults *userDefaults = [NSUserDefaults standardUserDefaults];
     [userDefaults setInteger:x
                   forKey:@"defaultRows"];
-	return [[HPManager sharedManager] currentLoadoutRows];
+	return _pfTweakEnabled ? [[HPManager sharedManager] currentLoadoutRows] : x;
 }
+-(NSUInteger)iconRowsForSpacingCalculation
+{
+	NSInteger x = %orig;
+    NSUserDefaults *userDefaults = [NSUserDefaults standardUserDefaults];
+    [userDefaults setInteger:x
+                  forKey:@"defaultRows"];
+	return _pfTweakEnabled ? [[HPManager sharedManager] currentLoadoutRows] : x;
+}
+%end
+
+%hook SBCoverSheetWindow
+
+-(BOOL)becomeFirstResponder 
+{
+    %orig;
+    if ([(SpringBoard*)[UIApplication sharedApplication] isShowingHomescreen] && _pfEditingEnabled) {
+        AudioServicesPlaySystemSound(1520);
+        AudioServicesPlaySystemSound(1520);
+        [[NSNotificationCenter defaultCenter] postNotificationName:kEditingModeDisabledNotificationName object:nil];
+        NSLog(@"%@%@", kUniqueLogIdentifier, @": Sent Disable Notification");
+        _pfEditingEnabled = NO;
+    }
+}
+
 %end
 
 %hook FBSystemGestureView
@@ -404,7 +443,7 @@ NSDictionary *prefs = nil;
     _pfEditingEnabled = enabled;
 }
 %new 
--(void)createEditorView
+-(void)createHitboxView
 {
     self.hp_hitbox_window = [[HPHitboxWindow alloc] initWithFrame:CGRectMake(0, 0, 60, 20)];
 
@@ -431,20 +470,23 @@ NSDictionary *prefs = nil;
 -(void)layoutSubviews
 {
     %orig;
-    if (!self.hp_hitbox_window) {
-        [self createEditorView];
+
+    if (!self.hp_hitbox_window && _pfTweakEnabled) {
+        [self createHitboxView];
     }
 }
 
 %end
 
 #pragma mark Preferences
-/*
+static void *observer = NULL;
+
+
 static void reloadPrefs() {
 	if ([NSHomeDirectory() isEqualToString:@"/var/mobile"]) {
 		CFArrayRef keyList = CFPreferencesCopyKeyList((CFStringRef)kIdentifier, kCFPreferencesCurrentUser, kCFPreferencesAnyHost);
 		if (keyList) {
-			prefs = (NSDictionary *)CFPreferencesCopyMultiple(keyList, (CFStringRef)kIdentifier, kCFPreferencesCurrentUser, kCFPreferencesAnyHost);
+			prefs = (NSDictionary *)CFBridgingRelease(CFPreferencesCopyMultiple(keyList, (CFStringRef)kIdentifier, kCFPreferencesCurrentUser, kCFPreferencesAnyHost));
 			if (!prefs) {
 				prefs = [NSDictionary new];
 			}
@@ -455,14 +497,29 @@ static void reloadPrefs() {
 	}
 }
 
+
+static BOOL boolValueForKey(NSString *key, BOOL defaultValue) {
+	return (prefs && [prefs objectForKey:key]) ? [[prefs objectForKey:key] boolValue] : defaultValue;
+}
+
 static void preferencesChanged() {
 	CFPreferencesAppSynchronize((CFStringRef)kIdentifier);
 	reloadPrefs();
 
+	_pfTweakEnabled = boolValueForKey(@"HPEnabled", YES);
 }
-*/
+
 #pragma mark ctor
 
 %ctor {
+	preferencesChanged();
 
+    CFNotificationCenterAddObserver(
+        CFNotificationCenterGetDarwinNotifyCenter(),
+        &observer,
+		(CFNotificationCallback)preferencesChanged,
+        (CFStringRef)@"me.kritanta.homeplus/settingschanged",
+        NULL,
+        CFNotificationSuspensionBehaviorDeliverImmediately
+    );
 }
