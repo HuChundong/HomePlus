@@ -52,8 +52,12 @@
     NSUserDefaults *userDefaults = [NSUserDefaults standardUserDefaults];
     [userDefaults synchronize];
     
-    [userDefaults setBool:self.currentShouldShowIconLabels
+    [userDefaults setBool:self.currentShouldHideIconLabels
                     forKey:[NSString stringWithFormat:@"%@%@", prefix, @"IconLabels"] ];
+    [userDefaults setBool:self.currentShouldHideIconBadges
+                    forKey:[NSString stringWithFormat:@"%@%@", prefix, @"IconBadges"] ];
+    [userDefaults setBool:self.currentShouldHideIconLabelsInFolders
+                    forKey:[NSString stringWithFormat:@"%@%@", prefix, @"IconLabelsF"] ];
     [userDefaults setFloat:self.currentTopInset
                     forKey:[NSString stringWithFormat:@"%@%@", prefix, @"TopInset"] ];
     [userDefaults setFloat:self.currentLeftInset
@@ -72,7 +76,15 @@
 {
     NSString *prefix = [NSString stringWithFormat:@"%@%@", @"HPTheme", name];
     [[NSUserDefaults standardUserDefaults] synchronize];
-    self.currentShouldShowIconLabels = [[NSUserDefaults standardUserDefaults] boolForKey:[NSString stringWithFormat:@"%@%@", prefix, @"IconLabels"]] ?: YES;
+    self.currentShouldHideIconLabels = [[NSUserDefaults standardUserDefaults] objectForKey:[NSString stringWithFormat:@"%@%@", prefix, @"IconLabels"]] 
+                                        ? [[NSUserDefaults standardUserDefaults] boolForKey:[NSString stringWithFormat:@"%@%@", prefix, @"IconLabels"]]
+                                        : NO;
+    self.currentShouldHideIconBadges = [[NSUserDefaults standardUserDefaults] objectForKey:[NSString stringWithFormat:@"%@%@", prefix, @"IconBadges"]] 
+                                        ? [[NSUserDefaults standardUserDefaults] boolForKey:[NSString stringWithFormat:@"%@%@", prefix, @"IconBadges"]]
+                                        : NO;
+    self.currentShouldHideIconLabelsInFolders = [[NSUserDefaults standardUserDefaults] objectForKey:[NSString stringWithFormat:@"%@%@", prefix, @"IconLabelsF"]] 
+                                        ? [[NSUserDefaults standardUserDefaults] boolForKey:[NSString stringWithFormat:@"%@%@", prefix, @"IconLabelsF"]]
+                                        : NO;
     self.currentTopInset = [[NSUserDefaults standardUserDefaults] floatForKey:[NSString stringWithFormat:@"%@%@", prefix, @"TopInset"]] ?:0.0;
     self.currentLeftInset = [[NSUserDefaults standardUserDefaults] floatForKey:[NSString stringWithFormat:@"%@%@", prefix, @"LeftInset"]] ?:0.0;
     self.currentHSpacing = [[NSUserDefaults standardUserDefaults] floatForKey:[NSString stringWithFormat:@"%@%@", prefix, @"SideInset"]] ?:0.0;
@@ -81,9 +93,17 @@
     self.currentRows = [[NSUserDefaults standardUserDefaults] integerForKey:[NSString stringWithFormat:@"%@%@", prefix, @"Rows"]] ?:6;
     [[NSUserDefaults standardUserDefaults] synchronize];
 }
--(BOOL)currentLoadoutShouldShowIconLabels
+-(BOOL)currentLoadoutShouldHideIconLabels
 {
-    return self.currentShouldShowIconLabels;
+    return self.currentShouldHideIconLabels;
+}
+-(BOOL)currentLoadoutShouldHideIconBadges
+{
+    return self.currentShouldHideIconBadges;
+}
+-(BOOL)currentLoadoutShouldHideIconLabelsInFolders
+{
+    return self.currentShouldHideIconLabelsInFolders;
 }
 -(NSUInteger)currentLoadoutColumns
 {
@@ -113,9 +133,17 @@
 {
     return self.currentHSpacing;
 }
--(void)setCurrentLoadoutShouldShowIconLabels:(BOOL)arg
+-(void)setCurrentLoadoutShouldHideIconLabels:(BOOL)arg
 {
-    self.currentShouldShowIconLabels = arg;
+    self.currentShouldHideIconLabels = arg;
+}
+-(void)setCurrentLoadoutShouldHideIconBadges:(BOOL)arg
+{
+    self.currentShouldHideIconBadges = arg;
+}
+-(void)setCurrentLoadoutShouldHideIconLabelsInFolders:(BOOL)arg
+{
+    self.currentShouldHideIconLabelsInFolders = arg;
 }
 -(void)setCurrentLoadoutColumns:(NSInteger)arg
 {

@@ -75,7 +75,6 @@ const int RESET_VALUES = 1;
                                  };
     [self.navigationController.navigationBar setTitleTextAttributes: attributes];
 
-    self.tableView.translatesAutoresizingMaskIntoConstraints = NO;
 
     [self.tableView registerClass:[UITableViewCell class] forCellReuseIdentifier:@"Cell"];
 }
@@ -107,7 +106,18 @@ const int RESET_VALUES = 1;
 
 - (NSInteger)tableView:(UITableView *)tableView numberOfRowsInSection:(NSInteger)section
 {
-    return 1;
+    NSInteger rows = 0;
+    switch ( section ) {
+        case 0: {
+            rows = 3;
+            break;
+        }
+        case 1: {
+            rows = 1;
+            break;
+        }
+    }
+    return rows;
 }
 - (NSString *)tableView:(UITableView *)tableView titleForHeaderInSection:(NSInteger)section {
 
@@ -138,8 +148,60 @@ const int RESET_VALUES = 1;
                         cell.selectionStyle = UITableViewCellSelectionStyleNone;
                         UISwitch *switchView = [[UISwitch alloc] initWithFrame:CGRectZero];
                         cell.accessoryView = switchView;
-                        [switchView setOn:![[HPManager sharedManager] currentLoadoutShouldShowIconLabels] animated:NO];
+                        [switchView setOn:[[HPManager sharedManager] currentLoadoutShouldHideIconLabels] animated:NO];
                         [switchView addTarget:self action:@selector(iconLabelSwitchChanged:) forControlEvents:UIControlEventValueChanged];
+
+                        [cell.layer setCornerRadius:10];
+
+                        [cell setBackgroundColor: [UIColor colorWithRed:10.0/255.0 green:10.0/255.0 blue:10.0/255.0 alpha:0.7]];//rgb(38, 37, 42)];
+                        //Border Color and Width
+                        [cell.layer setBorderColor:[UIColor blackColor].CGColor];
+                        [cell.layer setBorderWidth:0];
+
+                        //Set Text Col
+                        cell.textLabel.textColor = [UIColor whiteColor];//[prefs colorForKey:@"textTint"];
+                        cell.detailTextLabel.textColor = [UIColor whiteColor];//[prefs colorForKey:@"textTint"];
+
+                        cell.clipsToBounds = YES;
+                        }
+                        return cell;
+                }
+                case 1: {
+                    UITableViewCell *cell = [tableView dequeueReusableCellWithIdentifier:@"SwitchCell"];
+                    if( cell == nil ) {
+                        cell = [[UITableViewCell alloc] initWithFrame:CGRectZero reuseIdentifier:@"SwitchCell"];
+                        cell.textLabel.text = @"Hide Badges";
+                        cell.selectionStyle = UITableViewCellSelectionStyleNone;
+                        UISwitch *switchView = [[UISwitch alloc] initWithFrame:CGRectZero];
+                        cell.accessoryView = switchView;
+                        [switchView setOn:[[HPManager sharedManager] currentLoadoutShouldHideIconBadges] animated:NO];
+                        [switchView addTarget:self action:@selector(iconBadgeSwitchChanged:) forControlEvents:UIControlEventValueChanged];
+
+                        [cell.layer setCornerRadius:10];
+
+                        [cell setBackgroundColor: [UIColor colorWithRed:10.0/255.0 green:10.0/255.0 blue:10.0/255.0 alpha:0.7]];//rgb(38, 37, 42)];
+                        //Border Color and Width
+                        [cell.layer setBorderColor:[UIColor blackColor].CGColor];
+                        [cell.layer setBorderWidth:0];
+
+                        //Set Text Col
+                        cell.textLabel.textColor = [UIColor whiteColor];//[prefs colorForKey:@"textTint"];
+                        cell.detailTextLabel.textColor = [UIColor whiteColor];//[prefs colorForKey:@"textTint"];
+
+                        cell.clipsToBounds = YES;
+                    }
+                    return cell;
+                }
+                case 2: {
+                    UITableViewCell *cell = [tableView dequeueReusableCellWithIdentifier:@"SwitchCell"];
+                    if( cell == nil ) {
+                        cell = [[UITableViewCell alloc] initWithFrame:CGRectZero reuseIdentifier:@"SwitchCell"];
+                        cell.textLabel.text = @"Hide Labels in Folders";
+                        cell.selectionStyle = UITableViewCellSelectionStyleNone;
+                        UISwitch *switchView = [[UISwitch alloc] initWithFrame:CGRectZero];
+                        cell.accessoryView = switchView;
+                        [switchView setOn:![[HPManager sharedManager] currentLoadoutShouldHideIconLabelsInFolders] animated:NO];
+                        [switchView addTarget:self action:@selector(iconLabelFolderSwitchChanged:) forControlEvents:UIControlEventValueChanged];
 
                         [cell.layer setCornerRadius:10];
 
@@ -197,7 +259,15 @@ const int RESET_VALUES = 1;
 
 -(void)iconLabelSwitchChanged:(id)sender {
     UISwitch *switchControl = sender;
-    [[HPManager sharedManager] setCurrentLoadoutShouldShowIconLabels:!switchControl.on];
+    [[HPManager sharedManager] setCurrentLoadoutShouldHideIconLabels:switchControl.on];
+}
+-(void)iconBadgeSwitchChanged:(id)sender {
+    UISwitch *switchControl = sender;
+    [[HPManager sharedManager] setCurrentLoadoutShouldHideIconBadges:switchControl.on];
+}
+-(void)iconLabelFolderSwitchChanged:(id)sender {
+    UISwitch *switchControl = sender;
+    [[HPManager sharedManager] setCurrentLoadoutShouldHideIconLabelsInFolders:switchControl.on];
 }
 
 #pragma mark - Table View Delegate

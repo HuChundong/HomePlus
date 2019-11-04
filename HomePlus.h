@@ -6,6 +6,7 @@
 @property (nonatomic, assign) CGFloat customRows;
 @property (nonatomic, assign) CGFloat customColumns;
 @property (nonatomic, assign) BOOL configured;
+@property (nonatomic, assign) CGRect typicalFrame;
 - (void)setIconsLabelAlpha:(double)arg1;
 -(void)updateTopInset:(CGFloat)arg1;
 -(void)updateSideInset:(CGFloat)arg1;
@@ -25,11 +26,14 @@
 
 @interface HPHitboxView : UIView 
 @end 
+@interface HPTouchKillerHitboxView : HPHitboxView 
+@end 
 @interface HPHitboxWindow : UIWindow 
 @end 
 
 @interface FBSystemGestureView : UIView
--(void)createHitboxView;
+-(void)createTopLeftHitboxView;
+-(void)createFullScreenDragUpView;
 @property (nonatomic, retain) HPHitboxView *hp_hitbox;
 @property (nonatomic, retain) HPHitboxWindow *hp_hitbox_window;
 @end
@@ -53,6 +57,9 @@
 
 @interface SBIconView : UIView
 @property (nonatomic, retain) UIView *labelView;
+@property (nonatomic, assign) CGFloat iconAccessoryAlpha;
+-(void)setLabelAccessoryViewHidden:(BOOL)arg;
+-(NSInteger)location;
 @end
 
 

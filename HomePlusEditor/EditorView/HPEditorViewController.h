@@ -22,6 +22,7 @@
     IBOutlet OBSlider *columnsSlider;
 }
 
+
 @property (nonatomic, strong) id <HPEditorViewControllerDelegate> delegate;
 
 
@@ -61,6 +62,7 @@
 
 -(void)resetAllValuesToDefaults;
 -(void)addRootIconListViewToUpdate:(SBRootIconListView *)view;
+-(void)handleDoneSettingsButtonPress:(UIButton*)sender;
 
 @end
 

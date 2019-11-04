@@ -20,7 +20,31 @@
 			<key>key</key>
 			<string>HPEnabled</string>
 			<key>label</key>
-			<string>Tweak Enabled</string>
+			<string>Tweak Enabled*</string>
+		</dict>
+		<dict>
+			<key>cell</key>
+			<string>PSLinkListCell</string>
+			<key>detail</key>
+			<string>PSListItemsController</string>
+			<key>default</key>
+			<string>Drag Down Top Left</string>
+			<key>defaults</key>
+			<string>me.kritanta.homeplusprefs</string>
+			<key>label</key>
+			<string>Activation Gesture</string>
+			<key>key</key>
+			<string>gesture</string>
+			<key>validValues</key>
+			<array>
+				<real>1</real>
+				<real>2</real>
+			</array>
+			<key>validTitles</key>
+			<array>
+				<string>Drag Down Top Left</string>
+				<string>Drag Up Anywhere</string>
+			</array>
 		</dict>
 		<dict>
 			<key>action</key>

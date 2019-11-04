@@ -13,6 +13,31 @@
 #include "HPEditorWindow.h"
 #include "HPEditorViewController.h"
 
+@interface HPEditorViewController () 
+@property (nonatomic, readwrite, strong) HPControllerView *offsetControlView;
+@property (nonatomic, readwrite, strong) HPControllerView *spacingControlView;
+@property (nonatomic, readwrite, strong) HPControllerView *iconCountControlView;
+@property (nonatomic, readwrite, strong) HPControllerView *settingsView;
+@property (nonatomic, readwrite, strong) HPEditorViewNavigationTabBar *tabBar;
+
+@property (nonatomic, readwrite, strong) HPSettingsTableViewController *tableViewController;
+
+
+@property (nonatomic, readwrite, strong) UIView *tapBackView;
+
+@property (nonatomic, retain) HPControllerView *activeView;
+@property (nonatomic, retain) UIButton *activeButton;
+
+@property (nonatomic, retain) UIButton *offsetButton;
+@property (nonatomic, retain) UIButton *spacerButton;
+@property (nonatomic, retain) UIButton *iconCountButton;
+@property (nonatomic, retain) UIButton *settingsButton;
+@property (nonatomic, retain) UIButton *settingsDoneButton;
+
+
+@end
+
+
 @interface EditorManager () <HPEditorViewControllerDelegate>
 @property (nonatomic, readwrite, strong) HPEditorViewController *editorViewController;
 @property (nonatomic, readwrite, strong) HPEditorWindow *editorView;
@@ -60,6 +85,7 @@
 }
 -(void)hideEditorView
 {
+    [_editorViewController handleDoneSettingsButtonPress:_editorViewController.settingsDoneButton];
     _editorView.hidden = YES;
 }
 -(void)toggleEditorView

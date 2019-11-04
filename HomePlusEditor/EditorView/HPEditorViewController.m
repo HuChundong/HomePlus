@@ -141,6 +141,7 @@
 -(void)handleSettingsButtonPress:(UIButton*)sender
 {
     [self loadControllerView:[self settingsView]];
+    self.activeButton.userInteractionEnabled = YES; 
 
     [UIView animateWithDuration:.2 animations:^{
         self.settingsButton.alpha = 0;
@@ -153,6 +154,10 @@
 }
 -(void)handleDoneSettingsButtonPress:(UIButton*)sender
 {
+
+    for (SBRootIconListView *view in self.rootIconListViewsToUpdate) {
+        [view layoutIconsNow];
+    }
     [UIView animateWithDuration:.2 animations:^{
         self.settingsButton.alpha = 0.7;
         self.spacerButton.alpha = 0.7;
@@ -160,33 +165,41 @@
         self.offsetButton.alpha = 1;
     }];
     self.tapBackView.hidden = NO;
-    [self loadControllerView:[self offsetControlView]];
+
+    [self handleOffsetButtonPress:self.offsetButton];
 }
 -(void)handleOffsetButtonPress:(UIButton*)sender 
 {
     [self loadControllerView:[self offsetControlView]];
+
+    self.activeButton.userInteractionEnabled = YES; 
     [UIView animateWithDuration:.2 animations:^{
         sender.alpha = 1;
     }];
-    self.activeButton = sender;
+    self.activeButton = sender; 
+    sender.userInteractionEnabled = NO; 
     self.tapBackView.hidden = NO;
 }
 -(void)handleSpacerButtonPress:(UIButton*)sender 
 {
     [self loadControllerView:[self spacingControlView]];
+    self.activeButton.userInteractionEnabled = YES; 
     [UIView animateWithDuration:.2 animations:^{
         sender.alpha = 1;
     }];
     self.activeButton = sender;
+    sender.userInteractionEnabled = NO; 
     self.tapBackView.hidden = NO;
 }
 -(void)handleIconCountButtonPress:(UIButton*)sender 
 {
     [self loadControllerView:[self iconCountControlView]];
+    self.activeButton.userInteractionEnabled = YES; 
     [UIView animateWithDuration:.2 animations:^{
         sender.alpha = 1;
     }];
     self.activeButton = sender;
+    sender.userInteractionEnabled = NO; 
     self.tapBackView.hidden = NO;
 }
 -(void)loadControllerView:(HPControllerView *)arg1 
@@ -649,6 +662,13 @@
         [view layoutIconsNow];
     }    
     self.bottomIconCountValueInput.text = [NSString stringWithFormat:@"%.0f", (CGFloat)((NSInteger)(floor([sender value])))];
+}
+
+#pragma mark UIControllerView overrides
+
+- (BOOL)shouldAutorotate 
+{
+    return NO;
 }
 
 

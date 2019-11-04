@@ -40,6 +40,7 @@
 #pragma mark Global Values
 static BOOL _pfTweakEnabled = YES;
 // static BOOL _pfBatterySaver = NO;
+static NSInteger _pfActivationGesture = 1;
 static BOOL _pfEditingEnabled = NO;
 static CGFloat _pfEditingScale = 0.7;
 
@@ -51,11 +52,13 @@ NSDictionary *prefs = nil;
 
 # pragma mark Implementations
 
-@implementation HPHitboxView
+@implementation HPTouchKillerHitboxView
 -(BOOL)deliversTouchesForGesturesToSuperview
 {
     return (![(SpringBoard*)[UIApplication sharedApplication] isShowingHomescreen]);
 }
+@end
+@implementation HPHitboxView
 @end
 
 @implementation HPHitboxWindow
@@ -289,6 +292,7 @@ NSDictionary *prefs = nil;
 %hook SBRootIconListView 
 
 %property (nonatomic, assign) BOOL configured;
+%property (nonatomic, assign) CGRect typicalFrame;
 
 /*
 -(id)initWithModel:(id)arg1 orientation:(id)arg2 viewMap:(id)arg3 {
@@ -301,6 +305,7 @@ NSDictionary *prefs = nil;
 {
     %orig;
     if (!self.configured) {
+        self.typicalFrame = self.frame;
         [[[EditorManager sharedManager] editorViewController] addRootIconListViewToUpdate:self];
         [[NSNotificationCenter defaultCenter] addObserver:self selector:@selector(recieveNotification:) name:kEditingModeEnabledNotificationName object:nil];
         [[NSNotificationCenter defaultCenter] addObserver:self selector:@selector(recieveNotification:) name:kEditingModeDisabledNotificationName object:nil];
@@ -316,6 +321,7 @@ NSDictionary *prefs = nil;
     if (!enabled) {
         [[HPManager sharedManager] saveCurrentLoadoutName];
         [[HPManager sharedManager] saveCurrentLoadout];
+        [self layoutIconsNow];
     }
 }
 
@@ -328,24 +334,32 @@ NSDictionary *prefs = nil;
 -(void)layoutIconsNow {
     %orig;
     if (!_pfTweakEnabled) return;
-    double labelAlpha = [[HPManager sharedManager] currentLoadoutShouldShowIconLabels] ? 1.0 : 0.0;
+    /*
+    if (CGRectIsEmpty(self.typicalFrame)) self.typicalFrame = self.frame;
+    */
+    double labelAlpha = [[HPManager sharedManager] currentLoadoutShouldHideIconLabels] ? 0.0 : 1.0;
     [self setIconsLabelAlpha:labelAlpha];
+    //CGFloat x = self.frame 
+    //self.frame = CGRectOffset(self.frame, [[HPManager sharedManager] currentLoadoutLeftInset], 0);
 }
+/*
 -(void)setIconsLabelAlpha:(double)arg1 {
     if (!_pfTweakEnabled) 
     {
         %orig(arg1);
         return;
     }
-    double labelAlpha = [[HPManager sharedManager] currentLoadoutShouldShowIconLabels] ? arg1 : 0.0;
+    double labelAlpha = [[HPManager sharedManager] currentLoadoutShouldHideIconLabels] ? arg1 : 0.0;
     %orig(labelAlpha);
 }
+*/
 -(CGFloat)verticalIconPadding 
 {
     CGFloat x = %orig;
     NSUserDefaults *userDefaults = [NSUserDefaults standardUserDefaults];
     [userDefaults setFloat:x
                   forKey:@"defaultVSpacing"];
+
     return _pfTweakEnabled ? [[HPManager sharedManager] currentLoadoutVerticalSpacing] : x;
 }
 
@@ -394,6 +408,71 @@ NSDictionary *prefs = nil;
 }
 %end
 
+
+@interface SBIconLabelImageParameters : NSObject
+@property(readonly, nonatomic) long long iconLocation; 
+@end
+@interface SBIconLabelImage : UIImage
+@property(readonly, copy, nonatomic) SBIconLabelImageParameters *parameters; 
+@end
+@interface SBIconLegibilityLabelView : UIView
+@property(retain, nonatomic) UIImage *image;
+@end
+
+%hook SBIconLegibilityLabelView
+
+
+-(void)setHidden:(BOOL)arg1 {
+    BOOL hide = NO;
+    if (((SBIconLabelImage *)self.image).parameters.iconLocation  == 1){
+        // home screen
+        hide = [[HPManager sharedManager] currentLoadoutShouldHideIconLabels];
+    } else if (((SBIconLabelImage *)self.image).parameters.iconLocation == 6) {
+        // folder
+        hide = [[HPManager sharedManager] currentLoadoutShouldHideIconLabelsInFolders];
+    }
+    hide = (hide || arg1);
+	%orig(hide);
+    
+}
+
+%end
+
+
+
+%hook SBIconView 
+
+-(void)layoutSubviews {
+	%orig;
+    BOOL hideThis = NO;
+	switch ( [self location] ) {
+        case 1: {
+            hideThis = [[HPManager sharedManager] currentLoadoutShouldHideIconLabels];
+            break;
+        }
+        case 6: {
+            hideThis = [[HPManager sharedManager] currentLoadoutShouldHideIconLabelsInFolders];
+        }
+        default: {
+            hideThis = [[HPManager sharedManager] currentLoadoutShouldHideIconLabels];
+            break;
+        }
+    }
+    [self setLabelAccessoryViewHidden:hideThis];
+    self.iconAccessoryAlpha = [[HPManager sharedManager] currentLoadoutShouldHideIconBadges] ? 0.0 : 1.0;
+
+}
+
+
+%end
+
+%hook SBFolderIconBackgroundView
+-(void)setHidden:(BOOL)arg1 
+{
+    %orig(arg1);
+}
+%end
+
 %hook SBCoverSheetWindow
 
 -(BOOL)becomeFirstResponder 
@@ -417,9 +496,41 @@ NSDictionary *prefs = nil;
 %property (nonatomic, retain) HPHitboxWindow *hp_hitbox_window;
 
 %new
--(void)toggleEditingMode
+-(void)TL_toggleEditingMode
 {
     if (![(SpringBoard*)[UIApplication sharedApplication] isShowingHomescreen]) {
+        return;
+    }
+    if (_pfActivationGesture != 1) {
+        return;
+    }
+    BOOL enabled = !_pfEditingEnabled;
+
+    NSLog(@"%@%@", kUniqueLogIdentifier, @": Editing toggled");
+    if (enabled)
+    {
+        AudioServicesPlaySystemSound(1520);
+        AudioServicesPlaySystemSound(1520);
+        [[NSNotificationCenter defaultCenter] postNotificationName:kDisableWiggleTrigger object:nil];
+        [[NSNotificationCenter defaultCenter] postNotificationName:kEditingModeEnabledNotificationName object:nil];
+        NSLog(@"%@%@", kUniqueLogIdentifier,  @": Sent Enable Notification");
+    }
+    else 
+    {
+        AudioServicesPlaySystemSound(1520);
+        AudioServicesPlaySystemSound(1520);
+        [[NSNotificationCenter defaultCenter] postNotificationName:kEditingModeDisabledNotificationName object:nil];
+        NSLog(@"%@%@", kUniqueLogIdentifier, @": Sent Disable Notification");
+    }
+    _pfEditingEnabled = enabled;
+}
+%new
+-(void)BX_toggleEditingMode
+{
+    if (![(SpringBoard*)[UIApplication sharedApplication] isShowingHomescreen]) {
+        return;
+    }
+    if (_pfActivationGesture != 2) {
         return;
     }
     BOOL enabled = !_pfEditingEnabled;
@@ -443,19 +554,19 @@ NSDictionary *prefs = nil;
     _pfEditingEnabled = enabled;
 }
 %new 
--(void)createHitboxView
+-(void)createTopLeftHitboxView
 {
     self.hp_hitbox_window = [[HPHitboxWindow alloc] initWithFrame:CGRectMake(0, 0, 60, 20)];
 
-    self.hp_hitbox = [[HPHitboxView alloc] init];
+    self.hp_hitbox = [[HPTouchKillerHitboxView alloc] init];
     self.hp_hitbox.backgroundColor = [UIColor.lightGrayColor colorWithAlphaComponent:0.001];
     [self.hp_hitbox setValue:@NO forKey:@"deliversTouchesForGesturesToSuperview"];
 
-    UISwipeGestureRecognizer *swipeDownGesture = [[UISwipeGestureRecognizer alloc] initWithTarget:self action:@selector(toggleEditingMode)];
+    UISwipeGestureRecognizer *swipeDownGesture = [[UISwipeGestureRecognizer alloc] initWithTarget:self action:@selector(TL_toggleEditingMode)];
     [swipeDownGesture setDirection:UISwipeGestureRecognizerDirectionDown];
     [self.hp_hitbox addGestureRecognizer: swipeDownGesture];
 
-    UISwipeGestureRecognizer *swipeUpGesture = [[UISwipeGestureRecognizer alloc] initWithTarget:self action:@selector(toggleEditingMode)];
+    UISwipeGestureRecognizer *swipeUpGesture = [[UISwipeGestureRecognizer alloc] initWithTarget:self action:@selector(TL_toggleEditingMode)];
     [swipeUpGesture setDirection:UISwipeGestureRecognizerDirectionUp];
     [self.hp_hitbox addGestureRecognizer: swipeUpGesture];
 
@@ -466,13 +577,35 @@ NSDictionary *prefs = nil;
     [self addSubview:self.hp_hitbox_window];
     self.hp_hitbox_window.hidden = NO;
 }
+%new 
+-(void)createFullScreenDragUpView
+{
+    HPHitboxWindow *hp_hitbox_window = [[HPHitboxWindow alloc] initWithFrame:[[UIScreen mainScreen] bounds]];
+
+    HPHitboxView *hp_hitbox = [[HPHitboxView alloc] init];
+    hp_hitbox.backgroundColor = [UIColor.lightGrayColor colorWithAlphaComponent:0.001];
+    [hp_hitbox setValue:@YES forKey:@"deliversTouchesForGesturesToSuperview"];
+    [hp_hitbox_window setValue:@YES forKey:@"deliversTouchesForGesturesToSuperview"];
+
+    UISwipeGestureRecognizer *swipeUpGesture = [[UISwipeGestureRecognizer alloc] initWithTarget:self action:@selector(BX_toggleEditingMode)];
+    [swipeUpGesture setDirection:UISwipeGestureRecognizerDirectionUp];
+
+    [hp_hitbox addGestureRecognizer: swipeUpGesture];
+
+
+    hp_hitbox.frame = [[UIScreen mainScreen] bounds];
+    [hp_hitbox_window addSubview:hp_hitbox];
+    [self addSubview:hp_hitbox_window];
+    hp_hitbox_window.hidden = YES;
+}
 
 -(void)layoutSubviews
 {
     %orig;
 
     if (!self.hp_hitbox_window && _pfTweakEnabled) {
-        [self createHitboxView];
+        [self createTopLeftHitboxView];
+        [self createFullScreenDragUpView];
     }
 }
 
@@ -507,6 +640,7 @@ static void preferencesChanged() {
 	reloadPrefs();
 
 	_pfTweakEnabled = boolValueForKey(@"HPEnabled", YES);
+    _pfActivationGesture = [[prefs objectForKey:@"gesture"] intValue] ?: 1;
 }
 
 #pragma mark ctor
