@@ -25,7 +25,8 @@ const int RESET_VALUES = 1;
 - (id)initWithStyle:(UITableViewStyle)style
 {
     self = [super initWithStyle:style];
-    if (self) {
+    if (self) 
+    {
         self.title = @"HomePlus Settings";
     }
     return self;
@@ -47,7 +48,8 @@ const int RESET_VALUES = 1;
 
     //self.tableView.bounds = CGRectMake(self.tableView.frame.origin.x, self.tableView.frame.origin.y+topPadding, self.tableView.frame.size.width, self.tableView.frame.size.height-topPadding);
     UIView *bg = [[UIView alloc] init];
-    if (!UIAccessibilityIsReduceTransparencyEnabled()) {
+    if (!UIAccessibilityIsReduceTransparencyEnabled()) 
+    {
         bg.backgroundColor = [UIColor clearColor];
 
         UIBlurEffect *blurEffect = [UIBlurEffect effectWithStyle:UIBlurEffectStyleDark];
@@ -57,7 +59,9 @@ const int RESET_VALUES = 1;
         blurEffectView.autoresizingMask = UIViewAutoresizingFlexibleWidth | UIViewAutoresizingFlexibleHeight;
 
         [bg addSubview:blurEffectView]; //if you have more UIViews, use an insertSubview API to place it where needed
-    } else {
+    } 
+    else 
+    {
         bg.backgroundColor = [UIColor blackColor];
     }
 
@@ -89,13 +93,11 @@ const int RESET_VALUES = 1;
 
 #pragma mark Table Data Helpers
 
-
 - (NSString *)titleForRowAtIndexPath:(NSIndexPath *)indexPath
 {
     if (indexPath.row == 0) return(@"Reset Values");
     return (@"");
 }
-
 
 #pragma mark - Table View Data Source
 
@@ -107,12 +109,15 @@ const int RESET_VALUES = 1;
 - (NSInteger)tableView:(UITableView *)tableView numberOfRowsInSection:(NSInteger)section
 {
     NSInteger rows = 0;
-    switch ( section ) {
-        case 0: {
+    switch ( section ) 
+    {
+        case 0: 
+        {
             rows = 3;
             break;
         }
-        case 1: {
+        case 1: 
+        {
             rows = 1;
             break;
         }
@@ -122,7 +127,8 @@ const int RESET_VALUES = 1;
 - (NSString *)tableView:(UITableView *)tableView titleForHeaderInSection:(NSInteger)section {
 
     NSString *sectionName;
-    switch (section) {
+    switch (section) 
+    {
         case 0:
             sectionName = NSLocalizedString(@"Icons", @"Icons");
             break;
@@ -137,12 +143,18 @@ const int RESET_VALUES = 1;
 }
 - (UITableViewCell *)tableView:(UITableView *)tableView cellForRowAtIndexPath:(NSIndexPath *)indexPath
 {
-    switch( [indexPath section] ) {
-        case 0: {
-            switch ( [indexPath row] ){
-                case 0: {
+    switch( [indexPath section] ) 
+    {
+        case 0: 
+        {
+            switch ( [indexPath row] )
+            {
+                case 0: 
+                {
                     UITableViewCell *cell = [tableView dequeueReusableCellWithIdentifier:@"SwitchCell"];
-                    if( cell == nil ) {
+
+                    if( cell == nil ) 
+                    {
                         cell = [[UITableViewCell alloc] initWithFrame:CGRectZero reuseIdentifier:@"SwitchCell"];
                         cell.textLabel.text = @"Hide Icon Labels";
                         cell.selectionStyle = UITableViewCellSelectionStyleNone;
@@ -163,12 +175,16 @@ const int RESET_VALUES = 1;
                         cell.detailTextLabel.textColor = [UIColor whiteColor];//[prefs colorForKey:@"textTint"];
 
                         cell.clipsToBounds = YES;
-                        }
-                        return cell;
+                    }
+                    return cell;
                 }
-                case 1: {
+
+                case 1: 
+                {
                     UITableViewCell *cell = [tableView dequeueReusableCellWithIdentifier:@"SwitchCell"];
-                    if( cell == nil ) {
+
+                    if( cell == nil ) 
+                    {
                         cell = [[UITableViewCell alloc] initWithFrame:CGRectZero reuseIdentifier:@"SwitchCell"];
                         cell.textLabel.text = @"Hide Badges";
                         cell.selectionStyle = UITableViewCellSelectionStyleNone;
@@ -192,9 +208,13 @@ const int RESET_VALUES = 1;
                     }
                     return cell;
                 }
-                case 2: {
+
+                case 2: 
+                {
                     UITableViewCell *cell = [tableView dequeueReusableCellWithIdentifier:@"SwitchCell"];
-                    if( cell == nil ) {
+
+                    if( cell == nil ) 
+                    {
                         cell = [[UITableViewCell alloc] initWithFrame:CGRectZero reuseIdentifier:@"SwitchCell"];
                         cell.textLabel.text = @"Hide Labels in Folders";
                         cell.selectionStyle = UITableViewCellSelectionStyleNone;
@@ -215,18 +235,21 @@ const int RESET_VALUES = 1;
                         cell.detailTextLabel.textColor = [UIColor whiteColor];//[prefs colorForKey:@"textTint"];
 
                         cell.clipsToBounds = YES;
-                        }
-                        return cell;
+                    }
+                    return cell;
                 }
             }
-            
         }
-        case 1: {
-            switch ( [indexPath row] ) {
-                case 0: {
+        case 1: 
+        {
+            switch ( [indexPath row] ) 
+            {
+                case 0: 
+                {
                     static NSString *CellIdentifier = @"Cell";
                     UITableViewCell *cell = [tableView dequeueReusableCellWithIdentifier:CellIdentifier];
-                    if (!cell) {
+                    if (!cell) 
+                    {
                         cell = [[UITableViewCell alloc] initWithStyle:UITableViewCellStyleDefault reuseIdentifier:CellIdentifier];
                         cell.accessoryType = UITableViewCellAccessoryDisclosureIndicator;
                         cell.textLabel.font = [UIFont systemFontOfSize:16.0];
@@ -247,9 +270,8 @@ const int RESET_VALUES = 1;
 
                     cell.clipsToBounds = YES;
                     cell.hidden = NO;
-
-                    return cell;
                 }
+                return cell;
             }
         }
         break;
@@ -257,15 +279,20 @@ const int RESET_VALUES = 1;
     return nil;
 }
 
--(void)iconLabelSwitchChanged:(id)sender {
+- (void)iconLabelSwitchChanged:(id)sender 
+{
     UISwitch *switchControl = sender;
     [[HPManager sharedManager] setCurrentLoadoutShouldHideIconLabels:switchControl.on];
 }
--(void)iconBadgeSwitchChanged:(id)sender {
+
+- (void)iconBadgeSwitchChanged:(id)sender 
+{
     UISwitch *switchControl = sender;
     [[HPManager sharedManager] setCurrentLoadoutShouldHideIconBadges:switchControl.on];
 }
--(void)iconLabelFolderSwitchChanged:(id)sender {
+
+- (void)iconLabelFolderSwitchChanged:(id)sender 
+{
     UISwitch *switchControl = sender;
     [[HPManager sharedManager] setCurrentLoadoutShouldHideIconLabelsInFolders:switchControl.on];
 }

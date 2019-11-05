@@ -11,7 +11,7 @@
 #include "HPManager.h"
 @implementation HPManager
 
-+(instancetype)sharedManager
++ (instancetype)sharedManager
 {
     static HPManager *sharedManager = nil;
     static dispatch_once_t onceToken;
@@ -21,31 +21,35 @@
     return sharedManager;
 }
 
--(instancetype)init
+- (instancetype)init
 {
     self = [super init];
     [self loadSavedCurrentLoadoutName];
     [self loadLoadout:self.currentLoadout];
     return self;
 }
--(void)saveCurrentLoadoutName
+
+- (void)saveCurrentLoadoutName
 {
     [[NSUserDefaults standardUserDefaults] synchronize];
     [[NSUserDefaults standardUserDefaults] setObject:self.currentLoadout
                                                forKey:@"HPCurrentLoadout"];
     [[NSUserDefaults standardUserDefaults] synchronize];
 }
--(void)loadSavedCurrentLoadoutName
+
+- (void)loadSavedCurrentLoadoutName
 {
     [[NSUserDefaults standardUserDefaults] synchronize];
     self.currentLoadout = [[NSUserDefaults standardUserDefaults] stringForKey:@"HPCurrentLoadout"] ?: @"Default";
     [[NSUserDefaults standardUserDefaults] synchronize];
 }
--(void)saveCurrentLoadout
+
+- (void)saveCurrentLoadout
 {
     [self saveLoadout:self.currentLoadout];
 }
--(void)saveLoadout:(NSString *)name
+
+- (void)saveLoadout:(NSString *)name
 {
 
     NSString *prefix = [NSString stringWithFormat:@"%@%@", @"HPTheme", name];
@@ -72,7 +76,8 @@
                     forKey:[NSString stringWithFormat:@"%@%@", prefix, @"Rows"] ];
     [userDefaults synchronize];
 }
--(void)loadLoadout:(NSString *)name
+
+- (void)loadLoadout:(NSString *)name
 {
     NSString *prefix = [NSString stringWithFormat:@"%@%@", @"HPTheme", name];
     [[NSUserDefaults standardUserDefaults] synchronize];
@@ -93,80 +98,99 @@
     self.currentRows = [[NSUserDefaults standardUserDefaults] integerForKey:[NSString stringWithFormat:@"%@%@", prefix, @"Rows"]] ?:6;
     [[NSUserDefaults standardUserDefaults] synchronize];
 }
--(BOOL)currentLoadoutShouldHideIconLabels
+
+- (BOOL)currentLoadoutShouldHideIconLabels
 {
     return self.currentShouldHideIconLabels;
 }
--(BOOL)currentLoadoutShouldHideIconBadges
+
+- (BOOL)currentLoadoutShouldHideIconBadges
 {
     return self.currentShouldHideIconBadges;
 }
--(BOOL)currentLoadoutShouldHideIconLabelsInFolders
+
+- (BOOL)currentLoadoutShouldHideIconLabelsInFolders
 {
     return self.currentShouldHideIconLabelsInFolders;
 }
--(NSUInteger)currentLoadoutColumns
+
+- (NSUInteger)currentLoadoutColumns
 {
     NSUInteger r;
     r = (NSUInteger)self.currentColumns;
     return r;
 }
--(NSUInteger)currentLoadoutRows
+
+- (NSUInteger)currentLoadoutRows
 {
     NSUInteger r;
     r = (NSUInteger)self.currentRows;
     return r;
 }
--(CGFloat)currentLoadoutTopInset
+
+- (CGFloat)currentLoadoutTopInset
 {
     return self.currentTopInset;
 }
--(CGFloat)currentLoadoutLeftInset
+
+- (CGFloat)currentLoadoutLeftInset
 {
     return self.currentLeftInset;
 }
--(CGFloat)currentLoadoutVerticalSpacing
+
+- (CGFloat)currentLoadoutVerticalSpacing
 {
     return self.currentVSpacing;
 }
--(CGFloat)currentLoadoutHorizontalSpacing
+
+- (CGFloat)currentLoadoutHorizontalSpacing
 {
     return self.currentHSpacing;
 }
--(void)setCurrentLoadoutShouldHideIconLabels:(BOOL)arg
+
+- (void)setCurrentLoadoutShouldHideIconLabels:(BOOL)arg
 {
     self.currentShouldHideIconLabels = arg;
 }
--(void)setCurrentLoadoutShouldHideIconBadges:(BOOL)arg
+
+- (void)setCurrentLoadoutShouldHideIconBadges:(BOOL)arg
 {
     self.currentShouldHideIconBadges = arg;
 }
--(void)setCurrentLoadoutShouldHideIconLabelsInFolders:(BOOL)arg
+
+- (void)setCurrentLoadoutShouldHideIconLabelsInFolders:(BOOL)arg
 {
     self.currentShouldHideIconLabelsInFolders = arg;
 }
--(void)setCurrentLoadoutColumns:(NSInteger)arg
+
+- (void)setCurrentLoadoutColumns:(NSInteger)arg
 {
     self.currentColumns = arg;
 }
--(void)setCurrentLoadoutRows:(NSInteger)arg
+
+- (void)setCurrentLoadoutRows:(NSInteger)arg
 {
     self.currentRows = arg;
 }
--(void)setCurrentLoadoutTopInset:(CGFloat)arg
+
+- (void)setCurrentLoadoutTopInset:(CGFloat)arg
 {
     self.currentTopInset = arg;
 }
--(void)setCurrentLoadoutLeftInset:(CGFloat)arg
+
+- (void)setCurrentLoadoutLeftInset:(CGFloat)arg
 {
     self.currentLeftInset = arg;
 }
--(void)setCurrentLoadoutVerticalSpacing:(CGFloat)arg
+
+- (void)setCurrentLoadoutVerticalSpacing:(CGFloat)arg
 {
     self.currentVSpacing = arg;
 }
--(void)setCurrentLoadoutHorizontalSpacing:(CGFloat)arg
+
+- (void)setCurrentLoadoutHorizontalSpacing:(CGFloat)arg
 {
     self.currentHSpacing = arg;
 }
+
 @end

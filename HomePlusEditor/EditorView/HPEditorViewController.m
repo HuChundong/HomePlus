@@ -11,19 +11,20 @@
 //
 
 #include "HPEditorViewController.h"
-#include "HomePlus.h"
-#include "EditorManager.h"
-#include "HPManager.h"
-#include "HPUtilities.h"
-#include "HPSettingsTableViewController.h"
+#include "../../HomePlus.h"
+#include "../Manager/EditorManager.h"
+#include "../Manager/HPManager.h"
+#include "../Utility/HPUtilities.h"
+#include "../Settings/HPSettingsTableViewController.h"
 #include "HPEditorViewNavigationTabBar.h"
-#import "OBSlider.h"
-#import <AudioToolbox/AudioToolbox.h>
-
+#include "../Utility/OBSlider.h"
+#include <UIKit/UIKit.h>
+#include <AudioToolbox/AudioToolbox.h>
 
 
 @implementation HPEditorViewNavigationTabBar
 @end
+
 
 @interface HPEditorViewController () 
 @property (nonatomic, readwrite, strong) HPControllerView *offsetControlView;
@@ -46,11 +47,11 @@
 @property (nonatomic, retain) UIButton *settingsButton;
 @property (nonatomic, retain) UIButton *settingsDoneButton;
 
-
 @end
 
 
 @implementation HPControllerView
+
 - (id)initWithFrame:(CGRect)frame
 {
     self = [super initWithFrame:frame];
@@ -134,91 +135,115 @@
     self.activeButton = self.offsetButton;
 
 }
--(void)buttonPressDown:(UIButton*)sender
+- (void)buttonPressDown:(UIButton*)sender
 {
     // AudioServicesPlaySystemSound(1519);
 }
--(void)handleSettingsButtonPress:(UIButton*)sender
+- (void)handleSettingsButtonPress:(UIButton*)sender
 {
     [self loadControllerView:[self settingsView]];
     self.activeButton.userInteractionEnabled = YES; 
 
-    [UIView animateWithDuration:.2 animations:^{
-        self.settingsButton.alpha = 0;
-        self.spacerButton.alpha = 0;
-        self.offsetButton.alpha = 0;
-        self.iconCountButton.alpha = 0;
-    }];
+    [UIView animateWithDuration:.2 
+        animations:
+        ^{
+            self.settingsButton.alpha = 0;
+            self.spacerButton.alpha = 0;
+            self.offsetButton.alpha = 0;
+            self.iconCountButton.alpha = 0;
+        }
+    ];
+
     self.activeButton = sender;
     self.tapBackView.hidden = YES;
 }
--(void)handleDoneSettingsButtonPress:(UIButton*)sender
+- (void)handleDoneSettingsButtonPress:(UIButton*)sender
 {
 
-    for (SBRootIconListView *view in self.rootIconListViewsToUpdate) {
+    for (SBRootIconListView *view in self.rootIconListViewsToUpdate) 
+    {
         [view layoutIconsNow];
     }
-    [UIView animateWithDuration:.2 animations:^{
-        self.settingsButton.alpha = 0.7;
-        self.spacerButton.alpha = 0.7;
-        self.iconCountButton.alpha = 0.7;
-        self.offsetButton.alpha = 1;
-    }];
+
+    [UIView animateWithDuration:.2 
+        animations:
+        ^{
+            self.settingsButton.alpha = 0.7;
+            self.spacerButton.alpha = 0.7;
+            self.iconCountButton.alpha = 0.7;
+            self.offsetButton.alpha = 1;
+        }
+    ];
+
     self.tapBackView.hidden = NO;
 
     [self handleOffsetButtonPress:self.offsetButton];
 }
--(void)handleOffsetButtonPress:(UIButton*)sender 
+- (void)handleOffsetButtonPress:(UIButton*)sender 
 {
     [self loadControllerView:[self offsetControlView]];
 
     self.activeButton.userInteractionEnabled = YES; 
-    [UIView animateWithDuration:.2 animations:^{
-        sender.alpha = 1;
-    }];
+    [UIView animateWithDuration:.2 
+        animations:
+        ^{
+            sender.alpha = 1;
+        }
+    ];
     self.activeButton = sender; 
     sender.userInteractionEnabled = NO; 
     self.tapBackView.hidden = NO;
 }
--(void)handleSpacerButtonPress:(UIButton*)sender 
+- (void)handleSpacerButtonPress:(UIButton*)sender 
 {
     [self loadControllerView:[self spacingControlView]];
     self.activeButton.userInteractionEnabled = YES; 
-    [UIView animateWithDuration:.2 animations:^{
-        sender.alpha = 1;
-    }];
+
+    [UIView animateWithDuration:.2 
+        animations:
+        ^{
+            sender.alpha = 1;
+        }
+    ];
+
     self.activeButton = sender;
     sender.userInteractionEnabled = NO; 
     self.tapBackView.hidden = NO;
 }
--(void)handleIconCountButtonPress:(UIButton*)sender 
+- (void)handleIconCountButtonPress:(UIButton*)sender 
 {
     [self loadControllerView:[self iconCountControlView]];
     self.activeButton.userInteractionEnabled = YES; 
-    [UIView animateWithDuration:.2 animations:^{
-        sender.alpha = 1;
-    }];
+    [UIView animateWithDuration:.2 
+        animations:
+        ^{
+            sender.alpha = 1;
+        }
+    ];
     self.activeButton = sender;
     sender.userInteractionEnabled = NO; 
     self.tapBackView.hidden = NO;
 }
--(void)loadControllerView:(HPControllerView *)arg1 
+- (void)loadControllerView:(HPControllerView *)arg1 
 {
     self.activeButton.alpha = 0.7;
     AudioServicesPlaySystemSound(1519);
-    NSLog(@"HPD: Loading controller view");
 
-    [UIView animateWithDuration:.2 animations:^{
-        self.activeView.alpha = 0;
-        arg1.alpha = 1;
-    }];
+    [UIView animateWithDuration:.2 
+        animations:
+        ^{
+            self.activeView.alpha = 0;
+            arg1.alpha = 1;
+        }
+    ];
+
     self.activeView = arg1;
 }
--(UIView *)tapBackView 
+- (UIView *)tapBackView 
 {
-    if (!_tapBackView) {
+    if (!_tapBackView) 
+    {
         _tapBackView = [[UIView alloc] initWithFrame:[[UIScreen mainScreen] bounds]];
-        // lol fix pls
         UITapGestureRecognizer *singleTapRecognizer = [[UITapGestureRecognizer alloc] initWithTarget:self action: @selector(handleTapOnView:)];                                 
         [singleTapRecognizer setNumberOfTouchesRequired:2];
         [_tapBackView addGestureRecognizer: singleTapRecognizer];
@@ -229,8 +254,7 @@
 - (void)handleTapOnView:(id)sender
 {
 
-    [[self.view subviews]
-        makeObjectsPerformSelector:@selector(removeFromSuperview)];
+    [[self.view subviews] makeObjectsPerformSelector:@selector(removeFromSuperview)];
     _spacingControlView = nil;
     _offsetControlView = nil;
     _settingsView = nil;
@@ -240,8 +264,9 @@
 }
 #pragma mark HPControllerViews
 
--(HPControllerView *)settingsView {
-    if (!_settingsView) {
+- (HPControllerView *)settingsView {
+    if (!_settingsView) 
+    {
         _settingsView = [[HPControllerView alloc] initWithFrame:[[UIScreen mainScreen] bounds]];
         UIView *settingsContainerView = self.tableViewController.view;
         _settingsView.topView = [[UIView alloc] initWithFrame:[[UIScreen mainScreen] bounds]];
@@ -270,16 +295,18 @@
     _settingsView.hidden = NO;
     return _settingsView;
 }
--(HPSettingsTableViewController *)tableViewController
+- (HPSettingsTableViewController *)tableViewController
 {
-    if (!_tableViewController) {
+    if (!_tableViewController) 
+    {
         _tableViewController = [[HPSettingsTableViewController alloc] initWithStyle:UITableViewStyleGrouped];
     }
     return _tableViewController;
 }
--(HPControllerView *)offsetControlView 
+- (HPControllerView *)offsetControlView 
 {
-    if (!_offsetControlView) {
+    if (!_offsetControlView) 
+    {
         _offsetControlView = [[HPControllerView alloc] initWithFrame:[[UIScreen mainScreen] bounds]];
 
         _offsetControlView.topView = [[UIView alloc] initWithFrame:
@@ -333,7 +360,6 @@
         sideLabel.textAlignment=NSTextAlignmentCenter;
 
 
-
         self.bottomOffsetValueInput = [[UITextField alloc] initWithFrame:CGRectMake((0.613) * [[UIScreen mainScreen] bounds].size.width, (0.0369) * [[UIScreen mainScreen] bounds].size.height, 50, 30)];
         [self.bottomOffsetValueInput addTarget:self
                 action:@selector(bottomOffsetValueDidChange:)
@@ -372,10 +398,10 @@
     return _offsetControlView;
 }
 
-
--(HPControllerView *)iconCountControlView
+- (HPControllerView *)iconCountControlView
 {
-    if (!_iconCountControlView) {
+    if (!_iconCountControlView) 
+    {
         _iconCountControlView = [[HPControllerView alloc] initWithFrame:[[UIScreen mainScreen] bounds]];
 
         _iconCountControlView.topView =[[UIView alloc] initWithFrame:
@@ -467,9 +493,10 @@
     return _iconCountControlView;
 }
 
--(HPControllerView *)spacingControlView
+- (HPControllerView *)spacingControlView
 {
-    if (!_spacingControlView) {
+    if (!_spacingControlView) 
+    {
         _spacingControlView = [[HPControllerView alloc] initWithFrame:[[UIScreen mainScreen] bounds]];
 
         _spacingControlView.topView =[[UIView alloc] initWithFrame:
@@ -560,13 +587,16 @@
     }
     return _spacingControlView;
 }
--(void)addRootIconListViewToUpdate:(SBRootIconListView *)view
+- (void)addRootIconListViewToUpdate:(SBRootIconListView *)view
 {
-    if (!self.rootIconListViewsToUpdate) self.rootIconListViewsToUpdate = [[NSMutableArray alloc] init];
+    if (!self.rootIconListViewsToUpdate) 
+    {
+        self.rootIconListViewsToUpdate = [[NSMutableArray alloc] init];
+    }
     [self.rootIconListViewsToUpdate addObject:view];
 }
 
--(void)resetAllValuesToDefaults 
+- (void)resetAllValuesToDefaults 
 {
     [[self.view subviews]
         makeObjectsPerformSelector:@selector(removeFromSuperview)];
@@ -574,7 +604,8 @@
     _offsetControlView = nil;
     _settingsView = nil;
     _iconCountControlView = nil;
-    for (SBRootIconListView *view in self.rootIconListViewsToUpdate) {
+    for (SBRootIconListView *view in self.rootIconListViewsToUpdate) 
+    {
         [view resetValuesToDefaults];
     }
     [self viewDidLoad];
@@ -583,82 +614,88 @@
 
 #pragma mark Text Fields
 
--(void)topOffsetValueDidChange :(UITextField *) textField
+- (void)topOffsetValueDidChange :(UITextField *) textField
 {
     self.topOffsetSlider.value = [[textField text] floatValue];
     [self topOffsetSliderChanged:self.topOffsetSlider];
 }
--(void)bottomOffsetValueDidChange:(UITextField *)textField
+- (void)bottomOffsetValueDidChange:(UITextField *)textField
 {
     self.sideOffsetSlider.value = [[textField text] floatValue];
     [self sideOffsetSliderChanged:self.sideOffsetSlider];
 }
--(void)topSpacingValueDidChange:(UITextField *)textField
+- (void)topSpacingValueDidChange:(UITextField *)textField
 {
     self.verticalSpacingSlider.value = [[textField text] floatValue];
     [self verticalSpacingSliderChanged:self.verticalSpacingSlider];
 }
--(void)bottomSpacingValueDidChange:(UITextField *)textField 
+- (void)bottomSpacingValueDidChange:(UITextField *)textField 
 {
     self.horizontalSpacingSlider.value = [[textField text] floatValue];
     [self horizontalSpacingSliderChanged:self.horizontalSpacingSlider];
 }
--(void)topIconCountValueDidChange:(UITextField *)textField
+- (void)topIconCountValueDidChange:(UITextField *)textField
 {
     self.rowsSlider.value = [[textField text] floatValue];
     [self rowsSliderChanged:self.rowsSlider];
 }
--(void)bottomIconCountValueDidChange:(UITextField *)textField 
+- (void)bottomIconCountValueDidChange:(UITextField *)textField 
 {
     self.columnsSlider.value = [[textField text] floatValue];
     [self columnsSliderChanged:self.columnsSlider];
 }
 # pragma mark Spacing Sliders
 
--(void)verticalSpacingSliderChanged:(OBSlider *)sender
+- (void)verticalSpacingSliderChanged:(OBSlider *)sender
 {
     [[HPManager sharedManager] setCurrentLoadoutVerticalSpacing: [sender value]];
-    for (SBRootIconListView *view in self.rootIconListViewsToUpdate) {
+    for (SBRootIconListView *view in self.rootIconListViewsToUpdate) 
+    {
         [view layoutIconsNow];
     }    
     self.topSpacingValueInput.text = [NSString stringWithFormat:@"%.0f", sender.value];
 }
--(void)horizontalSpacingSliderChanged:(OBSlider *)sender
+- (void)horizontalSpacingSliderChanged:(OBSlider *)sender
 {
     [[HPManager sharedManager] setCurrentLoadoutHorizontalSpacing: [sender value]];
-    for (SBRootIconListView *view in self.rootIconListViewsToUpdate) {
+    for (SBRootIconListView *view in self.rootIconListViewsToUpdate) 
+    {
         [view layoutIconsNow];
     }
     self.bottomSpacingValueInput.text = [NSString stringWithFormat:@"%.0f", sender.value];
 }
--(void)topOffsetSliderChanged:(OBSlider *)sender
+- (void)topOffsetSliderChanged:(OBSlider *)sender
 {
     [[HPManager sharedManager] setCurrentLoadoutTopInset: [sender value]];
-    for (SBRootIconListView *view in self.rootIconListViewsToUpdate) {
+    for (SBRootIconListView *view in self.rootIconListViewsToUpdate) 
+    {
         [view layoutIconsNow];
     }    
     self.topOffsetValueInput.text = [NSString stringWithFormat:@"%.0f", sender.value];
 }
--(void)sideOffsetSliderChanged:(OBSlider *)sender
+- (void)sideOffsetSliderChanged:(OBSlider *)sender
 {
     [[HPManager sharedManager] setCurrentLoadoutLeftInset: [sender value]];
-    for (SBRootIconListView *view in self.rootIconListViewsToUpdate) {
+    for (SBRootIconListView *view in self.rootIconListViewsToUpdate) 
+    {
         [view layoutIconsNow];
     }    
     self.bottomOffsetValueInput.text = [NSString stringWithFormat:@"%.0f", sender.value];
 }
--(void)rowsSliderChanged:(OBSlider *)sender
+- (void)rowsSliderChanged:(OBSlider *)sender
 {
     [[HPManager sharedManager] setCurrentLoadoutRows: (NSInteger)(floor([sender value]))];
-    for (SBRootIconListView *view in self.rootIconListViewsToUpdate) {
+    for (SBRootIconListView *view in self.rootIconListViewsToUpdate) 
+    {
         [view layoutIconsNow];
     }    
     self.topIconCountValueInput.text = [NSString stringWithFormat:@"%.0f", (CGFloat)((NSInteger)(floor([sender value])))];
 }
--(void)columnsSliderChanged:(OBSlider *)sender
+- (void)columnsSliderChanged:(OBSlider *)sender
 {
     [[HPManager sharedManager] setCurrentLoadoutColumns: (NSInteger)(floor([sender value]))];
-    for (SBRootIconListView *view in self.rootIconListViewsToUpdate) {
+    for (SBRootIconListView *view in self.rootIconListViewsToUpdate) 
+    {
         [view layoutIconsNow];
     }    
     self.bottomIconCountValueInput.text = [NSString stringWithFormat:@"%.0f", (CGFloat)((NSInteger)(floor([sender value])))];

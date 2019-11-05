@@ -4,16 +4,18 @@
 #import "HPSettingsTableViewController.h"
 #import "HPEditorViewNavigationTabBar.h"
 
+
 @interface HPControllerView : UIView
 @property (nonatomic, retain) UIView *topView;
 @property (nonatomic, retain) UIView *bottomView;
 @end
 
 
-
 @protocol HPEditorViewControllerDelegate;
 
-@interface HPEditorViewController : UIViewController {
+
+@interface HPEditorViewController : UIViewController 
+{
     IBOutlet OBSlider *topOffsetSlider;
     IBOutlet OBSlider *sideOffsetSlider;
     IBOutlet OBSlider *horizontalSpacingSlider;
@@ -60,9 +62,9 @@
 
 @property (nonatomic, retain) NSMutableArray *rootIconListViewsToUpdate;
 
--(void)resetAllValuesToDefaults;
--(void)addRootIconListViewToUpdate:(SBRootIconListView *)view;
--(void)handleDoneSettingsButtonPress:(UIButton*)sender;
+- (void)resetAllValuesToDefaults;
+- (void)addRootIconListViewToUpdate:(SBRootIconListView *)view;
+- (void)handleDoneSettingsButtonPress:(UIButton*)sender;
 
 @end
 

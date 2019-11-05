@@ -11,7 +11,7 @@
 #include "HPEditorWindow.h"
 
 @implementation HPEditorWindow
--(id)initWithFrame:(CGRect)frame
+- (id)initWithFrame:(CGRect)frame
 {
     self = [super initWithFrame:frame];
     return self;

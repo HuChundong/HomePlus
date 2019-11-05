@@ -10,7 +10,6 @@
 - (void)setIconsLabelAlpha:(double)arg1;
 -(void)updateTopInset:(CGFloat)arg1;
 -(void)updateSideInset:(CGFloat)arg1;
-
 -(void)resetValuesToDefaults;
 -(void)updateVerticalSpacing:(CGFloat)arg1;
 -(void)updateLeftOffset:(CGFloat)arg1;
@@ -18,16 +17,16 @@
 -(void)updateCustomRows:(CGFloat)arg1;
 -(void)updateCustomColumns:(CGFloat)arg1;
 -(void)layoutIconsNow;
-// ext
 -(CGFloat)sideIconInset;
 -(CGFloat)topIconInset;
 @end
 
-
 @interface HPHitboxView : UIView 
 @end 
+
 @interface HPTouchKillerHitboxView : HPHitboxView 
 @end 
+
 @interface HPHitboxWindow : UIWindow 
 @end 
 
@@ -54,7 +53,6 @@
 @interface SBMainScreenActiveInterfaceOrientationWindow : UIView
 @end
 
-
 @interface SBIconView : UIView
 @property (nonatomic, retain) UIView *labelView;
 @property (nonatomic, assign) CGFloat iconAccessoryAlpha;
@@ -62,13 +60,26 @@
 -(NSInteger)location;
 @end
 
-
 @interface SBEditingDoneButton : UIButton
 @end
+
 @interface SBRootFolderView
 @property (nonatomic, retain) SBEditingDoneButton *doneButton;
 @end
+
 @interface SBRootFolderController
 -(void)doneButtonTriggered:(id)button; 
 @property (nonatomic, retain) SBRootFolderView *contentView;
+@end
+
+@interface SBIconLabelImageParameters : NSObject
+@property(readonly, nonatomic) long long iconLocation; 
+@end
+
+@interface SBIconLabelImage : UIImage
+@property(readonly, copy, nonatomic) SBIconLabelImageParameters *parameters; 
+@end
+
+@interface SBIconLegibilityLabelView : UIView
+@property(retain, nonatomic) UIImage *image;
 @end

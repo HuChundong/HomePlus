@@ -14,6 +14,7 @@
 #include "HPEditorViewController.h"
 
 @interface HPEditorViewController () 
+
 @property (nonatomic, readwrite, strong) HPControllerView *offsetControlView;
 @property (nonatomic, readwrite, strong) HPControllerView *spacingControlView;
 @property (nonatomic, readwrite, strong) HPControllerView *iconCountControlView;
@@ -21,7 +22,6 @@
 @property (nonatomic, readwrite, strong) HPEditorViewNavigationTabBar *tabBar;
 
 @property (nonatomic, readwrite, strong) HPSettingsTableViewController *tableViewController;
-
 
 @property (nonatomic, readwrite, strong) UIView *tapBackView;
 
@@ -34,17 +34,19 @@
 @property (nonatomic, retain) UIButton *settingsButton;
 @property (nonatomic, retain) UIButton *settingsDoneButton;
 
-
 @end
 
 
 @interface EditorManager () <HPEditorViewControllerDelegate>
+
 @property (nonatomic, readwrite, strong) HPEditorViewController *editorViewController;
 @property (nonatomic, readwrite, strong) HPEditorWindow *editorView;
+
 @end
 
 @implementation EditorManager 
-+(instancetype)sharedManager
+
++ (instancetype)sharedManager
 {
     static EditorManager *sharedManager = nil;
     static dispatch_once_t onceToken;
@@ -53,57 +55,74 @@
     });
     return sharedManager;
 }
--(instancetype)init
+
+- (instancetype)init
 {
     self = [super init];
     return self;
 }
--(HPEditorWindow *)editorView 
+
+- (HPEditorWindow *)editorView 
 {
-    if (!_editorView) {
+    if (!_editorView) 
+    {
         _editorView = [[HPEditorWindow alloc] initWithFrame:[[UIScreen mainScreen] bounds]];
         _editorView.rootViewController = self.editorViewController;
     }
     return _editorView;
 }
--(HPEditorViewController *)editorViewController 
+
+- (HPEditorViewController *)editorViewController 
 {
-    if (!_editorViewController) {
+    if (!_editorViewController) 
+    {
         _editorViewController = [[HPEditorViewController alloc] init];
         _editorViewController.delegate = self;
     }
 
     return _editorViewController;
 }
--(void)showEditorView 
+
+- (void)showEditorView 
 {
     _editorView.alpha = 0;
     _editorView.hidden = NO;
-    [UIView animateWithDuration:.2 animations:^{
-        _editorView.alpha = 1;
-    }];
+    [UIView animateWithDuration:.2 
+        animations:
+        ^{
+            _editorView.alpha = 1;
+        }
+    ];
 }
--(void)hideEditorView
+
+- (void)hideEditorView
 {
     [_editorViewController handleDoneSettingsButtonPress:_editorViewController.settingsDoneButton];
     _editorView.hidden = YES;
 }
--(void)toggleEditorView
+
+- (void)toggleEditorView
 {
-    if (_editorView.hidden) {
+    if (_editorView.hidden) 
+    {
         [self showEditorView];
-    } else {
+    } 
+    else 
+    {
         [self hideEditorView];
     }
 }
--(void)resetAllValuesToDefaults 
+
+- (void)resetAllValuesToDefaults 
 {
     [[self editorViewController] resetAllValuesToDefaults];
     [[NSNotificationCenter defaultCenter] postNotificationName:@"HomePlusEditingModeDisabled" object:nil];
     [self hideEditorView];
 }
-- (void)editorViewControllerDidFinish:(HPEditorViewController *)editorViewController {
-    NSLog(@"filler");
+
+- (void)editorViewControllerDidFinish:(HPEditorViewController *)editorViewController 
+{
+
 }
 @end
 
