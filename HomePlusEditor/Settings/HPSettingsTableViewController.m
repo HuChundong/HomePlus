@@ -270,8 +270,9 @@ const int RESET_VALUES = 1;
 
                     cell.clipsToBounds = YES;
                     cell.hidden = NO;
+
+                    return cell;
                 }
-                return cell;
             }
         }
         break;
