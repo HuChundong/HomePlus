@@ -141,7 +141,7 @@
     UIImage *rsImage = [HPUtilities resetImage];
     [self.topResetButton setImage:rsImage forState:UIControlStateNormal];
     self.topResetButton.frame = CGRectMake(20,(0.036) * [[UIScreen mainScreen] bounds].size.height + 40, 25.0, 25.0);
-    self.topResetButton.alpha = 1;
+    self.topResetButton.alpha = 0.8;
     [self.view addSubview:self.topResetButton];
 
     self.bottomResetButton = [UIButton buttonWithType:UIButtonTypeCustom];
@@ -153,7 +153,7 @@
             forControlEvents:UIControlEventTouchDown];
     [self.bottomResetButton setImage:rsImage forState:UIControlStateNormal];
     self.bottomResetButton.frame = CGRectMake(20,(0.862) * [[UIScreen mainScreen] bounds].size.height + 40, 25.0, 25.0);
-    self.bottomResetButton.alpha = 1;
+    self.bottomResetButton.alpha = 0.8;
     [self.view addSubview:self.bottomResetButton];
 
 
@@ -204,8 +204,8 @@
             self.spacerButton.alpha = 0.7;
             self.iconCountButton.alpha = 0.7;
             self.offsetButton.alpha = 1;
-            self.topResetButton.alpha = 1;
-            self.bottomResetButton.alpha = 1;
+            self.topResetButton.alpha = 0.8;
+            self.bottomResetButton.alpha = 0.8;
         }
     ];
 
@@ -231,6 +231,7 @@
 
 - (void)handleTopResetButtonPress:(UIButton*)sender 
 {
+    AudioServicesPlaySystemSound(1519);
     if (self.activeButton == self.offsetButton) 
     {
         CGFloat def = [[NSUserDefaults standardUserDefaults] floatForKey:@"defaultTopInset"] ?: 0.0;
@@ -253,6 +254,7 @@
 - (void)handleBottomResetButtonPress:(UIButton*)sender 
 {
 
+    AudioServicesPlaySystemSound(1519);
     if (self.activeButton == self.offsetButton) 
     {
         CGFloat def = [[NSUserDefaults standardUserDefaults] floatForKey:@"defaultLeftInset"] ?: 0.0;
@@ -388,14 +390,14 @@
         _offsetControlView = [[HPControllerView alloc] initWithFrame:[[UIScreen mainScreen] bounds]];
 
         _offsetControlView.topView = [[UIView alloc] initWithFrame:
-                CGRectMake((.146 * [[UIScreen mainScreen] bounds].size.width), (0.036) * [[UIScreen mainScreen] bounds].size.height, (.706 * [[UIScreen mainScreen] bounds].size.width), (0.123 * [[UIScreen mainScreen] bounds].size.height))];
+                CGRectMake((.146 * [[UIScreen mainScreen] bounds].size.width), (0.036) * [[UIScreen mainScreen] bounds].size.height, (1 * [[UIScreen mainScreen] bounds].size.width), (0.123 * [[UIScreen mainScreen] bounds].size.height))];
 
         UILabel *topLabel = [[UILabel alloc] initWithFrame:CGRectMake(0, 0, (0.706) * [[UIScreen mainScreen] bounds].size.width, (0.0615) * [[UIScreen mainScreen] bounds].size.height)];
         [topLabel setText:@"Top Offset: "];
         topLabel.textColor=[UIColor whiteColor];
         topLabel.textAlignment=NSTextAlignmentCenter;
 
-        self.topOffsetValueInput = [[UITextField alloc] initWithFrame:CGRectMake((0.613) * [[UIScreen mainScreen] bounds].size.width, (0.0369) * [[UIScreen mainScreen] bounds].size.height, (0.1333) * [[UIScreen mainScreen] bounds].size.width, (0.0369) * [[UIScreen mainScreen] bounds].size.height)];
+        self.topOffsetValueInput = [[UITextField alloc] initWithFrame:CGRectMake((0.730) * [[UIScreen mainScreen] bounds].size.width, (0.048) * [[UIScreen mainScreen] bounds].size.height, (0.1333) * [[UIScreen mainScreen] bounds].size.width, (0.0369) * [[UIScreen mainScreen] bounds].size.height)];
         [self.topOffsetValueInput addTarget:self
                 action:@selector(topOffsetValueDidChange:)
                 forControlEvents:UIControlEventEditingChanged];
@@ -414,7 +416,7 @@
         keyboardToolbar.items = @[flexBarButton, doneBarButton];
         self.topOffsetValueInput.inputAccessoryView = keyboardToolbar;
 
-        self.topOffsetSlider = [[OBSlider alloc] initWithFrame:CGRectMake(0, (0.0369) * [[UIScreen mainScreen] bounds].size.height, (0.586) * [[UIScreen mainScreen] bounds].size.width, (0.0615) * [[UIScreen mainScreen] bounds].size.height)];
+        self.topOffsetSlider = [[OBSlider alloc] initWithFrame:CGRectMake(0, (0.0369) * [[UIScreen mainScreen] bounds].size.height, (0.7) * [[UIScreen mainScreen] bounds].size.width, (0.0615) * [[UIScreen mainScreen] bounds].size.height)];
         [self.topOffsetSlider addTarget:self action:@selector(topOffsetSliderChanged:) forControlEvents:UIControlEventValueChanged];
         [self.topOffsetSlider setBackgroundColor:[UIColor clearColor]];
         self.topOffsetSlider.maximumTrackTintColor = [UIColor colorWithWhite:1.0 alpha:0.2];
@@ -430,7 +432,7 @@
         [_offsetControlView.topView addSubview:topOffsetValueInput];
 
 
-        _offsetControlView.bottomView = [[UIView alloc] initWithFrame:CGRectMake((0.146) * [[UIScreen mainScreen] bounds].size.width, (0.862) * [[UIScreen mainScreen] bounds].size.height, (0.706) * [[UIScreen mainScreen] bounds].size.width, (0.123) * [[UIScreen mainScreen] bounds].size.height)];
+        _offsetControlView.bottomView = [[UIView alloc] initWithFrame:CGRectMake((0.146) * [[UIScreen mainScreen] bounds].size.width, (0.862) * [[UIScreen mainScreen] bounds].size.height, (1) * [[UIScreen mainScreen] bounds].size.width, (0.123) * [[UIScreen mainScreen] bounds].size.height)];
 
         UILabel *sideLabel = [[UILabel alloc] initWithFrame:CGRectMake(0, 0, (0.706) * [[UIScreen mainScreen] bounds].size.width, 50)];
         [sideLabel setText:@"Left Offset"];
@@ -438,7 +440,7 @@
         sideLabel.textAlignment=NSTextAlignmentCenter;
 
 
-        self.bottomOffsetValueInput = [[UITextField alloc] initWithFrame:CGRectMake((0.613) * [[UIScreen mainScreen] bounds].size.width, (0.0369) * [[UIScreen mainScreen] bounds].size.height, 50, 30)];
+        self.bottomOffsetValueInput = [[UITextField alloc] initWithFrame:CGRectMake((0.730) * [[UIScreen mainScreen] bounds].size.width, (0.048) * [[UIScreen mainScreen] bounds].size.height, 50, 30)];
         [self.bottomOffsetValueInput addTarget:self
                 action:@selector(bottomOffsetValueDidChange:)
                 forControlEvents:UIControlEventEditingChanged];
@@ -458,7 +460,7 @@
         self.bottomOffsetValueInput.inputAccessoryView = bkeyboardToolbar;
 
 
-        self.sideOffsetSlider = [[OBSlider alloc] initWithFrame:CGRectMake(0, (0.0369) * [[UIScreen mainScreen] bounds].size.height, (0.586) * [[UIScreen mainScreen] bounds].size.width, 50)];
+        self.sideOffsetSlider = [[OBSlider alloc] initWithFrame:CGRectMake(0, (0.0369) * [[UIScreen mainScreen] bounds].size.height, (0.700) * [[UIScreen mainScreen] bounds].size.width, 50)];
         [self.sideOffsetSlider addTarget:self action:@selector(sideOffsetSliderChanged:) forControlEvents:UIControlEventValueChanged];
         [self.sideOffsetSlider setBackgroundColor:[UIColor clearColor]];
         self.sideOffsetSlider.maximumTrackTintColor = [UIColor colorWithWhite:1.0 alpha:0.2];
@@ -492,14 +494,14 @@
         _iconCountControlView = [[HPControllerView alloc] initWithFrame:[[UIScreen mainScreen] bounds]];
 
         _iconCountControlView.topView =[[UIView alloc] initWithFrame:
-                CGRectMake((.146 * [[UIScreen mainScreen] bounds].size.width), (0.036) * [[UIScreen mainScreen] bounds].size.height, (.706 * [[UIScreen mainScreen] bounds].size.width), (0.123 * [[UIScreen mainScreen] bounds].size.height))];
+                CGRectMake((.146 * [[UIScreen mainScreen] bounds].size.width), (0.036) * [[UIScreen mainScreen] bounds].size.height, (1 * [[UIScreen mainScreen] bounds].size.width), (0.123 * [[UIScreen mainScreen] bounds].size.height))];
 
         UILabel *topLabel = [[UILabel alloc] initWithFrame:CGRectMake(0, 0, (0.706) * [[UIScreen mainScreen] bounds].size.width, (0.0615) * [[UIScreen mainScreen] bounds].size.height)];
         [topLabel setText:@"Rows: "];
         topLabel.textColor=[UIColor whiteColor];
         topLabel.textAlignment=NSTextAlignmentCenter;
 
-        self.topIconCountValueInput =[[UITextField alloc] initWithFrame:CGRectMake((0.613) * [[UIScreen mainScreen] bounds].size.width, (0.0369) * [[UIScreen mainScreen] bounds].size.height, (0.1333) * [[UIScreen mainScreen] bounds].size.width, (0.0369) * [[UIScreen mainScreen] bounds].size.height)];
+        self.topIconCountValueInput =[[UITextField alloc] initWithFrame:CGRectMake((0.730) * [[UIScreen mainScreen] bounds].size.width, (0.048) * [[UIScreen mainScreen] bounds].size.height, (0.1333) * [[UIScreen mainScreen] bounds].size.width, (0.0369) * [[UIScreen mainScreen] bounds].size.height)];
         [self.topIconCountValueInput addTarget:self
                 action:@selector(topIconCountValueDidChange:)
                 forControlEvents:UIControlEventEditingChanged];
@@ -518,7 +520,7 @@
         keyboardToolbar.items = @[flexBarButton, doneBarButton];
         self.topIconCountValueInput.inputAccessoryView = keyboardToolbar;
 
-        self.rowsSlider = [[OBSlider alloc] initWithFrame:CGRectMake(0, 30, 220, 50)];
+        self.rowsSlider = [[OBSlider alloc] initWithFrame:CGRectMake(0, (0.0369) * [[UIScreen mainScreen] bounds].size.height, (0.7) * [[UIScreen mainScreen] bounds].size.width, (0.0615) * [[UIScreen mainScreen] bounds].size.height)];
         [self.rowsSlider addTarget:self action:@selector(rowsSliderChanged:) forControlEvents:UIControlEventValueChanged];
         [self.rowsSlider setBackgroundColor:[UIColor clearColor]];
         self.rowsSlider.maximumTrackTintColor = [UIColor colorWithWhite:1.0 alpha:0.2];
@@ -534,7 +536,7 @@
         [_iconCountControlView.topView addSubview:self.topIconCountValueInput];
 
 
-        _iconCountControlView.bottomView = [[UIView alloc] initWithFrame:CGRectMake((0.146) * [[UIScreen mainScreen] bounds].size.width, (0.862) * [[UIScreen mainScreen] bounds].size.height, (0.706) * [[UIScreen mainScreen] bounds].size.width, (0.123) * [[UIScreen mainScreen] bounds].size.height)];
+        _iconCountControlView.bottomView = [[UIView alloc] initWithFrame:CGRectMake((0.146) * [[UIScreen mainScreen] bounds].size.width, (0.862) * [[UIScreen mainScreen] bounds].size.height, (1) * [[UIScreen mainScreen] bounds].size.width, (0.123) * [[UIScreen mainScreen] bounds].size.height)];
 
 
         UILabel *sideLabel =  [[UILabel alloc] initWithFrame:CGRectMake(0, 0, (0.706) * [[UIScreen mainScreen] bounds].size.width, 50)];
@@ -543,7 +545,7 @@
         sideLabel.textAlignment=NSTextAlignmentCenter;
 
 
-        self.bottomIconCountValueInput = [[UITextField alloc] initWithFrame:CGRectMake((0.613) * [[UIScreen mainScreen] bounds].size.width, (0.0369) * [[UIScreen mainScreen] bounds].size.height, 50, 30)];
+        self.bottomIconCountValueInput = [[UITextField alloc] initWithFrame:CGRectMake((0.730) * [[UIScreen mainScreen] bounds].size.width, (0.0480) * [[UIScreen mainScreen] bounds].size.height, 50, 30)];
         [self.bottomIconCountValueInput addTarget:self
                 action:@selector(bottomIconCountValueDidChange:)
                 forControlEvents:UIControlEventEditingChanged];
@@ -562,7 +564,7 @@
         bkeyboardToolbar.items = @[bflexBarButton, bdoneBarButton];
         self.bottomIconCountValueInput.inputAccessoryView = bkeyboardToolbar;
 
-        self.columnsSlider =[[OBSlider alloc] initWithFrame:CGRectMake(0, (0.0369) * [[UIScreen mainScreen] bounds].size.height, (0.586) * [[UIScreen mainScreen] bounds].size.width, 50)];
+        self.columnsSlider =[[OBSlider alloc] initWithFrame:CGRectMake(0, (0.0369) * [[UIScreen mainScreen] bounds].size.height, (0.7) * [[UIScreen mainScreen] bounds].size.width, 50)];
         [self.columnsSlider addTarget:self action:@selector(columnsSliderChanged:) forControlEvents:UIControlEventValueChanged];
         [self.columnsSlider setBackgroundColor:[UIColor clearColor]];
         self.columnsSlider.maximumTrackTintColor = [UIColor colorWithWhite:1.0 alpha:0.2];
@@ -587,14 +589,14 @@
         _spacingControlView = [[HPControllerView alloc] initWithFrame:[[UIScreen mainScreen] bounds]];
 
         _spacingControlView.topView =[[UIView alloc] initWithFrame:
-                CGRectMake((.146 * [[UIScreen mainScreen] bounds].size.width), (0.036) * [[UIScreen mainScreen] bounds].size.height, (.706 * [[UIScreen mainScreen] bounds].size.width), (0.123 * [[UIScreen mainScreen] bounds].size.height))];
+                CGRectMake((.146 * [[UIScreen mainScreen] bounds].size.width), (0.036) * [[UIScreen mainScreen] bounds].size.height, (1 * [[UIScreen mainScreen] bounds].size.width), (0.123 * [[UIScreen mainScreen] bounds].size.height))];
 
         UILabel *topLabel = [[UILabel alloc] initWithFrame:CGRectMake(0, 0, (0.706) * [[UIScreen mainScreen] bounds].size.width, (0.0615) * [[UIScreen mainScreen] bounds].size.height)];
         [topLabel setText:@"Vertical Spacing: "];
         topLabel.textColor=[UIColor whiteColor];
         topLabel.textAlignment=NSTextAlignmentCenter;
 
-        self.topSpacingValueInput =[[UITextField alloc] initWithFrame:CGRectMake((0.613) * [[UIScreen mainScreen] bounds].size.width, (0.0369) * [[UIScreen mainScreen] bounds].size.height, (0.1333) * [[UIScreen mainScreen] bounds].size.width, (0.0369) * [[UIScreen mainScreen] bounds].size.height)];
+        self.topSpacingValueInput =[[UITextField alloc] initWithFrame:CGRectMake((0.730) * [[UIScreen mainScreen] bounds].size.width, (0.0480) * [[UIScreen mainScreen] bounds].size.height, (0.1333) * [[UIScreen mainScreen] bounds].size.width, (0.0369) * [[UIScreen mainScreen] bounds].size.height)];
         [self.topSpacingValueInput addTarget:self
                 action:@selector(topSpacingValueDidChange:)
                 forControlEvents:UIControlEventEditingChanged];
@@ -613,7 +615,7 @@
         keyboardToolbar.items = @[flexBarButton, doneBarButton];
         self.topSpacingValueInput.inputAccessoryView = keyboardToolbar;
 
-        self.verticalSpacingSlider = [[OBSlider alloc] initWithFrame:CGRectMake(0, 30, 220, 50)];
+        self.verticalSpacingSlider = [[OBSlider alloc] initWithFrame:CGRectMake(0, (0.0369) * [[UIScreen mainScreen] bounds].size.height, (0.7) * [[UIScreen mainScreen] bounds].size.width, (0.0615) * [[UIScreen mainScreen] bounds].size.height)];
         [self.verticalSpacingSlider addTarget:self action:@selector(verticalSpacingSliderChanged:) forControlEvents:UIControlEventValueChanged];
         [self.verticalSpacingSlider setBackgroundColor:[UIColor clearColor]];
         self.verticalSpacingSlider.maximumTrackTintColor = [UIColor colorWithWhite:1.0 alpha:0.2];
@@ -629,7 +631,7 @@
         [_spacingControlView.topView addSubview:self.topSpacingValueInput];
 
 
-        _spacingControlView.bottomView = [[UIView alloc] initWithFrame:CGRectMake((0.146) * [[UIScreen mainScreen] bounds].size.width, (0.862) * [[UIScreen mainScreen] bounds].size.height, (0.706) * [[UIScreen mainScreen] bounds].size.width, (0.123) * [[UIScreen mainScreen] bounds].size.height)];
+        _spacingControlView.bottomView = [[UIView alloc] initWithFrame:CGRectMake((0.146) * [[UIScreen mainScreen] bounds].size.width, (0.862) * [[UIScreen mainScreen] bounds].size.height, (1) * [[UIScreen mainScreen] bounds].size.width, (0.123) * [[UIScreen mainScreen] bounds].size.height)];
 
 
         UILabel *sideLabel =  [[UILabel alloc] initWithFrame:CGRectMake(0, 0, (0.706) * [[UIScreen mainScreen] bounds].size.width, 50)];
@@ -638,7 +640,7 @@
         sideLabel.textAlignment=NSTextAlignmentCenter;
 
 
-        self.bottomSpacingValueInput = [[UITextField alloc] initWithFrame:CGRectMake((0.613) * [[UIScreen mainScreen] bounds].size.width, (0.0369) * [[UIScreen mainScreen] bounds].size.height, 50, 30)];
+        self.bottomSpacingValueInput = [[UITextField alloc] initWithFrame:CGRectMake((0.730) * [[UIScreen mainScreen] bounds].size.width, (0.0480) * [[UIScreen mainScreen] bounds].size.height, 50, 30)];
         [self.bottomSpacingValueInput addTarget:self
                 action:@selector(bottomSpacingValueDidChange:)
                 forControlEvents:UIControlEventEditingChanged];
@@ -657,7 +659,7 @@
         bkeyboardToolbar.items = @[bflexBarButton, bdoneBarButton];
         self.bottomSpacingValueInput.inputAccessoryView = bkeyboardToolbar;
 
-        self.horizontalSpacingSlider =[[OBSlider alloc] initWithFrame:CGRectMake(0, (0.0369) * [[UIScreen mainScreen] bounds].size.height, (0.586) * [[UIScreen mainScreen] bounds].size.width, 50)];
+        self.horizontalSpacingSlider = [[OBSlider alloc] initWithFrame:CGRectMake(0, (0.0369) * [[UIScreen mainScreen] bounds].size.height, (0.7) * [[UIScreen mainScreen] bounds].size.width, 50)];
         [self.horizontalSpacingSlider addTarget:self action:@selector(horizontalSpacingSliderChanged:) forControlEvents:UIControlEventValueChanged];
         [self.horizontalSpacingSlider setBackgroundColor:[UIColor clearColor]];
         self.horizontalSpacingSlider.maximumTrackTintColor = [UIColor colorWithWhite:1.0 alpha:0.2];
