@@ -45,6 +45,8 @@
 @property (nonatomic, retain) UIButton *spacerButton;
 @property (nonatomic, retain) UIButton *iconCountButton;
 @property (nonatomic, retain) UIButton *settingsButton;
+@property (nonatomic, retain) UIButton *topResetButton;
+@property (nonatomic, retain) UIButton *bottomResetButton;
 @property (nonatomic, retain) UIButton *settingsDoneButton;
 
 @end
@@ -129,6 +131,32 @@
     self.settingsButton.alpha = 0.7;
     [self.view addSubview:self.settingsButton];
 
+    self.topResetButton = [UIButton buttonWithType:UIButtonTypeCustom];
+    [self.topResetButton addTarget:self 
+            action:@selector(handleTopResetButtonPress:)
+            forControlEvents:UIControlEventTouchUpInside];
+    [self.topResetButton addTarget:self
+            action:@selector(buttonPressDown:)
+            forControlEvents:UIControlEventTouchDown];
+    UIImage *rsImage = [HPUtilities resetImage];
+    [self.topResetButton setImage:rsImage forState:UIControlStateNormal];
+    self.topResetButton.frame = CGRectMake(20,(0.036) * [[UIScreen mainScreen] bounds].size.height + 40, 25.0, 25.0);
+    self.topResetButton.alpha = 1;
+    [self.view addSubview:self.topResetButton];
+
+    self.bottomResetButton = [UIButton buttonWithType:UIButtonTypeCustom];
+    [self.bottomResetButton addTarget:self 
+            action:@selector(handleBottomResetButtonPress:)
+            forControlEvents:UIControlEventTouchUpInside];
+    [self.bottomResetButton addTarget:self
+            action:@selector(buttonPressDown:)
+            forControlEvents:UIControlEventTouchDown];
+    [self.bottomResetButton setImage:rsImage forState:UIControlStateNormal];
+    self.bottomResetButton.frame = CGRectMake(20,(0.862) * [[UIScreen mainScreen] bounds].size.height + 40, 25.0, 25.0);
+    self.bottomResetButton.alpha = 1;
+    [self.view addSubview:self.bottomResetButton];
+
+
     [self.view addSubview:[self tapBackView]];
     self.tapBackView.hidden = NO;
     
@@ -141,6 +169,7 @@
 }
 - (void)handleSettingsButtonPress:(UIButton*)sender
 {
+    [[HPManager sharedManager] loadCurrentLoadout];
     [self loadControllerView:[self settingsView]];
     self.activeButton.userInteractionEnabled = YES; 
 
@@ -151,8 +180,11 @@
             self.spacerButton.alpha = 0;
             self.offsetButton.alpha = 0;
             self.iconCountButton.alpha = 0;
+            self.topResetButton.alpha = 0;
+            self.bottomResetButton.alpha = 0;
         }
     ];
+    [[self tableViewController] opened];
 
     self.activeButton = sender;
     self.tapBackView.hidden = YES;
@@ -172,6 +204,8 @@
             self.spacerButton.alpha = 0.7;
             self.iconCountButton.alpha = 0.7;
             self.offsetButton.alpha = 1;
+            self.topResetButton.alpha = 1;
+            self.bottomResetButton.alpha = 1;
         }
     ];
 
@@ -193,6 +227,50 @@
     self.activeButton = sender; 
     sender.userInteractionEnabled = NO; 
     self.tapBackView.hidden = NO;
+}
+
+- (void)handleTopResetButtonPress:(UIButton*)sender 
+{
+    if (self.activeButton == self.offsetButton) 
+    {
+        CGFloat def = [[NSUserDefaults standardUserDefaults] floatForKey:@"defaultTopInset"] ?: 0.0;
+        self.topOffsetValueInput.text = [NSString stringWithFormat:@"%.0f", def];
+        [self topOffsetValueDidChange:self.topOffsetValueInput];
+    }
+    else if (self.activeButton == self.spacerButton)
+    {
+        CGFloat def = [[NSUserDefaults standardUserDefaults] floatForKey:@"defaultVSpacing"] ?: 0.0;
+        self.topSpacingValueInput.text = [NSString stringWithFormat:@"%.0f", def];
+        [self topSpacingValueDidChange:self.topSpacingValueInput];
+    }
+    else if (self.activeButton == self.iconCountButton)
+    {
+        CGFloat def = [[NSUserDefaults standardUserDefaults] floatForKey:@"defaultRows"] ?: 6.0;
+        self.topIconCountValueInput.text = [NSString stringWithFormat:@"%.0f", def];
+        [self topIconCountValueDidChange:self.topIconCountValueInput];
+    }
+}
+- (void)handleBottomResetButtonPress:(UIButton*)sender 
+{
+
+    if (self.activeButton == self.offsetButton) 
+    {
+        CGFloat def = [[NSUserDefaults standardUserDefaults] floatForKey:@"defaultLeftInset"] ?: 0.0;
+        self.bottomOffsetValueInput.text = [NSString stringWithFormat:@"%.0f", def];
+        [self bottomOffsetValueDidChange:self.bottomOffsetValueInput];
+    }
+    else if (self.activeButton == self.spacerButton)
+    {
+        CGFloat def = [[NSUserDefaults standardUserDefaults] floatForKey:@"defaultHSpacing"] ?: 0.0;
+        self.bottomSpacingValueInput.text = [NSString stringWithFormat:@"%.0f", def];
+        [self bottomSpacingValueDidChange:self.bottomSpacingValueInput];
+    }
+    else if (self.activeButton == self.iconCountButton)
+    {
+        CGFloat def = [[NSUserDefaults standardUserDefaults] floatForKey:@"defaultColumns"] ?: 6.0;
+        self.bottomIconCountValueInput.text = [NSString stringWithFormat:@"%.0f", def];
+        [self bottomIconCountValueDidChange:self.bottomIconCountValueInput];
+    }
 }
 - (void)handleSpacerButtonPress:(UIButton*)sender 
 {
@@ -273,12 +351,12 @@
         [_settingsView.topView addSubview:settingsContainerView];
         [_settingsView addSubview:_settingsView.topView];
 
-        UIView *tableHeaderView = [[UIView alloc] initWithFrame:CGRectMake(0,0,[[UIScreen mainScreen] bounds].size.width,(0.428*[[UIScreen mainScreen] bounds].size.width))];
-        UIImageView *imageView = [[UIImageView alloc] initWithFrame:CGRectMake(0, 0, [[UIScreen mainScreen] bounds].size.width,(0.428*[[UIScreen mainScreen] bounds].size.width))];
+        UIView *tableHeaderView = [[UIView alloc] initWithFrame:CGRectMake(0,0,[[UIScreen mainScreen] bounds].size.width,(0.458*[[UIScreen mainScreen] bounds].size.width))];
+        UIImageView *imageView = [[UIImageView alloc] initWithFrame:CGRectMake(0, 0, [[UIScreen mainScreen] bounds].size.width,(0.458*[[UIScreen mainScreen] bounds].size.width))];
         imageView.image = [HPUtilities inAppBanner];
         [tableHeaderView addSubview:imageView];
 
-        UIView *doneButtonContainerView = [[UIView alloc] initWithFrame:CGRectMake([[UIScreen mainScreen] bounds].size.width-80, (0.428*[[UIScreen mainScreen] bounds].size.width)-40, [[UIScreen mainScreen] bounds].size.width/2, 40)];
+        UIView *doneButtonContainerView = [[UIView alloc] initWithFrame:CGRectMake([[UIScreen mainScreen] bounds].size.width-80, (0.458*[[UIScreen mainScreen] bounds].size.width)-40, [[UIScreen mainScreen] bounds].size.width/2, 40)];
         UIButton *button = [UIButton buttonWithType:UIButtonTypeCustom];
         [button addTarget:self 
                 action:@selector(handleDoneSettingsButtonPress:)
@@ -286,7 +364,7 @@
         [button setTitle:@"Done" forState:UIControlStateNormal];
         button.frame = CGRectMake(0, 0,80, 40);
         [doneButtonContainerView addSubview:button];
-        _settingsView.bottomView = [[UIView alloc] initWithFrame:CGRectMake(0,0,[[UIScreen mainScreen] bounds].size.width,(0.428*[[UIScreen mainScreen] bounds].size.width))];
+        _settingsView.bottomView = [[UIView alloc] initWithFrame:CGRectMake(0,0,[[UIScreen mainScreen] bounds].size.width,(0.458*[[UIScreen mainScreen] bounds].size.width))];
         [_settingsView.bottomView addSubview:doneButtonContainerView];
         
         [_settingsView.topView addSubview:tableHeaderView];
@@ -394,6 +472,15 @@
         [_offsetControlView.bottomView addSubview:self.sideOffsetSlider];
         self.bottomOffsetValueInput.text = [NSString stringWithFormat:@"%.0f", self.sideOffsetSlider.value];
         [_offsetControlView.bottomView addSubview:self.bottomOffsetValueInput];
+
+        // note
+        UILabel *sideULabel = [[UILabel alloc] initWithFrame:CGRectMake(0, (0.0369) * [[UIScreen mainScreen] bounds].size.height + 30, (0.706) * [[UIScreen mainScreen] bounds].size.width, 50)];
+        [sideULabel setText:@"Set to 0 to enable auto-centered\n Horizontal Spacing"];
+        [sideULabel setFont:[UIFont systemFontOfSize:11]];
+        sideULabel.numberOfLines = 2;
+        sideULabel.textColor=[UIColor whiteColor];
+        sideULabel.textAlignment=NSTextAlignmentCenter;
+        [_offsetControlView.bottomView addSubview: sideULabel];
     }
     return _offsetControlView;
 }
@@ -575,8 +662,8 @@
         [self.horizontalSpacingSlider setBackgroundColor:[UIColor clearColor]];
         self.horizontalSpacingSlider.maximumTrackTintColor = [UIColor colorWithWhite:1.0 alpha:0.2];
         self.horizontalSpacingSlider.minimumTrackTintColor = [UIColor colorWithWhite:1.0 alpha: 0.9];
-        self.horizontalSpacingSlider.minimumValue = 0.0;
-        self.horizontalSpacingSlider.maximumValue = 600.0;
+        self.horizontalSpacingSlider.minimumValue = -100.0;
+        self.horizontalSpacingSlider.maximumValue = 200.0;
         self.horizontalSpacingSlider.continuous = YES;
         self.horizontalSpacingSlider.value = [[HPManager sharedManager] currentLoadoutHorizontalSpacing];
         [_spacingControlView addSubview:_spacingControlView.bottomView];
@@ -604,10 +691,6 @@
     _offsetControlView = nil;
     _settingsView = nil;
     _iconCountControlView = nil;
-    for (SBRootIconListView *view in self.rootIconListViewsToUpdate) 
-    {
-        [view resetValuesToDefaults];
-    }
     [self viewDidLoad];
     [[EditorManager sharedManager] hideEditorView];
 }

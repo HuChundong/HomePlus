@@ -19,7 +19,9 @@
 - (void)saveCurrentLoadoutName;
 - (void)saveLoadout:(NSString *)name;
 - (void)saveCurrentLoadout;
+- (void)loadCurrentLoadout;
 - (void)loadLoadout:(NSString *)name;
+- (void)resetCurrentLoadoutToDefaults;
 - (BOOL)currentLoadoutShouldHideIconLabels;
 - (BOOL)currentLoadoutShouldHideIconBadges;
 - (BOOL)currentLoadoutShouldHideIconLabelsInFolders;

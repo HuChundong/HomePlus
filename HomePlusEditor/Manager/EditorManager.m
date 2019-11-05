@@ -85,6 +85,8 @@
 
 - (void)showEditorView 
 {
+    [self editorViewController];
+    [self editorView];
     _editorView.alpha = 0;
     _editorView.hidden = NO;
     [UIView animateWithDuration:.2 
@@ -115,9 +117,21 @@
 
 - (void)resetAllValuesToDefaults 
 {
-    [[self editorViewController] resetAllValuesToDefaults];
     [[NSNotificationCenter defaultCenter] postNotificationName:@"HomePlusEditingModeDisabled" object:nil];
     [self hideEditorView];
+    NSMutableArray *views = _editorViewController.rootIconListViewsToUpdate;
+    _editorView = nil;
+    _editorViewController = nil;
+    _editorViewController = [[HPEditorViewController alloc] init];
+    _editorViewController.delegate = self;
+    _editorView = [[HPEditorWindow alloc] initWithFrame:[[UIScreen mainScreen] bounds]];
+    _editorView.rootViewController = self.editorViewController;
+    [[self editorViewController] resetAllValuesToDefaults];
+
+    for (SBRootIconListView *view in views) 
+    {
+        [view resetValuesToDefaults];
+    }
 }
 
 - (void)editorViewControllerDidFinish:(HPEditorViewController *)editorViewController 

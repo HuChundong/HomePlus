@@ -210,7 +210,7 @@ NSDictionary *prefs = nil;
     BOOL notched = NO;
 
     if ([[UIDevice currentDevice] userInterfaceIdiom] == UIUserInterfaceIdiomPhone)
-     {
+    {
         switch ((int)[[UIScreen mainScreen] nativeBounds].size.height) 
         {
             case 2436:
@@ -276,8 +276,10 @@ NSDictionary *prefs = nil;
     _pfEditingEnabled = enabled;
     BOOL notched = NO;
 
-    if([[UIDevice currentDevice] userInterfaceIdiom] == UIUserInterfaceIdiomPhone) {
-        switch ((int)[[UIScreen mainScreen] nativeBounds].size.height) {
+    if([[UIDevice currentDevice] userInterfaceIdiom] == UIUserInterfaceIdiomPhone) 
+    {
+        switch ((int)[[UIScreen mainScreen] nativeBounds].size.height) 
+        {
             case 2436:
                 notched = YES;
                 break;
@@ -333,12 +335,19 @@ NSDictionary *prefs = nil;
 }
 %end
 
+@interface _NSCompositeLayoutXAxisAnchor : NSObject
+- (NSArray *)_childAnchors;
+@end
+
+@interface NSLayoutXAxisAnchor ()
+- (_NSCompositeLayoutXAxisAnchor *)offsetBy:(CGFloat)arg;
+@end
+
 #pragma mark -- SBRootIconListView
 
 %hook SBRootIconListView 
 
 %property (nonatomic, assign) BOOL configured;
-%property (nonatomic, assign) CGRect typicalFrame;
 
 /*
 - (id)initWithModel:(id)arg1 orientation:(id)arg2 viewMap:(id)arg3 {
@@ -353,7 +362,21 @@ NSDictionary *prefs = nil;
 
     if (!self.configured) 
     {
-        self.typicalFrame = self.frame;
+        [self layoutIconsNow];
+        // Configure our reset-to-default values based on what the phone gives us.
+        [[NSUserDefaults standardUserDefaults] setFloat:[self topIconInset]
+                                                forKey:@"defaultTopInset"];
+        [[NSUserDefaults standardUserDefaults] setFloat:0.0
+                                                forKey:@"defaultLeftInset"];
+        [[NSUserDefaults standardUserDefaults] setFloat:[self sideIconInset]
+                                                forKey:@"defaultHSpacing"];
+        [[NSUserDefaults standardUserDefaults] setFloat:[self verticalIconPadding]
+                                                forKey:@"defaultVSpacing"];
+        [[NSUserDefaults standardUserDefaults] setInteger:4
+                                                forKey:@"defaultColumns"];
+        [[NSUserDefaults standardUserDefaults] setInteger:[self iconRowsForSpacingCalculation]
+                                                forKey:@"defaultRows"];
+
         [[[EditorManager sharedManager] editorViewController] addRootIconListViewToUpdate:self];
         [[NSNotificationCenter defaultCenter] addObserver:self selector:@selector(recieveNotification:) name:kEditingModeEnabledNotificationName object:nil];
         [[NSNotificationCenter defaultCenter] addObserver:self selector:@selector(recieveNotification:) name:kEditingModeDisabledNotificationName object:nil];
@@ -376,9 +399,13 @@ NSDictionary *prefs = nil;
 %new
 - (void)resetValuesToDefaults 
 {
+    [[HPManager sharedManager] resetCurrentLoadoutToDefaults];
     [self layoutIconsNow];
     _pfEditingEnabled = NO;
+    [[[EditorManager sharedManager] editorViewController] addRootIconListViewToUpdate:self];
+    [self layoutIconsNow];
 }
+
 - (void)layoutIconsNow 
 {
     %orig;
@@ -387,19 +414,20 @@ NSDictionary *prefs = nil;
     {
         return;
     }
-    /*
-    if (CGRectIsEmpty(self.typicalFrame)) self.typicalFrame = self.frame;
-    */
+    
     double labelAlpha = [[HPManager sharedManager] currentLoadoutShouldHideIconLabels] ? 0.0 : 1.0;
     [self setIconsLabelAlpha:labelAlpha];
+}
+- (CGFloat)horizontalIconPadding {
+	CGFloat x = %orig;
+
+    return (_pfTweakEnabled && [[HPManager sharedManager] currentLoadoutLeftInset] != 0.0) ? [[HPManager sharedManager] currentLoadoutHorizontalSpacing] : x;
 }
 - (CGFloat)verticalIconPadding 
 {
     CGFloat x = %orig;
-
-    NSUserDefaults *userDefaults = [NSUserDefaults standardUserDefaults];
-    [userDefaults setFloat:x
-                  forKey:@"defaultVSpacing"];
+    [[NSUserDefaults standardUserDefaults] setFloat:x
+                                                forKey:@"defaultVSpacing"];
 
     return _pfTweakEnabled ? [[HPManager sharedManager] currentLoadoutVerticalSpacing] : x;
 }
@@ -407,20 +435,21 @@ NSDictionary *prefs = nil;
 - (CGFloat)sideIconInset
 {   
     CGFloat x = %orig;
-
-    NSUserDefaults *userDefaults = [NSUserDefaults standardUserDefaults];
-    [userDefaults setFloat:x
-                  forKey:@"defaultHSpacing"];
-    return _pfTweakEnabled ? [[HPManager sharedManager] currentLoadoutHorizontalSpacing] : x;
+    if (!self.configured)
+    {
+        return x;
+    }
+    return (_pfTweakEnabled && [[HPManager sharedManager] currentLoadoutLeftInset] != 0.0) ? [[HPManager sharedManager] currentLoadoutLeftInset] : [[HPManager sharedManager] currentLoadoutHorizontalSpacing];
 }
 
 - (CGFloat)topIconInset
 {
     CGFloat x = %orig;
-
-    NSUserDefaults *userDefaults = [NSUserDefaults standardUserDefaults];
-    [userDefaults setFloat:x
-                  forKey:@"defaultTopInset"];
+    if (!self.configured)
+    {
+        return x;
+    }
+    
     return _pfTweakEnabled ? [[HPManager sharedManager] currentLoadoutTopInset] : x;
 }
 
@@ -428,9 +457,6 @@ NSDictionary *prefs = nil;
 {
 	NSInteger x = %orig(arg1);
 
-    NSUserDefaults *userDefaults = [NSUserDefaults standardUserDefaults];
-    [userDefaults setInteger:x
-                  forKey:@"defaultColumns"];
 	return _pfTweakEnabled ? [[HPManager sharedManager] currentLoadoutColumns] : x;
 }
 
@@ -438,18 +464,17 @@ NSDictionary *prefs = nil;
 {
 	NSInteger x = %orig(arg1);
 
-    NSUserDefaults *userDefaults = [NSUserDefaults standardUserDefaults];
-    [userDefaults setInteger:x
-                  forKey:@"defaultRows"];
 	return _pfTweakEnabled ? [[HPManager sharedManager] currentLoadoutRows] : x;
 }
+
 - (NSUInteger)iconRowsForSpacingCalculation
 {
 	NSInteger x = %orig;
+    if (!self.configured)
+    {
+        return x;
+    }
 
-    NSUserDefaults *userDefaults = [NSUserDefaults standardUserDefaults];
-    [userDefaults setInteger:x
-                  forKey:@"defaultRows"];
 	return _pfTweakEnabled ? [[HPManager sharedManager] currentLoadoutRows] : x;
 }
 %end
@@ -476,7 +501,6 @@ NSDictionary *prefs = nil;
 }
 
 %end
-
 
 
 %hook SBIconView 

@@ -18,7 +18,9 @@
 -(void)updateCustomColumns:(CGFloat)arg1;
 -(void)layoutIconsNow;
 -(CGFloat)sideIconInset;
+- (CGFloat)verticalIconPadding;
 -(CGFloat)topIconInset;
+- (NSUInteger)iconRowsForSpacingCalculation;
 @end
 
 @interface HPHitboxView : UIView 

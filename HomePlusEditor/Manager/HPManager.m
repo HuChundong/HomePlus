@@ -49,6 +49,11 @@
     [self saveLoadout:self.currentLoadout];
 }
 
+- (void)loadCurrentLoadout
+{
+    [self loadLoadout:self.currentLoadout];
+}
+
 - (void)saveLoadout:(NSString *)name
 {
 
@@ -97,6 +102,31 @@
     self.currentColumns = [[NSUserDefaults standardUserDefaults] integerForKey:[NSString stringWithFormat:@"%@%@", prefix, @"Columns"]] ?:4;
     self.currentRows = [[NSUserDefaults standardUserDefaults] integerForKey:[NSString stringWithFormat:@"%@%@", prefix, @"Rows"]] ?:6;
     [[NSUserDefaults standardUserDefaults] synchronize];
+}
+
+- (void)resetCurrentLoadoutToDefaults
+{
+    NSString *prefix = [NSString stringWithFormat:@"%@%@", @"HPTheme", self.currentLoadout];
+
+    NSUserDefaults *userDefaults = [NSUserDefaults standardUserDefaults];
+    [[NSUserDefaults standardUserDefaults] synchronize];
+    self.currentShouldHideIconLabels = NO;
+    self.currentShouldHideIconBadges = NO;
+    self.currentShouldHideIconLabelsInFolders = NO;
+    self.currentTopInset = [[NSUserDefaults standardUserDefaults] floatForKey:@"defaultTopInset"] ?: 0.0;
+    self.currentLeftInset = [[NSUserDefaults standardUserDefaults] floatForKey:@"defaultLeftInset"] ?: 0.0;
+    self.currentHSpacing = [[NSUserDefaults standardUserDefaults] floatForKey:@"defaultHSpacing"] ?: 0.0;
+    self.currentVSpacing = [[NSUserDefaults standardUserDefaults] floatForKey:@"defaultVSpacing"] ?: 0.0;
+    self.currentColumns = [[NSUserDefaults standardUserDefaults] integerForKey:@"defaultColumns"] ?:4;
+    self.currentRows = [[NSUserDefaults standardUserDefaults] integerForKey:@"defaultRows"] ?:6;
+    [self saveCurrentLoadout];
+    
+    [userDefaults setBool:NO
+                    forKey:[NSString stringWithFormat:@"%@%@", prefix, @"IconLabels"] ];
+    [userDefaults setBool:NO
+                    forKey:[NSString stringWithFormat:@"%@%@", prefix, @"IconBadges"] ];
+    [userDefaults setBool:NO
+                    forKey:[NSString stringWithFormat:@"%@%@", prefix, @"IconLabelsF"] ];
 }
 
 - (BOOL)currentLoadoutShouldHideIconLabels

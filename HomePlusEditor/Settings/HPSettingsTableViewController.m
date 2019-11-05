@@ -32,6 +32,12 @@ const int RESET_VALUES = 1;
     return self;
 }
 
+- (void)opened
+{
+    [self.tableView reloadData];
+    //[[tableView:self.tableView cellForRowAtIndexPath:[NSIndexPath indexPathForRow:0 inSection:0]].accessoryView ]
+}
+
 - (void)viewDidLoad
 {
     [super viewDidLoad];
@@ -39,8 +45,9 @@ const int RESET_VALUES = 1;
     self.navigationItem.rightBarButtonItem = [[UIBarButtonItem alloc] initWithBarButtonSystemItem:UIBarButtonSystemItemDone target:self action:@selector(donePressed:)];
     self.tableView.separatorStyle = UITableViewCellSeparatorStyleNone;
 
-    UIWindow *window = UIApplication.sharedApplication.keyWindow;
-    CGFloat topPadding = window.safeAreaInsets.top;
+    // UIWindow *window = UIApplication.sharedApplication.keyWindow;
+    CGSize statusBarSize = [UIApplication sharedApplication].statusBarFrame.size;
+    CGFloat topPadding = statusBarSize.height;
 
     //CGFloat bottomPadding = window.safeAreaInsets.bottom;
     
@@ -65,7 +72,7 @@ const int RESET_VALUES = 1;
         bg.backgroundColor = [UIColor blackColor];
     }
 
-    UIView *tableHeaderView = [[UIView alloc] initWithFrame:CGRectMake(0,0,[[UIScreen mainScreen] bounds].size.width,(0.428*[[UIScreen mainScreen] bounds].size.width)-topPadding-20)];
+    UIView *tableHeaderView = [[UIView alloc] initWithFrame:CGRectMake(0,0,[[UIScreen mainScreen] bounds].size.width,(0.458*[[UIScreen mainScreen] bounds].size.width)-topPadding-20)];
     self.tableView.tableHeaderView = tableHeaderView;
     self.tableView.backgroundColor = [UIColor clearColor];
     self.tableView.backgroundView = bg;
@@ -220,7 +227,7 @@ const int RESET_VALUES = 1;
                         cell.selectionStyle = UITableViewCellSelectionStyleNone;
                         UISwitch *switchView = [[UISwitch alloc] initWithFrame:CGRectZero];
                         cell.accessoryView = switchView;
-                        [switchView setOn:![[HPManager sharedManager] currentLoadoutShouldHideIconLabelsInFolders] animated:NO];
+                        [switchView setOn:[[HPManager sharedManager] currentLoadoutShouldHideIconLabelsInFolders] animated:NO];
                         [switchView addTarget:self action:@selector(iconLabelFolderSwitchChanged:) forControlEvents:UIControlEventValueChanged];
 
                         [cell.layer setCornerRadius:10];
