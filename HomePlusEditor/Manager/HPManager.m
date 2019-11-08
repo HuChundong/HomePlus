@@ -57,10 +57,15 @@
 - (void)saveLoadout:(NSString *)name
 {
 
+
     NSString *prefix = [NSString stringWithFormat:@"%@%@", @"HPTheme", name];
     NSUserDefaults *userDefaults = [NSUserDefaults standardUserDefaults];
     [userDefaults synchronize];
     
+    [userDefaults setBool:self.switcherDisables
+                    forKey:@"HPSettingSwitcherDisables" ];
+    [userDefaults setBool:self.vRowUpdates
+                    forKey:@"HPSettingVRowUpdates" ];
     [userDefaults setBool:self.currentShouldHideIconLabels
                     forKey:[NSString stringWithFormat:@"%@%@", prefix, @"IconLabels"] ];
     [userDefaults setBool:self.currentShouldHideIconBadges
@@ -75,6 +80,10 @@
                     forKey:[NSString stringWithFormat:@"%@%@", prefix, @"SideInset"] ];
     [userDefaults setFloat:self.currentVSpacing
                     forKey:[NSString stringWithFormat:@"%@%@", prefix, @"VerticalSpacing"] ];
+    [userDefaults setFloat:self.currentScale
+                    forKey:[NSString stringWithFormat:@"%@%@", prefix, @"Scale"] ];
+    [userDefaults setFloat:self.currentRotation
+                    forKey:[NSString stringWithFormat:@"%@%@", prefix, @"Rotation"] ];
     [userDefaults setInteger:self.currentColumns
                     forKey:[NSString stringWithFormat:@"%@%@", prefix, @"Columns"] ];
     [userDefaults setInteger:self.currentRows
@@ -99,8 +108,16 @@
     self.currentLeftInset = [[NSUserDefaults standardUserDefaults] floatForKey:[NSString stringWithFormat:@"%@%@", prefix, @"LeftInset"]] ?:0.0;
     self.currentHSpacing = [[NSUserDefaults standardUserDefaults] floatForKey:[NSString stringWithFormat:@"%@%@", prefix, @"SideInset"]] ?:0.0;
     self.currentVSpacing = [[NSUserDefaults standardUserDefaults] floatForKey:[NSString stringWithFormat:@"%@%@", prefix, @"VerticalSpacing"]] ?:0.0;
+    self.currentScale = [[NSUserDefaults standardUserDefaults] floatForKey:[NSString stringWithFormat:@"%@%@", prefix, @"Scale"]] ?: 60.0;
+    self.currentRotation = [[NSUserDefaults standardUserDefaults] floatForKey:[NSString stringWithFormat:@"%@%@", prefix, @"Rotation"]] ?:0.0;
     self.currentColumns = [[NSUserDefaults standardUserDefaults] integerForKey:[NSString stringWithFormat:@"%@%@", prefix, @"Columns"]] ?:4;
     self.currentRows = [[NSUserDefaults standardUserDefaults] integerForKey:[NSString stringWithFormat:@"%@%@", prefix, @"Rows"]] ?:6;
+    self.switcherDisables = [[NSUserDefaults standardUserDefaults] objectForKey:@"HPSettingSwitcherDisables"]
+                                        ? [[NSUserDefaults standardUserDefaults] boolForKey:@"HPSettingSwitcherDisables"]
+                                        : YES;
+    self.vRowUpdates = [[NSUserDefaults standardUserDefaults] objectForKey:@"HPSettingsVRowUpdates"]
+                                        ? [[NSUserDefaults standardUserDefaults] boolForKey:@"HPSettingsVRowUpdates"]
+                                        : YES;
     [[NSUserDefaults standardUserDefaults] synchronize];
 }
 
@@ -128,7 +145,6 @@
     [userDefaults setBool:NO
                     forKey:[NSString stringWithFormat:@"%@%@", prefix, @"IconLabelsF"] ];
 }
-
 - (BOOL)currentLoadoutShouldHideIconLabels
 {
     return self.currentShouldHideIconLabels;
@@ -168,6 +184,16 @@
     return self.currentLeftInset;
 }
 
+- (CGFloat)currentLoadoutScale
+{
+    return self.currentScale;
+}
+
+- (CGFloat)currentLoadoutRotation
+{
+    return self.currentRotation;
+}
+
 - (CGFloat)currentLoadoutVerticalSpacing
 {
     return self.currentVSpacing;
@@ -201,6 +227,16 @@
 - (void)setCurrentLoadoutRows:(NSInteger)arg
 {
     self.currentRows = arg;
+}
+
+- (void)setCurrentLoadoutScale:(CGFloat)arg
+{
+    self.currentScale = arg;
+}
+
+- (void)setCurrentLoadoutRotation:(CGFloat)arg
+{
+    self.currentRotation = arg;
 }
 
 - (void)setCurrentLoadoutTopInset:(CGFloat)arg

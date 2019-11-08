@@ -1,3 +1,27 @@
+@interface SBIconModel : NSObject 
+-(void)layout;
+@end
+@interface SBIconListModel : NSObject
+@property (nonatomic, assign) NSUInteger maxNumberOfIcons;
+@end
+@interface SBIconViewMap : NSObject
+@property (nonatomic, retain) SBIconModel *iconModel;
+@end
+
+
+@interface SBEditingDoneButton : UIButton
+@end
+
+@interface SBRootFolderView
+@property (nonatomic, retain) SBEditingDoneButton *doneButton;
+-(void)resetIconListViews;
+@end
+
+@interface SBRootFolderController
+-(void)doneButtonTriggered:(id)button; 
+@property (nonatomic, retain) SBIconViewMap *iconViewMap;
+@property (nonatomic, retain) SBRootFolderView *contentView;
+@end
 @interface SBRootIconListView : UIView
 @property (nonatomic, assign) CGFloat customTopInset;
 @property (nonatomic, assign) CGFloat customLeftOffset;
@@ -20,7 +44,14 @@
 -(CGFloat)sideIconInset;
 - (CGFloat)verticalIconPadding;
 -(CGFloat)topIconInset;
+- (CGSize)defaultIconSize;
+- (void)updateRC;
+@property (nonatomic, retain) NSArray *allSubviews;
+@property (nonatomic, retain) SBIconViewMap *viewMap;
+@property (nonatomic, retain) SBIconListModel *model;
 - (NSUInteger)iconRowsForSpacingCalculation;
++ (NSUInteger)maxIcons;
+- (SBRootFolderController *)_viewControllerForAncestor;
 @end
 
 @interface HPHitboxView : UIView 
@@ -60,18 +91,6 @@
 @property (nonatomic, assign) CGFloat iconAccessoryAlpha;
 -(void)setLabelAccessoryViewHidden:(BOOL)arg;
 -(NSInteger)location;
-@end
-
-@interface SBEditingDoneButton : UIButton
-@end
-
-@interface SBRootFolderView
-@property (nonatomic, retain) SBEditingDoneButton *doneButton;
-@end
-
-@interface SBRootFolderController
--(void)doneButtonTriggered:(id)button; 
-@property (nonatomic, retain) SBRootFolderView *contentView;
 @end
 
 @interface SBIconLabelImageParameters : NSObject

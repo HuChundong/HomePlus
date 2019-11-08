@@ -1,5 +1,5 @@
 #import <UIKit/UIKit.h>
 
-@interface HPSettingsTableViewController : UITableViewController
+@interface HPSettingsTableViewController<UIAlertViewDelegate> : UITableViewController
 -(void)opened;
 @end

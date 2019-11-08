@@ -125,7 +125,7 @@ const int RESET_VALUES = 1;
         }
         case 1: 
         {
-            rows = 1;
+            rows = 3;
             break;
         }
     }
@@ -140,7 +140,7 @@ const int RESET_VALUES = 1;
             sectionName = NSLocalizedString(@"Icons", @"Icons");
             break;
         case 1:
-            sectionName = NSLocalizedString(@"Reset", @"Reset");
+            sectionName = NSLocalizedString(@"Settings", @"Settings");
             break;
         default:
             sectionName = @"";
@@ -280,11 +280,82 @@ const int RESET_VALUES = 1;
 
                     return cell;
                 }
+
+                case 1: 
+                {
+                    UITableViewCell *cell = [tableView dequeueReusableCellWithIdentifier:@"SwitchCell"];
+
+                    if( cell == nil ) 
+                    {
+                        cell = [[UITableViewCell alloc] initWithFrame:CGRectZero reuseIdentifier:@"SwitchCell"];
+                        cell.textLabel.text = @"App Switcher Disables Editor";
+                        cell.selectionStyle = UITableViewCellSelectionStyleNone;
+                        UISwitch *switchView = [[UISwitch alloc] initWithFrame:CGRectZero];
+                        cell.accessoryView = switchView;
+                        [switchView setOn:[[HPManager sharedManager] switcherDisables] animated:NO];
+                        [switchView addTarget:self action:@selector(switcherSwitchChanged:) forControlEvents:UIControlEventValueChanged];
+
+                        [cell.layer setCornerRadius:10];
+
+                        [cell setBackgroundColor: [UIColor colorWithRed:10.0/255.0 green:10.0/255.0 blue:10.0/255.0 alpha:0.7]];//rgb(38, 37, 42)];
+                        //Border Color and Width
+                        [cell.layer setBorderColor:[UIColor blackColor].CGColor];
+                        [cell.layer setBorderWidth:0];
+
+                        //Set Text Col
+                        cell.textLabel.textColor = [UIColor whiteColor];//[prefs colorForKey:@"textTint"];
+                        cell.detailTextLabel.textColor = [UIColor whiteColor];//[prefs colorForKey:@"textTint"];
+
+                        cell.clipsToBounds = YES;
+                    }
+                    return cell;
+                }
+                case 2: 
+                {
+                    UITableViewCell *cell = [tableView dequeueReusableCellWithIdentifier:@"SwitchCell"];
+
+                    if( cell == nil ) 
+                    {
+                        cell = [[UITableViewCell alloc] initWithFrame:CGRectZero reuseIdentifier:@"SwitchCell"];
+                        cell.textLabel.text = @"Update V. Spacing W/ Rows";
+                        cell.selectionStyle = UITableViewCellSelectionStyleNone;
+                        UISwitch *switchView = [[UISwitch alloc] initWithFrame:CGRectZero];
+                        cell.accessoryView = switchView;
+                        [switchView setOn:[[HPManager sharedManager] vRowUpdates] animated:NO];
+                        [switchView addTarget:self action:@selector(vRowSwitchChanged:) forControlEvents:UIControlEventValueChanged];
+
+                        [cell.layer setCornerRadius:10];
+
+                        [cell setBackgroundColor: [UIColor colorWithRed:10.0/255.0 green:10.0/255.0 blue:10.0/255.0 alpha:0.7]];//rgb(38, 37, 42)];
+                        //Border Color and Width
+                        [cell.layer setBorderColor:[UIColor blackColor].CGColor];
+                        [cell.layer setBorderWidth:0];
+
+                        //Set Text Col
+                        cell.textLabel.textColor = [UIColor whiteColor];//[prefs colorForKey:@"textTint"];
+                        cell.detailTextLabel.textColor = [UIColor whiteColor];//[prefs colorForKey:@"textTint"];
+
+                        cell.clipsToBounds = YES;
+                    }
+                    return cell;
+                }
             }
         }
         break;
     }
     return nil;
+}
+
+- (void)switcherSwitchChanged:(id)sender 
+{
+    UISwitch *switchControl = sender;
+    [[HPManager sharedManager] setSwitcherDisables:switchControl.on];
+}
+
+- (void)vRowSwitchChanged:(id)sender 
+{
+    UISwitch *switchControl = sender;
+    [[HPManager sharedManager] setVRowUpdates:switchControl.on];
 }
 
 - (void)iconLabelSwitchChanged:(id)sender 
@@ -307,9 +378,37 @@ const int RESET_VALUES = 1;
 
 #pragma mark - Table View Delegate
 
+
+
+- (void)alertView:(UIAlertView *)alertView clickedButtonAtIndex:(NSInteger)buttonIndex
+{
+    switch(buttonIndex) {
+        case 0: //"No" pressed
+            //do something?
+            break;
+        case 1: //"Yes" pressed
+            [[EditorManager sharedManager] resetAllValuesToDefaults];
+            break;
+    }
+}
 - (void)tableView:(UITableView *)tableView didSelectRowAtIndexPath:(NSIndexPath *)indexPath
 {
-    if (indexPath.section == 1 && indexPath.row == 0) [[EditorManager sharedManager] resetAllValuesToDefaults];
+    switch (indexPath.section) {
+        case 1: {
+            switch (indexPath.row) {
+                case 0: {
+                    UIAlertView *alert = [[UIAlertView alloc] initWithTitle:@"Aye,"
+                                                                    message:@"Are you sure you want to reset everything?"
+                                                                delegate:self
+                                                        cancelButtonTitle:@"Nah"
+                                                        otherButtonTitles:@"Yes", nil];
+                    [alert show];
+                    break;
+                }
+            }
+            break;
+        }
+    }
 }
 
 - (void)tableView:(UITableView *)tableView willDisplayHeaderView:(UIView *)view forSection:(NSInteger)section

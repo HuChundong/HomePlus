@@ -22,6 +22,9 @@
     IBOutlet OBSlider *verticalSpacingSlider;
     IBOutlet OBSlider *rowsSlider;
     IBOutlet OBSlider *columnsSlider;
+    IBOutlet OBSlider *scaleSlider;
+    IBOutlet OBSlider *rotationSlider;
+    
 }
 
 
@@ -53,6 +56,15 @@
 
 @property (nonatomic, retain) UITextField *topIconCountValueInput;
 @property (nonatomic, retain) UITextField *bottomIconCountValueInput;
+
+
+@property (nonatomic, readonly, strong) HPControllerView *scaleControlView;
+
+@property (nonatomic, retain) IBOutlet OBSlider *scaleSlider;
+@property (nonatomic, retain) IBOutlet OBSlider *rotationSlider;
+
+@property (nonatomic, retain) UITextField *topScaleValueInput;
+@property (nonatomic, retain) UITextField *bottomScaleValueInput;
 
 
 @property (nonatomic, readonly, strong) HPControllerView *settingsView;

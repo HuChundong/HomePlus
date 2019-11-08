@@ -29,6 +29,8 @@
 #define kEditingModeChangedNotificationName @"HomePlusEditingModeChanged"
 #define kEditingModeEnabledNotificationName @"HomePlusEditingModeEnabled"
 #define kEditingModeDisabledNotificationName @"HomePlusEditingModeDisabled"
+#define kEditorKickViewsUp @"HomePlusKickWindowsUp"
+#define kEditorKickViewsBack @"HomePlusKickWindowsBack"
 #define kDeviceIsLocked @"HomePlusDeviceIsLocked"
 #define kDeviceIsUnlocked @"HomePlusDeviceIsUnlocked"
 #define kWiggleActive @"HomePlusWiggleActive"
@@ -43,8 +45,12 @@
 static BOOL _pfTweakEnabled = YES;
 // static BOOL _pfBatterySaver = NO;
 static NSInteger _pfActivationGesture = 1;
-static BOOL _pfEditingEnabled = NO;
 static CGFloat _pfEditingScale = 0.7;
+
+// Runtime Globals
+static BOOL _rtEditingEnabled = NO;
+static BOOL _rtKickedUp = NO;
+static BOOL _rtnotched = NO;
 
 CGFloat customTopInset = 0;
 CGFloat customSideInset = 0;
@@ -93,9 +99,26 @@ NSDictionary *prefs = nil;
 	[[NSNotificationCenter defaultCenter] addObserver:self selector:@selector(recieveNotification:) name:kEditingModeEnabledNotificationName object:nil];
 	[[NSNotificationCenter defaultCenter] addObserver:self selector:@selector(recieveNotification:) name:kEditingModeDisabledNotificationName object:nil];
 
+	[[NSNotificationCenter defaultCenter] addObserver:self selector:@selector(kicker:) name:kEditorKickViewsUp object:nil];
+	[[NSNotificationCenter defaultCenter] addObserver:self selector:@selector(kicker:) name:kEditorKickViewsBack object:nil];
+
     [self createManagers];
 
     return o;
+}
+
+%new 
+- (void)kicker:(NSNotification *)notification
+{
+    BOOL up = ([[notification name] isEqualToString:kEditorKickViewsUp]);
+    CGAffineTransform transform = self.transform;
+
+    [UIView animateWithDuration:.3 
+    animations:
+    ^{
+        self.transform = (up && !_rtKickedUp) ? CGAffineTransformTranslate(transform, 0, (transform.ty == 0 ? 0-([[UIScreen mainScreen] bounds].size.height * 0.6) : 0.0)) : CGAffineTransformTranslate(transform, 0, (transform.ty == 0 ? 0 : ([[UIScreen mainScreen] bounds].size.height * 0.6)));
+    }]; 
+    
 }
 
 %new
@@ -171,7 +194,29 @@ NSDictionary *prefs = nil;
     if (!_pfTweakEnabled) {
         return;
     }
+    BOOL notched = NO;
+    if([[UIDevice currentDevice] userInterfaceIdiom] == UIUserInterfaceIdiomPhone) 
+    {
+        switch ((int)[[UIScreen mainScreen] nativeBounds].size.height) 
+        {
+            case 2436:
+                notched = YES;
+                break;
 
+            case 2688:
+                notched = YES;
+                break;
+
+            case 1792:
+                notched = YES;
+                break;
+
+            default:
+                notched = NO;
+                break;
+        }
+    } 
+    _rtnotched = notched;
     HPEditorWindow *view = [[EditorManager sharedManager] editorView];
     [[[UIApplication sharedApplication] keyWindow] addSubview:view];
 
@@ -200,13 +245,28 @@ NSDictionary *prefs = nil;
 	[[NSNotificationCenter defaultCenter] addObserver:self selector:@selector(recieveNotification:) name:kEditingModeEnabledNotificationName object:nil];
 	[[NSNotificationCenter defaultCenter] addObserver:self selector:@selector(recieveNotification:) name:kEditingModeDisabledNotificationName object:nil];
 
+	[[NSNotificationCenter defaultCenter] addObserver:self selector:@selector(kicker:) name:kEditorKickViewsUp object:nil];
+	[[NSNotificationCenter defaultCenter] addObserver:self selector:@selector(kicker:) name:kEditorKickViewsBack object:nil];
+
     return o;
+}
+
+%new 
+- (void)kicker:(NSNotification *)notification
+{
+    BOOL up = ([[notification name] isEqualToString:kEditorKickViewsUp]);
+    CGAffineTransform transform = self.transform;
+    [UIView animateWithDuration:.3 
+    animations:
+    ^{
+        self.transform = (up && !_rtKickedUp) ? CGAffineTransformTranslate(transform, 0, (transform.ty == 0 ? 0-([[UIScreen mainScreen] bounds].size.height * 0.6) : 0.0)) : CGAffineTransformTranslate(transform, 0, (transform.ty == 0 ? 0 : ([[UIScreen mainScreen] bounds].size.height * 0.6)));
+    }]; 
 }
 %new
 - (void)recieveNotification:(NSNotification *)notification
 {
     BOOL enabled = ([[notification name] isEqualToString:kEditingModeEnabledNotificationName]);
-    _pfEditingEnabled = enabled;
+    _rtEditingEnabled = enabled;
     BOOL notched = NO;
 
     if ([[UIDevice currentDevice] userInterfaceIdiom] == UIUserInterfaceIdiomPhone)
@@ -230,7 +290,7 @@ NSDictionary *prefs = nil;
                 break;
         }
     }   
-
+    _rtnotched = notched;
     CGFloat cR = notched ? 40 : 0;
 
     if (enabled) 
@@ -258,6 +318,7 @@ NSDictionary *prefs = nil;
 
 /* 
  * Floaty Dock scaling.
+ * TODO: Finish this stuff up
 */
 - (id)_initWithScreen:(id)arg1 layoutStrategy:(id)arg2 debugName:(id)arg3 rootViewController:(id)arg4 scene:(id)arg5
 {
@@ -273,7 +334,7 @@ NSDictionary *prefs = nil;
 - (void)recieveNotification:(NSNotification *)notification
 {
     BOOL enabled = ([[notification name] isEqualToString:kEditingModeEnabledNotificationName]);
-    _pfEditingEnabled = enabled;
+    _rtEditingEnabled = enabled;
     BOOL notched = NO;
 
     if([[UIDevice currentDevice] userInterfaceIdiom] == UIUserInterfaceIdiomPhone) 
@@ -345,6 +406,44 @@ NSDictionary *prefs = nil;
 
 #pragma mark -- SBRootIconListView
 
+%hook SBIconModel
+-(id)initWithStore:(id)arg applicationDataSource:(id)arg2
+{
+    id x = %orig(arg, arg2);
+    [[NSNotificationCenter defaultCenter] addObserver:self selector:@selector(recieveNotification:) name:@"HPResetIconViews" object:nil];
+    return x;
+}
+%new 
+
+- (void)recieveNotification:(NSNotification *)notification
+{
+    @try {
+        [self layout];
+    } 
+    @catch (NSException *exception) {
+        NSLog(@"SBICONMODEL CRASH: %@", exception);
+    }
+}
+%end
+
+%hook SBRootFolderView
+
+
+-(id)initWithFolder:(id)arg1 orientation:(NSInteger)arg2 viewMap:(id)arg3 context:(id)arg4 {
+	if ((self = %orig(arg1, arg2, arg3, arg4))) {
+
+	}
+
+    //[[NSNotificationCenter defaultCenter] addObserver:self selector:@selector(recieveNotification:) name:@"HPResetIconViews" object:nil];
+	return self;
+}
+
+%new
+- (void)recieveNotification:(NSNotification *)notification
+{
+        [self resetIconListViews];
+}
+%end
 %hook SBRootIconListView 
 
 %property (nonatomic, assign) BOOL configured;
@@ -383,6 +482,7 @@ NSDictionary *prefs = nil;
         [self layoutIconsNow];
         self.configured = YES;
     }
+    
 }
 
 %new
@@ -401,7 +501,7 @@ NSDictionary *prefs = nil;
 {
     [[HPManager sharedManager] resetCurrentLoadoutToDefaults];
     [self layoutIconsNow];
-    _pfEditingEnabled = NO;
+    _rtEditingEnabled = NO;
     [[[EditorManager sharedManager] editorViewController] addRootIconListViewToUpdate:self];
     [self layoutIconsNow];
 }
@@ -418,10 +518,50 @@ NSDictionary *prefs = nil;
     double labelAlpha = [[HPManager sharedManager] currentLoadoutShouldHideIconLabels] ? 0.0 : 1.0;
     [self setIconsLabelAlpha:labelAlpha];
 }
+
+- (CGSize)alignmentIconSize 
+{
+    CGSize o = %orig;
+    CGFloat s = [[HPManager sharedManager] currentLoadoutScale];
+    return o;
+    //return CGSizeMake(s, (o.height/o.width) * s);
+}
+- (CGSize)defaultIconSize
+{
+    CGSize o = %orig;
+    return o;//CGSizeMake(s, (o.height/o.width) * s);
+}
 - (CGFloat)horizontalIconPadding {
 	CGFloat x = %orig;
+    if (!_pfTweakEnabled) {
+        return x;
+    }
+    BOOL buggedSpacing = [[HPManager sharedManager] currentLoadoutColumns] == 4 && _rtnotched;
+    BOOL leftInsetZeroed = [[HPManager sharedManager] currentLoadoutLeftInset] == 0.0;
+    if (leftInsetZeroed) {
+        return x;
+    }
+    else
+    {
+        return [[HPManager sharedManager] currentLoadoutHorizontalSpacing];
+    }
+    /*
+    if (!buggedSpacing && leftInsetZeroed) {
+        return x;
+    }
+    else if (leftInsetZeroed && !_rtnotched) {
+        return [[HPManager sharedManager] currentLoadoutHorizontalSpacing];
+    }
+    else if (buggedSpacing && !leftInsetZeroed) {
+        return -100.0;
+    }
+    else if (buggedSpacing && leftInsetZeroed) {
+        return -100.0;
+    }
+    else if (!buggedSpacing && !leftInsetZeroed) {
+        return [[HPManager sharedManager] currentLoadoutHorizontalSpacing];
+    }*/
 
-    return (_pfTweakEnabled && [[HPManager sharedManager] currentLoadoutLeftInset] != 0.0) ? [[HPManager sharedManager] currentLoadoutHorizontalSpacing] : x;
 }
 - (CGFloat)verticalIconPadding 
 {
@@ -435,11 +575,43 @@ NSDictionary *prefs = nil;
 - (CGFloat)sideIconInset
 {   
     CGFloat x = %orig;
-    if (!self.configured)
+    if (!self.configured || !_pfTweakEnabled)
     {
         return x;
     }
-    return (_pfTweakEnabled && [[HPManager sharedManager] currentLoadoutLeftInset] != 0.0) ? [[HPManager sharedManager] currentLoadoutLeftInset] : [[HPManager sharedManager] currentLoadoutHorizontalSpacing];
+    // I need to do a write-up on all of this sometime.
+    // at ToW, this is confusing and hard to explain. 
+    BOOL buggedSpacing = [[HPManager sharedManager] currentLoadoutColumns] == 4 && _rtnotched;
+    BOOL leftInsetZeroed = [[HPManager sharedManager] currentLoadoutLeftInset] == 0.0;
+    if (leftInsetZeroed) 
+    {
+        return [[HPManager sharedManager] currentLoadoutHorizontalSpacing];
+    }
+    else
+    {
+        return [[HPManager sharedManager] currentLoadoutLeftInset];
+    }
+    /*
+    if (!buggedSpacing && !leftInsetZeroed) 
+    {
+        return [[HPManager sharedManager] currentLoadoutLeftInset];
+    }
+    else if (!leftInsetZeroed && !_rtnotched) 
+    {
+        return [[HPManager sharedManager] currentLoadoutLeftInset];
+    }
+    else if (buggedSpacing && !leftInsetZeroed)
+    {
+        return [[HPManager sharedManager] currentLoadoutHorizontalSpacing];
+    }
+    else if (!buggedSpacing && leftInsetZeroed)
+    {
+        return [[HPManager sharedManager] currentLoadoutHorizontalSpacing];
+    }
+    else if (buggedSpacing && leftInsetZeroed) 
+    {
+        return [[HPManager sharedManager] currentLoadoutHorizontalSpacing];
+    }*/
 }
 
 - (CGFloat)topIconInset
@@ -477,6 +649,7 @@ NSDictionary *prefs = nil;
 
 	return _pfTweakEnabled ? [[HPManager sharedManager] currentLoadoutRows] : x;
 }
+
 %end
 
 
@@ -528,9 +701,22 @@ NSDictionary *prefs = nil;
     }
     [self setLabelAccessoryViewHidden:hideThis];
     self.iconAccessoryAlpha = [[HPManager sharedManager] currentLoadoutShouldHideIconBadges] ? 0.0 : 1.0;
+
 }
-
-
+/*
+-(CGSize)iconImageVisibleSize 
+{
+    CGSize o = %orig;
+    CGFloat s = [[HPManager sharedManager] currentLoadoutScale];
+    return CGSizeMake(s, (o.height/o.width) * s);
+}*/
+%end
+%hook SBIconImageView
+-(void)setFrame:(CGRect)arg { // 60 / 2 - scale
+    %orig(CGRectMake(arg.origin.x + ((arg.size.width / 2 ) - [[HPManager sharedManager] currentLoadoutScale]/2), arg.origin.y + ((arg.size.height / 2 ) - [[HPManager sharedManager] currentLoadoutScale]/2), [[HPManager sharedManager] currentLoadoutScale], [[HPManager sharedManager] currentLoadoutScale]*(74/60)));
+    [[NSUserDefaults standardUserDefaults] setFloat:arg.size.width
+                                                forKey:@"defaultScale"];
+}
 %end
 
 %hook SBFolderIconBackgroundView
@@ -545,12 +731,12 @@ NSDictionary *prefs = nil;
 - (BOOL)becomeFirstResponder 
 {
     %orig;
-    if ([(SpringBoard*)[UIApplication sharedApplication] isShowingHomescreen] && _pfEditingEnabled) 
+    if ([(SpringBoard*)[UIApplication sharedApplication] isShowingHomescreen] && _rtEditingEnabled) 
     {
         AudioServicesPlaySystemSound(1520);
         AudioServicesPlaySystemSound(1520);
         [[NSNotificationCenter defaultCenter] postNotificationName:kEditingModeDisabledNotificationName object:nil];
-        _pfEditingEnabled = NO;
+        _rtEditingEnabled = NO;
     }
 }
 
@@ -573,7 +759,7 @@ NSDictionary *prefs = nil;
     {
         return;
     }
-    BOOL enabled = !_pfEditingEnabled;
+    BOOL enabled = !_rtEditingEnabled;
 
     if (enabled)
     {
@@ -588,7 +774,7 @@ NSDictionary *prefs = nil;
         AudioServicesPlaySystemSound(1520);
         [[NSNotificationCenter defaultCenter] postNotificationName:kEditingModeDisabledNotificationName object:nil];
     }
-    _pfEditingEnabled = enabled;
+    _rtEditingEnabled = enabled;
 }
 %new
 - (void)BX_toggleEditingMode
@@ -601,7 +787,7 @@ NSDictionary *prefs = nil;
     {
         return;
     }
-    BOOL enabled = !_pfEditingEnabled;
+    BOOL enabled = !_rtEditingEnabled;
 
     NSLog(@"%@%@", kUniqueLogIdentifier, @": Editing toggled");
     if (enabled)
@@ -619,7 +805,7 @@ NSDictionary *prefs = nil;
         [[NSNotificationCenter defaultCenter] postNotificationName:kEditingModeDisabledNotificationName object:nil];
         NSLog(@"%@%@", kUniqueLogIdentifier, @": Sent Disable Notification");
     }
-    _pfEditingEnabled = enabled;
+    _rtEditingEnabled = enabled;
 }
 %new 
 - (void)createTopLeftHitboxView
@@ -678,6 +864,17 @@ NSDictionary *prefs = nil;
     }
 }
 
+%end
+
+%hook SBMainSwitcherWindow
+-(void)setHidden:(BOOL)arg
+{
+    %orig(arg);
+    if (_rtEditingEnabled && [[HPManager sharedManager] switcherDisables]) 
+    {
+        [[NSNotificationCenter defaultCenter] postNotificationName:kEditingModeDisabledNotificationName object:nil];
+    }
+}
 %end
 
 #pragma mark Preferences
