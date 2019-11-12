@@ -11,8 +11,7 @@
 // Created Oct 2019
 // Author: Kritanta
 //
-
-
+// GLOBALS
 
 #pragma mark Imports
 
@@ -42,19 +41,19 @@
 #define kSettingsPath @"/var/mobile/Library/Preferences/me.kritanta.homeplusprefs.plist"
 
 #pragma mark Global Values
+// Preference globals
 static BOOL _pfTweakEnabled = YES;
 // static BOOL _pfBatterySaver = NO;
 static NSInteger _pfActivationGesture = 1;
 static CGFloat _pfEditingScale = 0.7;
 
-// Runtime Globals
+// Values we use everywhere during runtime. 
 static BOOL _rtEditingEnabled = NO;
+static BOOL _rtConfigured = NO;
 static BOOL _rtKickedUp = NO;
 static BOOL _rtnotched = NO;
 
-CGFloat customTopInset = 0;
-CGFloat customSideInset = 0;
-
+static UIImage *_rtBackgroundImage;
 
 NSDictionary *prefs = nil;
 
@@ -131,33 +130,35 @@ NSDictionary *prefs = nil;
     {
         switch ((int)[[UIScreen mainScreen] nativeBounds].size.height)
         {
-            case 2436:
+            case 2436: 
+            {
                 notched = YES;
                 break;
-
+            }
             case 2688:
+            {
                 notched = YES;
                 break;
-
+            }
             case 1792:
+            {
                 notched = YES;
                 break;
-
+            }
             default:
+            {
                 notched = NO;
                 break;
+            }
         }
     }   
     CGFloat cR = notched ? 40 : 0;
     
     if (enabled) 
     {
-        self.layer.borderColor = enabled 
-            ? [[UIColor whiteColor] CGColor] 
-            : [[UIColor clearColor] CGColor];
-
-        self.layer.borderWidth = enabled ? 1 : 0;
-        self.layer.cornerRadius = enabled ? cR : 0;
+        self.layer.borderColor = [[UIColor whiteColor] CGColor];
+        self.layer.borderWidth = 1;
+        self.layer.cornerRadius = cR;
     }
     else
     {
@@ -173,12 +174,15 @@ NSDictionary *prefs = nil;
             if (enabled) 
             {
                 [[EditorManager sharedManager] toggleEditorView];
+                self.layer.borderColor = [[UIColor whiteColor] CGColor];
+                self.layer.borderWidth = 1;
+                self.layer.cornerRadius = cR;
+            } else 
+            {
+                self.layer.borderColor = [[UIColor clearColor] CGColor];
+                self.layer.borderWidth = 0;
+                self.layer.cornerRadius = 0;
             }
-            self.layer.borderColor = enabled 
-                ? [[UIColor whiteColor] CGColor] 
-                : [[UIColor clearColor] CGColor];
-            self.layer.borderWidth = enabled ? 1 : 0;
-            self.layer.cornerRadius = enabled ? cR : 0;
         }
     ];
 }
@@ -310,6 +314,15 @@ NSDictionary *prefs = nil;
     ];
 }
 %end
+@interface SBFStaticWallpaperImageView : UIImageView 
+@end
+%hook SBFStaticWallpaperImageView
+-(void)setImage:(UIImage *)img 
+{
+    %orig(img);
+    _rtBackgroundImage = img;
+}
+%end
 
 #pragma mark 
 #pragma mark -- Floaty Dock Thing
@@ -379,6 +392,257 @@ NSDictionary *prefs = nil;
 }
 %end
 
+
+#pragma mark 
+#pragma mark -- Floaty Dock Thing
+@interface FBRootWindow : UIView 
+- (UIImage *)blurredImageWithImage:(UIImage *)sourceImage;
+@end
+%hook FBRootWindow
+
+/* 
+ * iOS 12
+ * TODO: Finish this stuff up
+*/
+- (id)initWithDisplay:(id)arg
+{
+    id o = %orig(arg);
+
+	[[NSNotificationCenter defaultCenter] addObserver:self selector:@selector(recieveNotification:) name:kEditingModeEnabledNotificationName object:nil];
+	[[NSNotificationCenter defaultCenter] addObserver:self selector:@selector(recieveNotification:) name:kEditingModeDisabledNotificationName object:nil];
+
+    return o;
+}
+
+- (id)initWithDisplayConfiguration:(id)arg
+{
+    id o = %orig(arg);
+
+	[[NSNotificationCenter defaultCenter] addObserver:self selector:@selector(recieveNotification:) name:kEditingModeEnabledNotificationName object:nil];
+	[[NSNotificationCenter defaultCenter] addObserver:self selector:@selector(recieveNotification:) name:kEditingModeDisabledNotificationName object:nil];
+
+    return o;
+}
+
+- (id)initWithScreen:(id)arg
+{
+    id o = %orig(arg);
+
+	[[NSNotificationCenter defaultCenter] addObserver:self selector:@selector(recieveNotification:) name:kEditingModeEnabledNotificationName object:nil];
+	[[NSNotificationCenter defaultCenter] addObserver:self selector:@selector(recieveNotification:) name:kEditingModeDisabledNotificationName object:nil];
+
+    return o;
+}
+
+
+%new 
+- (UIImage *)blurredImageWithImage:(UIImage *)sourceImage {
+
+    //  Create our blurred image
+    CIContext *context = [CIContext contextWithOptions:nil];
+    CIImage *inputImage = [CIImage imageWithCGImage:sourceImage.CGImage];
+
+
+    CIFilter* blackGenerator = [CIFilter filterWithName:@"CIConstantColorGenerator"];
+    CIColor* black = [CIColor colorWithRed:0.0f green:0.0f blue:0.0f alpha:.5];
+    [blackGenerator setValue:black forKey:@"inputColor"];
+    CIImage* blackImage = [blackGenerator valueForKey:@"outputImage"];
+
+    //Second, apply that black
+    CIFilter *compositeFilter = [CIFilter filterWithName:@"CIMultiplyBlendMode"];
+    [compositeFilter setValue:blackImage forKey:@"inputImage"];
+    [compositeFilter setValue:inputImage forKey:@"inputBackgroundImage"];
+    CIImage *darkenedImage = [compositeFilter outputImage];
+
+    //Third, blur the image
+    CIFilter *blurFilter = [CIFilter filterWithName:@"CIGaussianBlur"];
+    [blurFilter setDefaults];
+    [blurFilter setValue:@(15.0) forKey:@"inputRadius"];
+    [blurFilter setValue:darkenedImage forKey:kCIInputImageKey];
+    CIImage *blurredImage = [blurFilter outputImage];
+
+    CGImageRef cgimg = [context createCGImage:blurredImage fromRect:inputImage.extent];
+    UIImage *blurredAndDarkenedImage = [UIImage imageWithCGImage:cgimg];
+    CGImageRelease(cgimg);
+
+    return blurredAndDarkenedImage;
+}
+
+%new
+- (void)recieveNotification:(NSNotification *)notification
+{
+    BOOL enabled = ([[notification name] isEqualToString:kEditingModeEnabledNotificationName]);
+    _rtEditingEnabled = enabled;
+    
+    if (enabled)
+    {
+        self.backgroundColor = [UIColor colorWithPatternImage:[self blurredImageWithImage:_rtBackgroundImage]];
+    }
+    else 
+    {
+        self.alpha = 0.99;
+        [UIView animateWithDuration:.4
+        animations:
+        ^{
+            self.alpha = 1; // give animation something to do
+        } 
+        completion:^(BOOL finished) 
+        {
+        self.backgroundColor = [UIColor blackColor];
+        self.transform = CGAffineTransformIdentity;
+        }];
+    }
+
+}
+
+%end
+
+#pragma mark 
+#pragma mark -- Floaty Dock Thing
+@interface UIRootSceneWindow : UIView 
+- (UIImage *)blurredImageWithImage:(UIImage *)sourceImage;
+@end
+
+%hook UIRootSceneWindow
+
+/* 
+ * iOS 13
+ * TODO: Finish this stuff up
+*/
+- (id)initWithDisplay:(id)arg
+{
+    id o = %orig(arg);
+
+	[[NSNotificationCenter defaultCenter] addObserver:self selector:@selector(recieveNotification:) name:kEditingModeEnabledNotificationName object:nil];
+	[[NSNotificationCenter defaultCenter] addObserver:self selector:@selector(recieveNotification:) name:kEditingModeDisabledNotificationName object:nil];
+
+    return o;
+}
+
+- (id)initWithDisplayConfiguration:(id)arg
+{
+    id o = %orig(arg);
+
+	[[NSNotificationCenter defaultCenter] addObserver:self selector:@selector(recieveNotification:) name:kEditingModeEnabledNotificationName object:nil];
+	[[NSNotificationCenter defaultCenter] addObserver:self selector:@selector(recieveNotification:) name:kEditingModeDisabledNotificationName object:nil];
+
+    return o;
+}
+
+- (id)initWithScreen:(id)arg
+{
+    id o = %orig(arg);
+
+	[[NSNotificationCenter defaultCenter] addObserver:self selector:@selector(recieveNotification:) name:kEditingModeEnabledNotificationName object:nil];
+	[[NSNotificationCenter defaultCenter] addObserver:self selector:@selector(recieveNotification:) name:kEditingModeDisabledNotificationName object:nil];
+
+    return o;
+}
+
+%new 
+- (UIImage *)blurredImageWithImage:(UIImage *)sourceImage {
+
+    //  Create our blurred image
+    CIContext *context = [CIContext contextWithOptions:nil];
+    CIImage *inputImage = [CIImage imageWithCGImage:sourceImage.CGImage];
+
+
+    CIFilter* blackGenerator = [CIFilter filterWithName:@"CIConstantColorGenerator"];
+    CIColor* black = [CIColor colorWithRed:0.0f green:0.0f blue:0.0f alpha:.5];
+    [blackGenerator setValue:black forKey:@"inputColor"];
+    CIImage* blackImage = [blackGenerator valueForKey:@"outputImage"];
+
+    //Second, apply that black
+    CIFilter *compositeFilter = [CIFilter filterWithName:@"CIMultiplyBlendMode"];
+    [compositeFilter setValue:blackImage forKey:@"inputImage"];
+    [compositeFilter setValue:inputImage forKey:@"inputBackgroundImage"];
+    CIImage *darkenedImage = [compositeFilter outputImage];
+
+    //Third, blur the image
+    CIFilter *blurFilter = [CIFilter filterWithName:@"CIGaussianBlur"];
+    [blurFilter setDefaults];
+    [blurFilter setValue:@(15.0) forKey:@"inputRadius"];
+    [blurFilter setValue:darkenedImage forKey:kCIInputImageKey];
+    CIImage *blurredImage = [blurFilter outputImage];
+
+    CGImageRef cgimg = [context createCGImage:blurredImage fromRect:inputImage.extent];
+    UIImage *blurredAndDarkenedImage = [UIImage imageWithCGImage:cgimg];
+    CGImageRelease(cgimg);
+
+    return blurredAndDarkenedImage;
+}
+
+%new
+- (void)recieveNotification:(NSNotification *)notification
+{
+    BOOL enabled = ([[notification name] isEqualToString:kEditingModeEnabledNotificationName]);
+    _rtEditingEnabled = enabled;
+    
+    if (enabled)
+    {
+        self.backgroundColor = [UIColor colorWithPatternImage:[self blurredImageWithImage:_rtBackgroundImage]];
+    }
+    else 
+    {
+        self.alpha = 0.99;
+        [UIView animateWithDuration:.4
+        animations:
+        ^{
+            self.alpha = 1; // give animation something to do
+        } 
+        completion:^(BOOL finished) 
+        {
+        self.backgroundColor = [UIColor blackColor];
+        self.transform = CGAffineTransformIdentity;
+        }
+    ];
+    }
+
+}
+%end
+
+
+%hook SBCoverSheetWindow
+
+- (BOOL)becomeFirstResponder 
+{
+    %orig;
+    if ([(SpringBoard*)[UIApplication sharedApplication] isShowingHomescreen] && _rtEditingEnabled) 
+    {
+        AudioServicesPlaySystemSound(1520);
+        AudioServicesPlaySystemSound(1520);
+        [[NSNotificationCenter defaultCenter] postNotificationName:kEditingModeDisabledNotificationName object:nil];
+        _rtEditingEnabled = NO;
+    }
+}
+
+%end
+
+%hook SBMainSwitcherWindow
+-(void)setHidden:(BOOL)arg
+{
+    %orig(arg);
+
+    if (_rtEditingEnabled && [[HPManager sharedManager] switcherDisables]) 
+    {
+        [[NSNotificationCenter defaultCenter] postNotificationName:kEditingModeDisabledNotificationName object:nil];
+    }
+}
+%end
+
+static void *observer = NULL;
+
+
+
+//
+//
+// IOS 12
+// #pragma mark iOS 12
+//
+//
+
+// IOS 11/12
+%group iOS12
 
 %hook SBRootFolderController
 /*
@@ -481,6 +745,7 @@ NSDictionary *prefs = nil;
         [[NSNotificationCenter defaultCenter] addObserver:self selector:@selector(recieveNotification:) name:kEditingModeDisabledNotificationName object:nil];
         [self layoutIconsNow];
         self.configured = YES;
+        _rtConfigured = YES;
     }
     
 }
@@ -496,16 +761,6 @@ NSDictionary *prefs = nil;
     }
 }
 
-%new
-- (void)resetValuesToDefaults 
-{
-    [[HPManager sharedManager] resetCurrentLoadoutToDefaults];
-    [self layoutIconsNow];
-    _rtEditingEnabled = NO;
-    [[[EditorManager sharedManager] editorViewController] addRootIconListViewToUpdate:self];
-    [self layoutIconsNow];
-}
-
 - (void)layoutIconsNow 
 {
     %orig;
@@ -518,54 +773,45 @@ NSDictionary *prefs = nil;
     double labelAlpha = [[HPManager sharedManager] currentLoadoutShouldHideIconLabels] ? 0.0 : 1.0;
     [self setIconsLabelAlpha:labelAlpha];
 }
-
-- (CGSize)alignmentIconSize 
-{
-    CGSize o = %orig;
-    CGFloat s = [[HPManager sharedManager] currentLoadoutScale];
-    return o;
-    //return CGSizeMake(s, (o.height/o.width) * s);
-}
-- (CGSize)defaultIconSize
-{
-    CGSize o = %orig;
-    return o;//CGSizeMake(s, (o.height/o.width) * s);
-}
 - (CGFloat)horizontalIconPadding {
 	CGFloat x = %orig;
-    if (!_pfTweakEnabled) {
+
+    if (!_pfTweakEnabled || !self.configured || [[HPManager sharedManager] resettingIconLayout]) 
+    {
         return x;
     }
+
     BOOL buggedSpacing = [[HPManager sharedManager] currentLoadoutColumns] == 4 && _rtnotched;
     BOOL leftInsetZeroed = [[HPManager sharedManager] currentLoadoutLeftInset] == 0.0;
-    if (leftInsetZeroed) {
-        return x;
-    }
-    else
+    if ([[[UIDevice currentDevice] systemVersion] floatValue] >= 12.0)
     {
-        return [[HPManager sharedManager] currentLoadoutHorizontalSpacing];
+        if (buggedSpacing)
+        {
+            return -100.0;
+        }
+        if (leftInsetZeroed) {
+            return x;
+        }
+        else
+        {
+            return [[HPManager sharedManager] currentLoadoutHorizontalSpacing];
+        }
     }
-    /*
-    if (!buggedSpacing && leftInsetZeroed) {
-        return x;
-    }
-    else if (leftInsetZeroed && !_rtnotched) {
-        return [[HPManager sharedManager] currentLoadoutHorizontalSpacing];
-    }
-    else if (buggedSpacing && !leftInsetZeroed) {
-        return -100.0;
-    }
-    else if (buggedSpacing && leftInsetZeroed) {
-        return -100.0;
-    }
-    else if (!buggedSpacing && !leftInsetZeroed) {
-        return [[HPManager sharedManager] currentLoadoutHorizontalSpacing];
-    }*/
+    else 
+    {
+        /*
+         * For some odd reason, this behaviour gets reversed on iOS 11. 
+         * 
+        */
 
+            return [[HPManager sharedManager] currentLoadoutHorizontalSpacing];
+    }
 }
 - (CGFloat)verticalIconPadding 
 {
     CGFloat x = %orig;
+    if (!self.configured || [[HPManager sharedManager] resettingIconLayout]) return x;
+
     [[NSUserDefaults standardUserDefaults] setFloat:x
                                                 forKey:@"defaultVSpacing"];
 
@@ -575,7 +821,7 @@ NSDictionary *prefs = nil;
 - (CGFloat)sideIconInset
 {   
     CGFloat x = %orig;
-    if (!self.configured || !_pfTweakEnabled)
+    if (!self.configured || !_pfTweakEnabled || [[HPManager sharedManager] resettingIconLayout])
     {
         return x;
     }
@@ -583,71 +829,77 @@ NSDictionary *prefs = nil;
     // at ToW, this is confusing and hard to explain. 
     BOOL buggedSpacing = [[HPManager sharedManager] currentLoadoutColumns] == 4 && _rtnotched;
     BOOL leftInsetZeroed = [[HPManager sharedManager] currentLoadoutLeftInset] == 0.0;
-    if (leftInsetZeroed) 
+
+    if ([[[UIDevice currentDevice] systemVersion] floatValue] >= 12.0)
     {
-        return [[HPManager sharedManager] currentLoadoutHorizontalSpacing];
+        if (leftInsetZeroed || buggedSpacing) 
+        {
+            return [[HPManager sharedManager] currentLoadoutHorizontalSpacing];
+        }
+        else
+        {
+            return [[HPManager sharedManager] currentLoadoutLeftInset];
+        }
     }
     else
     {
         return [[HPManager sharedManager] currentLoadoutLeftInset];
     }
-    /*
-    if (!buggedSpacing && !leftInsetZeroed) 
-    {
-        return [[HPManager sharedManager] currentLoadoutLeftInset];
-    }
-    else if (!leftInsetZeroed && !_rtnotched) 
-    {
-        return [[HPManager sharedManager] currentLoadoutLeftInset];
-    }
-    else if (buggedSpacing && !leftInsetZeroed)
-    {
-        return [[HPManager sharedManager] currentLoadoutHorizontalSpacing];
-    }
-    else if (!buggedSpacing && leftInsetZeroed)
-    {
-        return [[HPManager sharedManager] currentLoadoutHorizontalSpacing];
-    }
-    else if (buggedSpacing && leftInsetZeroed) 
-    {
-        return [[HPManager sharedManager] currentLoadoutHorizontalSpacing];
-    }*/
 }
 
 - (CGFloat)topIconInset
 {
     CGFloat x = %orig;
-    if (!self.configured)
+
+    if (!self.configured || !_pfTweakEnabled || [[HPManager sharedManager] resettingIconLayout])
     {
         return x;
     }
     
-    return _pfTweakEnabled ? [[HPManager sharedManager] currentLoadoutTopInset] : x;
+    return [[HPManager sharedManager] currentLoadoutTopInset];
 }
 
 + (NSUInteger)iconColumnsForInterfaceOrientation:(NSInteger)arg1
 {
 	NSInteger x = %orig(arg1);
 
-	return _pfTweakEnabled ? [[HPManager sharedManager] currentLoadoutColumns] : x;
+    if (!_rtConfigured || !_pfTweakEnabled || [[HPManager sharedManager] resettingIconLayout])
+    {
+        return x;
+    }
+
+	return [[HPManager sharedManager] currentLoadoutColumns];
 }
 
 + (NSUInteger)iconRowsForInterfaceOrientation:(NSInteger)arg1
 {
 	NSInteger x = %orig(arg1);
-
-	return _pfTweakEnabled ? [[HPManager sharedManager] currentLoadoutRows] : x;
-}
-
-- (NSUInteger)iconRowsForSpacingCalculation
-{
-	NSInteger x = %orig;
-    if (!self.configured)
+    if (arg1==69)
+    {
+        return %orig(1);
+    }
+    if (!_rtConfigured || !_pfTweakEnabled || [[HPManager sharedManager] resettingIconLayout])
     {
         return x;
     }
 
-	return _pfTweakEnabled ? [[HPManager sharedManager] currentLoadoutRows] : x;
+	return [[HPManager sharedManager] currentLoadoutRows];
+}
+%new 
+- (NSUInteger)iconRowsForHomePlusCalculations
+{
+    return [[self class] iconRowsForInterfaceOrientation:69];
+}
+- (NSUInteger)iconRowsForSpacingCalculation
+{
+	NSInteger x = %orig;
+
+    if (!self.configured || !_pfTweakEnabled || [[HPManager sharedManager] resettingIconLayout])
+    {
+        return x;
+    }
+
+	return [[HPManager sharedManager] currentLoadoutRows];
 }
 
 %end
@@ -675,7 +927,6 @@ NSDictionary *prefs = nil;
 
 %end
 
-
 %hook SBIconView 
 
 - (void)layoutSubviews 
@@ -699,48 +950,15 @@ NSDictionary *prefs = nil;
             break;
         }
     }
+    
     [self setLabelAccessoryViewHidden:hideThis];
+    
     self.iconAccessoryAlpha = [[HPManager sharedManager] currentLoadoutShouldHideIconBadges] ? 0.0 : 1.0;
 
 }
-/*
--(CGSize)iconImageVisibleSize 
-{
-    CGSize o = %orig;
-    CGFloat s = [[HPManager sharedManager] currentLoadoutScale];
-    return CGSizeMake(s, (o.height/o.width) * s);
-}*/
-%end
-%hook SBIconImageView
--(void)setFrame:(CGRect)arg { // 60 / 2 - scale
-    %orig(CGRectMake(arg.origin.x + ((arg.size.width / 2 ) - [[HPManager sharedManager] currentLoadoutScale]/2), arg.origin.y + ((arg.size.height / 2 ) - [[HPManager sharedManager] currentLoadoutScale]/2), [[HPManager sharedManager] currentLoadoutScale], [[HPManager sharedManager] currentLoadoutScale]*(74/60)));
-    [[NSUserDefaults standardUserDefaults] setFloat:arg.size.width
-                                                forKey:@"defaultScale"];
-}
 %end
 
-%hook SBFolderIconBackgroundView
-- (void)setHidden:(BOOL)arg1 
-{
-    %orig(arg1);
-}
-%end
 
-%hook SBCoverSheetWindow
-
-- (BOOL)becomeFirstResponder 
-{
-    %orig;
-    if ([(SpringBoard*)[UIApplication sharedApplication] isShowingHomescreen] && _rtEditingEnabled) 
-    {
-        AudioServicesPlaySystemSound(1520);
-        AudioServicesPlaySystemSound(1520);
-        [[NSNotificationCenter defaultCenter] postNotificationName:kEditingModeDisabledNotificationName object:nil];
-        _rtEditingEnabled = NO;
-    }
-}
-
-%end
 
 %hook FBSystemGestureView
 
@@ -825,10 +1043,10 @@ NSDictionary *prefs = nil;
     [self.hp_hitbox addGestureRecognizer: swipeUpGesture];
 
     CGSize hitboxSize = CGSizeMake(60, 20);
-
     self.hp_hitbox.frame = CGRectMake(0, 0, hitboxSize.width, hitboxSize.height);
     [self.hp_hitbox_window addSubview:self.hp_hitbox];
     [self addSubview:self.hp_hitbox_window];
+
     self.hp_hitbox_window.hidden = NO;
 }
 %new 
@@ -845,7 +1063,6 @@ NSDictionary *prefs = nil;
     [swipeUpGesture setDirection:UISwipeGestureRecognizerDirectionUp];
 
     [hp_hitbox addGestureRecognizer: swipeUpGesture];
-
 
     hp_hitbox.frame = [[UIScreen mainScreen] bounds];
     [hp_hitbox_window addSubview:hp_hitbox];
@@ -866,19 +1083,483 @@ NSDictionary *prefs = nil;
 
 %end
 
-%hook SBMainSwitcherWindow
--(void)setHidden:(BOOL)arg
+
+%end
+
+//
+//
+// IOS 13
+//
+//
+//
+
+%group iOS13
+
+// IOS 13
+%hook SBIconView
+- (void)layoutSubviews 
 {
-    %orig(arg);
-    if (_rtEditingEnabled && [[HPManager sharedManager] switcherDisables]) 
+	%orig;
+    
+    BOOL hideThis = NO;
+	switch ( [self location] ) 
     {
+        case 1: 
+        {
+            hideThis = [[HPManager sharedManager] currentLoadoutShouldHideIconLabels];
+            break;
+        }
+        case 6: 
+        {
+            hideThis = [[HPManager sharedManager] currentLoadoutShouldHideIconLabelsInFolders];
+        }
+        default: 
+        {
+            hideThis = [[HPManager sharedManager] currentLoadoutShouldHideIconLabels];
+            break;
+        }
+    }
+    
+    [self _applyIconLabelAlpha:(hideThis ? 0.0 : 1.0)];
+    
+    self.iconAccessoryAlpha = [[HPManager sharedManager] currentLoadoutShouldHideIconBadges] ? 0.0 : 1.0;
+
+}
+%end 
+
+
+%hook UISystemGestureView
+
+%property (nonatomic, assign) BOOL hitboxViewExists;
+%property (nonatomic, retain) HPHitboxView *hp_hitbox;
+%property (nonatomic, retain) HPHitboxWindow *hp_hitbox_window;
+
+%new
+- (void)TL_toggleEditingMode
+{
+    if (![(SpringBoard*)[UIApplication sharedApplication] isShowingHomescreen]) 
+    {
+        return;
+    }
+    if (_pfActivationGesture != 1) 
+    {
+        return;
+    }
+    BOOL enabled = !_rtEditingEnabled;
+
+    if (enabled)
+    {
+        AudioServicesPlaySystemSound(1520);
+        AudioServicesPlaySystemSound(1520);
+        [[NSNotificationCenter defaultCenter] postNotificationName:kDisableWiggleTrigger object:nil];
+        [[NSNotificationCenter defaultCenter] postNotificationName:kEditingModeEnabledNotificationName object:nil];
+    }
+    else 
+    {
+        AudioServicesPlaySystemSound(1520);
+        AudioServicesPlaySystemSound(1520);
         [[NSNotificationCenter defaultCenter] postNotificationName:kEditingModeDisabledNotificationName object:nil];
+    }
+    _rtEditingEnabled = enabled;
+}
+%new
+- (void)BX_toggleEditingMode
+{
+    if (![(SpringBoard*)[UIApplication sharedApplication] isShowingHomescreen]) 
+    {
+        return;
+    }
+    if (_pfActivationGesture != 2) 
+    {
+        return;
+    }
+    BOOL enabled = !_rtEditingEnabled;
+
+    NSLog(@"%@%@", kUniqueLogIdentifier, @": Editing toggled");
+    if (enabled)
+    {
+        AudioServicesPlaySystemSound(1520);
+        AudioServicesPlaySystemSound(1520);
+        [[NSNotificationCenter defaultCenter] postNotificationName:kDisableWiggleTrigger object:nil];
+        [[NSNotificationCenter defaultCenter] postNotificationName:kEditingModeEnabledNotificationName object:nil];
+        NSLog(@"%@%@", kUniqueLogIdentifier,  @": Sent Enable Notification");
+    }
+    else 
+    {
+        AudioServicesPlaySystemSound(1520);
+        AudioServicesPlaySystemSound(1520);
+        [[NSNotificationCenter defaultCenter] postNotificationName:kEditingModeDisabledNotificationName object:nil];
+        NSLog(@"%@%@", kUniqueLogIdentifier, @": Sent Disable Notification");
+    }
+    _rtEditingEnabled = enabled;
+}
+%new 
+- (void)createTopLeftHitboxView
+{
+    self.hp_hitbox_window = [[HPHitboxWindow alloc] initWithFrame:CGRectMake(0, 0, 60, 20)];
+
+    self.hp_hitbox = [[HPTouchKillerHitboxView alloc] init];
+    self.hp_hitbox.backgroundColor = [UIColor.lightGrayColor colorWithAlphaComponent:0.001];
+    [self.hp_hitbox setValue:@NO forKey:@"deliversTouchesForGesturesToSuperview"];
+
+    UISwipeGestureRecognizer *swipeDownGesture = [[UISwipeGestureRecognizer alloc] initWithTarget:self action:@selector(TL_toggleEditingMode)];
+    [swipeDownGesture setDirection:UISwipeGestureRecognizerDirectionDown];
+    [self.hp_hitbox addGestureRecognizer: swipeDownGesture];
+
+    UISwipeGestureRecognizer *swipeUpGesture = [[UISwipeGestureRecognizer alloc] initWithTarget:self action:@selector(TL_toggleEditingMode)];
+    [swipeUpGesture setDirection:UISwipeGestureRecognizerDirectionUp];
+    [self.hp_hitbox addGestureRecognizer: swipeUpGesture];
+
+    CGSize hitboxSize = CGSizeMake(60, 20);
+    self.hp_hitbox.frame = CGRectMake(0, 0, hitboxSize.width, hitboxSize.height);
+    [self.hp_hitbox_window addSubview:self.hp_hitbox];
+    [self addSubview:self.hp_hitbox_window];
+
+    self.hp_hitbox_window.hidden = NO;
+}
+%new 
+- (void)createFullScreenDragUpView
+{
+    HPHitboxWindow *hp_hitbox_window = [[HPHitboxWindow alloc] initWithFrame:[[UIScreen mainScreen] bounds]];
+
+    HPHitboxView *hp_hitbox = [[HPHitboxView alloc] init];
+    hp_hitbox.backgroundColor = [UIColor.lightGrayColor colorWithAlphaComponent:0.001];
+    [hp_hitbox setValue:@YES forKey:@"deliversTouchesForGesturesToSuperview"];
+    [hp_hitbox_window setValue:@YES forKey:@"deliversTouchesForGesturesToSuperview"];
+
+    UISwipeGestureRecognizer *swipeUpGesture = [[UISwipeGestureRecognizer alloc] initWithTarget:self action:@selector(BX_toggleEditingMode)];
+    [swipeUpGesture setDirection:UISwipeGestureRecognizerDirectionUp];
+
+    [hp_hitbox addGestureRecognizer: swipeUpGesture];
+
+    hp_hitbox.frame = [[UIScreen mainScreen] bounds];
+    [hp_hitbox_window addSubview:hp_hitbox];
+    [self addSubview:hp_hitbox_window];
+    hp_hitbox_window.hidden = YES;
+}
+
+- (void)layoutSubviews
+{
+    %orig;
+
+    if (!self.hp_hitbox_window && _pfTweakEnabled) 
+    {
+        [self createTopLeftHitboxView];
+        [self createFullScreenDragUpView];
+    }
+}
+
+%end
+
+%hook SBIconListFlowLayout
+
+-(NSUInteger)numberOfRowsForOrientation:(NSInteger)arg1
+{
+	NSInteger x = %orig(arg1);
+    if (x==3)
+    {
+        return 3;
+    }
+
+    if (!_rtConfigured && _pfTweakEnabled) return kMaxRowAmount;
+
+	return _pfTweakEnabled ? [[HPManager sharedManager] currentLoadoutRows] : (NSUInteger)x;
+}
+
+-(NSUInteger)numberOfColumnsForOrientation:(NSInteger)arg1
+{
+	NSInteger x = %orig(arg1);
+    if (x==3)
+    {
+        return 3;
+    }
+
+    if (!_rtConfigured && _pfTweakEnabled) return kMaxColumnAmount;
+
+	return _pfTweakEnabled ? [[HPManager sharedManager] currentLoadoutColumns] : (NSUInteger)x;
+}
+
+%end
+
+
+%hook SBIconListGridLayoutConfiguration 
+%property (nonatomic, assign) BOOL isAFolderList;
+
+-(id)init {
+    id x = %orig; 
+    self.isAFolderList = NO;
+    return x;
+}
+
+
+
+// top left bottom right 
+
+-(NSUInteger)numberOfPortraitRows
+{
+	NSInteger x = %orig;
+    if (x==3)
+        self.isAFolderList = YES;
+    if (self.isAFolderList) return x;
+
+    if (!_rtConfigured && _pfTweakEnabled) return kMaxRowAmount;
+
+	return _pfTweakEnabled ? [[HPManager sharedManager] currentLoadoutRows] : (NSUInteger)x;
+}
+
+-(NSUInteger)numberOfPortraitColumns
+{
+	NSInteger x = %orig;
+    if (x == 3)
+        self.isAFolderList = YES;
+    if (self.isAFolderList) return x;
+
+    if (!_rtConfigured && _pfTweakEnabled) return kMaxColumnAmount;
+
+	return _pfTweakEnabled ? [[HPManager sharedManager] currentLoadoutColumns] : (NSUInteger)x;
+}
+
+-(void)setNumberOfPortraitRows:(NSUInteger)arg 
+{
+    if (arg == 3)
+    {
+        self.isAFolderList = YES;
+        %orig(arg);
+    }
+    NSUInteger x = (_pfTweakEnabled && !self.isAFolderList) ? [[HPManager sharedManager] currentLoadoutRows] : arg;
+
+    if (NO && !_rtConfigured && _pfTweakEnabled && !self.isAFolderList)
+    {
+        %orig(kMaxRowAmount);
+        return;
+    }
+    %orig(x);
+}
+
+-(void)setNumberOfPortraitColumns:(NSUInteger)arg 
+{
+    if (arg == 3)
+    {
+        self.isAFolderList = YES;
+        %orig(arg);
+    }
+    NSUInteger x = (_pfTweakEnabled && !self.isAFolderList) ? [[HPManager sharedManager] currentLoadoutColumns] : arg;
+
+
+    if (!_rtConfigured && _pfTweakEnabled && !self.isAFolderList) 
+    {
+        %orig(kMaxColumnAmount);
+        return;
+    }
+
+    %orig(x);
+}
+
+-(UIEdgeInsets)portraitLayoutInsets//
+{
+    UIEdgeInsets x = %orig;
+    [self numberOfPortraitColumns];
+    if (!_pfTweakEnabled || self.isAFolderList)
+    {
+        return x;
+    }
+    BOOL left_inset_will_misalign = [[HPManager sharedManager] currentLoadoutLeftInset] < x.right;
+    left_inset_will_misalign = (left_inset_will_misalign && [[HPManager sharedManager] currentLoadoutLeftInset] != 0);
+    BOOL leftInsetZeroed = [[HPManager sharedManager] currentLoadoutLeftInset] == 0;
+    if (!leftInsetZeroed)
+    {
+        return UIEdgeInsetsMake(
+            [[HPManager sharedManager] currentLoadoutTopInset],
+            [[HPManager sharedManager] currentLoadoutLeftInset],
+            x.bottom - [[HPManager sharedManager] currentLoadoutTopInset] + [[HPManager sharedManager] currentLoadoutVerticalSpacing]*2, // * 2 because regularly it was too slow
+            x.right - [[HPManager sharedManager] currentLoadoutLeftInset] + [[HPManager sharedManager] currentLoadoutHorizontalSpacing]*2
+        );
+    }
+    else
+    {
+        return UIEdgeInsetsMake(
+            [[HPManager sharedManager] currentLoadoutTopInset],
+            [[HPManager sharedManager] currentLoadoutHorizontalSpacing],
+            x.bottom - [[HPManager sharedManager] currentLoadoutTopInset] + [[HPManager sharedManager] currentLoadoutVerticalSpacing]*2, // * 2 because regularly it was too slow
+            [[HPManager sharedManager] currentLoadoutHorizontalSpacing]
+        );
+    }
+}
+
+%end
+
+@interface SBIconListFlowLayout : NSObject
+-(SBIconListGridLayoutConfiguration *)layoutConfiguration;
+@end
+@interface SBIconListView (HomePlus)
+-(SBIconListFlowLayout *)layout;
+@end
+@interface SBFloatyFolderScrollView : UIView 
+@end
+
+%hook SBFloatyFolderScrollView
+-(void)layoutSubviews
+{
+    %orig;
+    @try {
+        SBIconListView *lv = (SBIconListView *)[self subviews][0];
+        [[lv layout] layoutConfiguration].isAFolderList = YES;
+    }
+    @catch (NSException *exception) {
+        // Folder probably closed
+    }
+    @finally {
+        // blah
     }
 }
 %end
+/*
+@interface SBIconScrollView : UIView 
+@end
+%hook SBIconScrollView
+-(void)layoutSubviews
+{
+    @try {
+        SBIconListView *lv = (SBIconListView *)[self subviews][0];
+        [[lv layout] layoutConfiguration].isAFolderList = NO;
+    }
+    @catch (NSException *exception) {
+        // Folder probably closed
+    }
+    @finally {
+        // blah
+    }
 
-#pragma mark Preferences
-static void *observer = NULL;
+    %orig;
+}
+%end
+*/
+%hook SBIconListView 
+
+%property (nonatomic, assign) BOOL configured;
+
+
+- (id)initWithModel:(id)arg1 orientation:(id)arg2 viewMap:(id)arg3 {
+    id o = %orig(arg1, arg2, arg3);
+
+    return o;
+}
+
+- (void)layoutSubviews 
+{
+    %orig;
+
+    if (!self.configured) 
+    {
+        /*
+        //[self layout];
+        // Configure our reset-to-default values based on what the phone gives us.
+        [[NSUserDefaults standardUserDefaults] setFloat:[self topIconInset]
+                                                forKey:@"defaultTopInset"];
+        [[NSUserDefaults standardUserDefaults] setFloat:0.0
+                                                forKey:@"defaultLeftInset"];
+        [[NSUserDefaults standardUserDefaults] setFloat:[self sideIconInset]
+                                                forKey:@"defaultHSpacing"];
+        [[NSUserDefaults standardUserDefaults] setFloat:[self verticalIconPadding]
+                                                forKey:@"defaultVSpacing"];
+        [[NSUserDefaults standardUserDefaults] setInteger:4
+                                                forKey:@"defaultColumns"];
+        [[NSUserDefaults standardUserDefaults] setInteger:[self iconRowsForSpacingCalculation]
+                                                forKey:@"defaultRows"];
+
+        [[[EditorManager sharedManager] editorViewController] addRootIconListViewToUpdate:self];
+        [[NSNotificationCenter defaultCenter] addObserver:self selector:@selector(recieveNotification:) name:kEditingModeEnabledNotificationName object:nil];
+        [[NSNotificationCenter defaultCenter] addObserver:self selector:@selector(recieveNotification:) name:kEditingModeDisabledNotificationName object:nil];
+        //[self layout];
+        self.configured = YES;
+        */
+        [self layoutIconsNow];
+        [[NSNotificationCenter defaultCenter] postNotificationName:@"HPResetIconViews" object:nil];
+        [[[EditorManager sharedManager] editorViewController] addRootIconListViewToUpdate:self];
+        [[NSNotificationCenter defaultCenter] addObserver:self selector:@selector(recieveNotification:) name:kEditingModeEnabledNotificationName object:nil];
+        [[NSNotificationCenter defaultCenter] addObserver:self selector:@selector(recieveNotification:) name:kEditingModeDisabledNotificationName object:nil];
+        self.configured = YES;
+        _rtConfigured = YES;
+
+        [self layoutIconsNow];
+
+        [[NSNotificationCenter defaultCenter] postNotificationName:@"HPResetIconViews" object:nil];
+    }
+    
+}
+-(BOOL)automaticallyAdjustsLayoutMetricsToFit
+{
+    return (!_pfTweakEnabled);
+}
+%new
+- (void)recieveNotification:(NSNotification *)notification
+{
+    if (!([[notification name] isEqualToString:kEditingModeEnabledNotificationName])) 
+    {
+        [[HPManager sharedManager] saveCurrentLoadoutName];
+        [[HPManager sharedManager] saveCurrentLoadout];
+        [self layoutIconsNow];
+    }
+}
+
+%new
+- (void)resetValuesToDefaults 
+{
+    [[HPManager sharedManager] resetCurrentLoadoutToDefaults];
+    [self layoutIconsNow];
+    _rtEditingEnabled = NO;
+    [[[EditorManager sharedManager] editorViewController] addRootIconListViewToUpdate:self];
+    [self layoutIconsNow];
+}
+
+- (void)layoutIconsNow 
+{
+    %orig;
+
+    if (!_pfTweakEnabled)
+    {
+        return;
+    }
+    
+    double labelAlpha = [[HPManager sharedManager] currentLoadoutShouldHideIconLabels] ? 0.0 : 1.0;
+    [self setIconsLabelAlpha:labelAlpha];
+
+}
+
+
+%end
+
+%hook SBHRootFolderSettings
+-(BOOL)isAdjustableLayoutEnabled
+{
+    return _pfTweakEnabled;
+}
+
+-(CGFloat)portraitTopLayoutInset
+{
+    return _pfTweakEnabled ? [[HPManager sharedManager] currentLoadoutTopInset] : %orig;
+}
+-(CGFloat)portraitSideLayoutInset
+{
+    return _pfTweakEnabled ? [[HPManager sharedManager] currentLoadoutHorizontalSpacing] : %orig;
+}
+-(void)portraitTopLayoutInset:(CGFloat)arg
+{
+    CGFloat x =  _pfTweakEnabled ? [[HPManager sharedManager] currentLoadoutTopInset] : arg;
+    %orig(x);
+}
+-(void)portraitSideLayoutInset:(CGFloat)arg
+{
+    CGFloat x =  _pfTweakEnabled ? [[HPManager sharedManager] currentLoadoutHorizontalSpacing] : arg;
+    %orig(x);
+}
+
+%end
+
+
+// END iOS 13 Group
+%end
+
 
 
 static void reloadPrefs() 
@@ -886,9 +1567,11 @@ static void reloadPrefs()
 	if ([NSHomeDirectory() isEqualToString:@"/var/mobile"]) 
     {
 		CFArrayRef keyList = CFPreferencesCopyKeyList((CFStringRef)kIdentifier, kCFPreferencesCurrentUser, kCFPreferencesAnyHost);
+
 		if (keyList) 
         {
 			prefs = (NSDictionary *)CFBridgingRelease(CFPreferencesCopyMultiple(keyList, (CFStringRef)kIdentifier, kCFPreferencesCurrentUser, kCFPreferencesAnyHost));
+
 			if (!prefs) 
             {
 				prefs = [NSDictionary new];
@@ -914,7 +1597,7 @@ static void preferencesChanged()
 	reloadPrefs();
 
 	_pfTweakEnabled = boolValueForKey(@"HPEnabled", YES);
-    _pfActivationGesture = [[prefs objectForKey:@"gesture"] intValue] ?: 1;
+    _pfActivationGesture = 1;
 }
 
 #pragma mark ctor
@@ -931,4 +1614,15 @@ static void preferencesChanged()
         NULL,
         CFNotificationSuspensionBehaviorDeliverImmediately
     );
-} 
+
+    %init;
+
+	if (kCFCoreFoundationVersionNumber < 1600) 
+    {
+        %init(iOS12);
+	} 
+    else 
+    {
+		%init(iOS13);
+	}
+}

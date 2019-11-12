@@ -117,6 +117,7 @@
 
 - (void)resetAllValuesToDefaults 
 {
+    [_editorViewController resetAllValuesToDefaults];
     [[NSNotificationCenter defaultCenter] postNotificationName:@"HomePlusEditingModeDisabled" object:nil];
     [self hideEditorView];
     NSMutableArray *views = _editorViewController.rootIconListViewsToUpdate;
@@ -126,12 +127,12 @@
     _editorViewController.delegate = self;
     _editorView = [[HPEditorWindow alloc] initWithFrame:[[UIScreen mainScreen] bounds]];
     _editorView.rootViewController = self.editorViewController;
-    [[self editorViewController] resetAllValuesToDefaults];
-
     for (SBRootIconListView *view in views) 
     {
-        [view resetValuesToDefaults];
+        //[view resetValuesToDefaults];
     }
+
+    [[NSNotificationCenter defaultCenter] postNotificationName:@"HPResetIconViews" object:nil];
 }
 
 - (void)editorViewControllerDidFinish:(HPEditorViewController *)editorViewController 

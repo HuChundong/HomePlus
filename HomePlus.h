@@ -1,5 +1,7 @@
+#define kMaxColumnAmount 14
+#define kMaxRowAmount 14
 @interface SBIconModel : NSObject 
--(void)layout;
+- (void)layout;
 @end
 @interface SBIconListModel : NSObject
 @property (nonatomic, assign) NSUInteger maxNumberOfIcons;
@@ -9,20 +11,26 @@
 @end
 
 
+@interface SBIconListGridLayoutConfiguration
+@property (nonatomic, assign) BOOL isAFolderList;
+-(NSUInteger)numberOfPortraitColumns;
+@end
+
 @interface SBEditingDoneButton : UIButton
 @end
 
 @interface SBRootFolderView
 @property (nonatomic, retain) SBEditingDoneButton *doneButton;
--(void)resetIconListViews;
+- (void)resetIconListViews;
 @end
 
 @interface SBRootFolderController
--(void)doneButtonTriggered:(id)button; 
+- (void)doneButtonTriggered:(id)button; 
 @property (nonatomic, retain) SBIconViewMap *iconViewMap;
 @property (nonatomic, retain) SBRootFolderView *contentView;
 @end
 @interface SBRootIconListView : UIView
+- (CGFloat)horizontalIconPadding ;
 @property (nonatomic, assign) CGFloat customTopInset;
 @property (nonatomic, assign) CGFloat customLeftOffset;
 @property (nonatomic, assign) CGFloat customSideInset;
@@ -40,18 +48,24 @@
 -(void)recieveNotification:(NSNotification *)notification;
 -(void)updateCustomRows:(CGFloat)arg1;
 -(void)updateCustomColumns:(CGFloat)arg1;
+- (NSUInteger)iconRowsForHomePlusCalculations;
 -(void)layoutIconsNow;
 -(CGFloat)sideIconInset;
 - (CGFloat)verticalIconPadding;
 -(CGFloat)topIconInset;
 - (CGSize)defaultIconSize;
+-(void)setLayoutReversed:(BOOL)arg;
 - (void)updateRC;
 @property (nonatomic, retain) NSArray *allSubviews;
 @property (nonatomic, retain) SBIconViewMap *viewMap;
 @property (nonatomic, retain) SBIconListModel *model;
 - (NSUInteger)iconRowsForSpacingCalculation;
 + (NSUInteger)maxIcons;
++ (NSUInteger)iconRowsForInterfaceOrientation:(NSInteger)arg1;
 - (SBRootFolderController *)_viewControllerForAncestor;
+@end
+@interface SBIconListView : SBRootIconListView
+@property(readonly, nonatomic) _Bool automaticallyAdjustsLayoutMetricsToFit;
 @end
 
 @interface HPHitboxView : UIView 
@@ -64,20 +78,27 @@
 @end 
 
 @interface FBSystemGestureView : UIView
--(void)createTopLeftHitboxView;
--(void)createFullScreenDragUpView;
+- (void)createTopLeftHitboxView;
+- (void)createFullScreenDragUpView;
+@property (nonatomic, retain) HPHitboxView *hp_hitbox;
+@property (nonatomic, retain) HPHitboxWindow *hp_hitbox_window;
+@end
+
+@interface UISystemGestureView : UIView
+- (void)createTopLeftHitboxView;
+- (void)createFullScreenDragUpView;
 @property (nonatomic, retain) HPHitboxView *hp_hitbox;
 @property (nonatomic, retain) HPHitboxWindow *hp_hitbox_window;
 @end
 
 @interface SBHomeScreenWindow : UIView
--(void)createManagers;
+- (void)createManagers;
 @property (nonatomic, retain) HPHitboxView *hp_hitbox;
 @property (nonatomic, retain) HPHitboxWindow *hp_hitbox_window;
 @end
 
 @interface SpringBoard : UIApplication
--(BOOL)isShowingHomescreen;
+- (BOOL)isShowingHomescreen;
 @end
 
 @interface _SBWallpaperWindow : UIView 
@@ -89,8 +110,9 @@
 @interface SBIconView : UIView
 @property (nonatomic, retain) UIView *labelView;
 @property (nonatomic, assign) CGFloat iconAccessoryAlpha;
--(void)setLabelAccessoryViewHidden:(BOOL)arg;
--(NSInteger)location;
+- (void)setLabelAccessoryViewHidden:(BOOL)arg;
+- (NSInteger)location;
+- (void)_applyIconLabelAlpha:(CGFloat)a;
 @end
 
 @interface SBIconLabelImageParameters : NSObject

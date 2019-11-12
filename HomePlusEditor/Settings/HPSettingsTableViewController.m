@@ -361,19 +361,19 @@ const int RESET_VALUES = 1;
 - (void)iconLabelSwitchChanged:(id)sender 
 {
     UISwitch *switchControl = sender;
-    [[HPManager sharedManager] setCurrentLoadoutShouldHideIconLabels:switchControl.on];
+    [[HPManager sharedManager] setCurrentLoadoutShouldHideIconLabels:switchControl.on];[[NSNotificationCenter defaultCenter] postNotificationName:@"HPResetIconViews" object:nil];
 }
 
 - (void)iconBadgeSwitchChanged:(id)sender 
 {
     UISwitch *switchControl = sender;
-    [[HPManager sharedManager] setCurrentLoadoutShouldHideIconBadges:switchControl.on];
+    [[HPManager sharedManager] setCurrentLoadoutShouldHideIconBadges:switchControl.on];[[NSNotificationCenter defaultCenter] postNotificationName:@"HPResetIconViews" object:nil];
 }
 
 - (void)iconLabelFolderSwitchChanged:(id)sender 
 {
     UISwitch *switchControl = sender;
-    [[HPManager sharedManager] setCurrentLoadoutShouldHideIconLabelsInFolders:switchControl.on];
+    [[HPManager sharedManager] setCurrentLoadoutShouldHideIconLabelsInFolders:switchControl.on];[[NSNotificationCenter defaultCenter] postNotificationName:@"HPResetIconViews" object:nil];
 }
 
 #pragma mark - Table View Delegate

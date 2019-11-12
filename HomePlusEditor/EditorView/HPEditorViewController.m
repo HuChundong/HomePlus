@@ -5,12 +5,15 @@
 // Most of the UI code goes here. This handles all of the views that are brought up. 
 // Although it isn't the manager, think of this as the home-base for everything that happens
 //      once the editor view is activated.
+//
+// This needs to be categorized at some point. 
 // 
 // Created Oct 2019 
 // Authors: Kritanta
 //
 
 #include "HPEditorViewController.h"
+#include "HPControllerView.h"
 #include "../../HomePlus.h"
 #include "../Manager/EditorManager.h"
 #include "../Manager/HPManager.h"
@@ -35,7 +38,6 @@
 @property (nonatomic, readwrite, strong) HPEditorViewNavigationTabBar *tabBar;
 
 @property (nonatomic, readwrite, strong) HPSettingsTableViewController *tableViewController;
-
 
 @property (nonatomic, readwrite, strong) UIView *tapBackView;
 
@@ -63,9 +65,16 @@
  * Oh boy. So, to get the UI to translate well to other devices, I gotthe
  *      exact measurements on my X, and then whipped out a calculator. These
  *      are the values it gave me. Assume any of them are * by device screen w/h
+ *
+ * In hindsight, this is inefficient and, the smaller the screen gets, the less
+ *       reliable it is. Fortunately, it all still works on the smallest screen that
+ *       this tweak can run on (SE)
+ * 
 */
 
-const CGFloat MENU_BUTTON_TOP_ANCHOR = 0.197; // * device height
+// TODO: Finish turning these offsets into constants and maybe #def them instead in a header. 
+
+const CGFloat MENU_BUTTON_TOP_ANCHOR = 0.197; 
 const CGFloat MENU_BUTTON_SIZE = 40.0;
 
 const CGFloat RESET_BUTTON_SIZE = 25.0;
@@ -96,20 +105,26 @@ const CGFloat TABLE_HEADER_HEIGHT = 0.458;
 {
     [super viewDidLoad];
 
+    // Load latest values from the manager. Crucial. 
     [[HPManager sharedManager] loadCurrentLoadout];
 
+    // Add subviews to self. Any time viewDidLoad is called manually, unload these view beforehand
     [self.view addSubview:[self offsetControlView]];
     [self.view addSubview:[self spacingControlView]];
     [self.view addSubview:[self iconCountControlView]];
     [self.view addSubview:[self scaleControlView]];
     [self.view addSubview:[self settingsView]];
+    // Load the view
     [self loadControllerView:[self offsetControlView]];
+    // Set the alpha of the rest to 0
     [self spacingControlView].alpha = 0;
     [self iconCountControlView].alpha = 0;
     [self scaleControlView].alpha = 0;
     [self settingsView].alpha = 0;
 
-    #pragma mark Settings Buttons
+    // Side Navigation Bar
+    // TODO: Add these as a subview of HPEditorViewNavigationTabBar and expand that class. 
+    // TODO: Generate these with a switch-case generator
     self.offsetButton = [UIButton buttonWithType:UIButtonTypeCustom];
     [self.offsetButton addTarget:self 
             action:@selector(handleOffsetButtonPress:)
@@ -123,6 +138,8 @@ const CGFloat TABLE_HEADER_HEIGHT = 0.458;
                                          MENU_BUTTON_TOP_ANCHOR * [[UIScreen mainScreen] bounds].size.height,
                                          MENU_BUTTON_SIZE, MENU_BUTTON_SIZE);
     [self.view addSubview:self.offsetButton];
+    // Since the offset view will be the first loaded, we dont need to lower alpha
+    //      on the button. 
 
     self.spacerButton = [UIButton buttonWithType:UIButtonTypeCustom];
 
@@ -140,6 +157,8 @@ const CGFloat TABLE_HEADER_HEIGHT = 0.458;
     self.spacerButton.frame = CGRectMake([[UIScreen mainScreen] bounds].size.width - 47.5,
                                          (MENU_BUTTON_TOP_ANCHOR * [[UIScreen mainScreen] bounds].size.height) + MENU_BUTTON_SIZE,
                                          MENU_BUTTON_SIZE, MENU_BUTTON_SIZE);
+    // Lower alpha on the rest. 
+    // TODO: const these
     self.spacerButton.alpha = 0.7;
     [self.view addSubview:self.spacerButton];
 
@@ -174,7 +193,7 @@ const CGFloat TABLE_HEADER_HEIGHT = 0.458;
                                             MENU_BUTTON_SIZE, MENU_BUTTON_SIZE);
     self.scaleButton.alpha = 0.7;
     [self.view addSubview:self.scaleButton];
-
+    
     self.settingsButton = [UIButton buttonWithType:UIButtonTypeCustom];
     [self.settingsButton addTarget:self 
             action:@selector(handleSettingsButtonPress:)
@@ -245,7 +264,11 @@ const CGFloat TABLE_HEADER_HEIGHT = 0.458;
     [[EditorManager sharedManager] hideEditorView];
 }
 
-#pragma mark HPControllerViews
+#pragma mark - HPControllerViews
+
+
+
+#pragma mark Settings View
 
 - (HPControllerView *)settingsView 
 {
@@ -263,6 +286,7 @@ const CGFloat TABLE_HEADER_HEIGHT = 0.458;
         [tableHeaderView addSubview:imageView];
 
         UIView *doneButtonContainerView = [[UIView alloc] initWithFrame:CGRectMake([[UIScreen mainScreen] bounds].size.width-80, (TABLE_HEADER_HEIGHT*[[UIScreen mainScreen] bounds].size.width)-40, [[UIScreen mainScreen] bounds].size.width/2, 40)];
+        
         UIButton *button = [UIButton buttonWithType:UIButtonTypeCustom];
         [button addTarget:self 
                 action:@selector(handleDoneSettingsButtonPress:)
@@ -493,19 +517,22 @@ const CGFloat TABLE_HEADER_HEIGHT = 0.458;
         self.topIconCountValueInput.inputAccessoryView = keyboardToolbar;
 
         self.rowsSlider = [[OBSlider alloc] initWithFrame:CGRectMake(0, (0.0369) * [[UIScreen mainScreen] bounds].size.height, (0.7) * [[UIScreen mainScreen] bounds].size.width, (0.0615) * [[UIScreen mainScreen] bounds].size.height)];
+        
         [self.rowsSlider addTarget:self action:@selector(rowsSliderChanged:) forControlEvents:UIControlEventValueChanged];
         [self.rowsSlider setBackgroundColor:[UIColor clearColor]];
         self.rowsSlider.maximumTrackTintColor = [UIColor colorWithWhite:1.0 alpha:0.2];
         self.rowsSlider.minimumTrackTintColor = [UIColor colorWithWhite:1.0 alpha: 0.9];
         self.rowsSlider.minimumValue = 1;
-        self.rowsSlider.maximumValue = 14;
+        self.rowsSlider.maximumValue = kMaxRowAmount;
         self.rowsSlider.continuous = YES;
         self.rowsSlider.value = (CGFloat)[[HPManager sharedManager] currentLoadoutRows];
+        
         [_iconCountControlView addSubview:_iconCountControlView.topView];
         [_iconCountControlView.topView addSubview:topLabel];
         [_iconCountControlView.topView addSubview:self.rowsSlider];
         self.rowsSlider.alpha = 0.0;
         UIButton *rowMin = [UIButton buttonWithType:UIButtonTypeCustom];
+        
         [rowMin addTarget:self 
                 action:@selector(rowMinus)
         forControlEvents:UIControlEventTouchUpInside];
@@ -521,6 +548,7 @@ const CGFloat TABLE_HEADER_HEIGHT = 0.458;
         rowPlu.frame = CGRectMake(((0.7) * [[UIScreen mainScreen] bounds].size.width / 2) + ((0.0369) * [[UIScreen mainScreen] bounds].size.height) / 2, (0.0369) *  [[UIScreen mainScreen] bounds].size.height, ((0.7) * [[UIScreen mainScreen] bounds].size.width / 2) - ((0.0369) * [[UIScreen mainScreen] bounds].size.height) / 2 , 40.0);
         
         [_iconCountControlView.topView addSubview:rowPlu];
+        
         self.topIconCountValueInput.text = [NSString stringWithFormat:@"%.0f", self.rowsSlider.value];
         [_iconCountControlView.topView addSubview:self.topIconCountValueInput];
 
@@ -562,7 +590,7 @@ const CGFloat TABLE_HEADER_HEIGHT = 0.458;
         self.columnsSlider.maximumTrackTintColor = [UIColor colorWithWhite:1.0 alpha:0.2];
         self.columnsSlider.minimumTrackTintColor = [UIColor colorWithWhite:1.0 alpha: 0.9];
         self.columnsSlider.minimumValue = 1.0;
-        self.columnsSlider.maximumValue = 14.0;
+        self.columnsSlider.maximumValue = kMaxColumnAmount;
         self.columnsSlider.continuous = YES;
         self.columnsSlider.value = (CGFloat)[[HPManager sharedManager] currentLoadoutColumns];
         [_iconCountControlView addSubview:_iconCountControlView.bottomView];
@@ -651,7 +679,7 @@ const CGFloat TABLE_HEADER_HEIGHT = 0.458;
         topLabel.textColor=[UIColor whiteColor];
         topLabel.textAlignment=NSTextAlignmentCenter;
 
-        self.topSpacingValueInput =[[UITextField alloc] initWithFrame:CGRectMake((0.730) * [[UIScreen mainScreen] bounds].size.width, (0.0480) * [[UIScreen mainScreen] bounds].size.height, (0.1333) * [[UIScreen mainScreen] bounds].size.width, (0.0369) * [[UIScreen mainScreen] bounds].size.height)];
+        self.topSpacingValueInput = [[UITextField alloc] initWithFrame:CGRectMake((0.730) * [[UIScreen mainScreen] bounds].size.width, (0.0480) * [[UIScreen mainScreen] bounds].size.height, (0.1333) * [[UIScreen mainScreen] bounds].size.width, (0.0369) * [[UIScreen mainScreen] bounds].size.height)];
         [self.topSpacingValueInput addTarget:self
                 action:@selector(topSpacingValueDidChange:)
                 forControlEvents:UIControlEventEditingChanged];
@@ -959,31 +987,64 @@ const CGFloat TABLE_HEADER_HEIGHT = 0.458;
 }
 
 - (void)resetAllValuesToDefaults 
-{
+{   // Called by EditorManager
 
-    //dumb hack
-    self.activeButton = self.offsetButton;
-    [self handleTopResetButtonPress:self.topResetButton];
-    self.activeButton = self.spacerButton;
-    [self handleTopResetButtonPress:self.topResetButton];
-    self.activeButton = self.iconCountButton;
-    [self handleTopResetButtonPress:self.topResetButton];
-    self.activeButton = self.scaleButton;
-    [self handleTopResetButtonPress:self.topResetButton];
-    self.activeButton = self.offsetButton;
-    [self handleBottomResetButtonPress:self.bottomResetButton];
-    self.activeButton = self.spacerButton;
-    [self handleBottomResetButtonPress:self.bottomResetButton];
-    self.activeButton = self.iconCountButton;
-    [self handleBottomResetButtonPress:self.bottomResetButton];
-    self.activeButton = self.scaleButton;
-    [self handleBottomResetButtonPress:self.bottomResetButton];
+    /* 
+     * Resetting the icons relies on some finnicky behavior by iOS
+     * One of the biggest hurdles is that the return values of the %orig of some methods
+     * are dependent on the values of others
+    */
+
+
+    // First, lets get ourselves the first page of the homescreen
+    // Yes, arrays start at 0, but 0 in this case will be the dock :)
+    // TODO: Replace with a check for the dock class
+    // TODO: Fix dock checks elsewhere in tweak
+    SBRootIconListView *view = self.rootIconListViewsToUpdate[1];
+    
+    // First, we want to set Rows 
+    [[HPManager sharedManager] setCurrentLoadoutRows:[view iconRowsForHomePlusCalculations]];
+    // Also reset columns here, although nothing relies on this
+    [[HPManager sharedManager] setCurrentLoadoutColumns:4.0]; 
+
+    // Reload the entire structure
+    [[NSNotificationCenter defaultCenter] postNotificationName:@"HPResetIconViews" object:nil]; 
+
+    // Save it, so the value is sure to be loaded everywhere
+    [[HPManager sharedManager] saveCurrentLoadout]; 
+    
+    // Tell all of the hooks to return their %orig's
+    [[HPManager sharedManager] setResettingIconLayout:YES]; 
+
+    // Reset these values. AFAIK they are not dependent on above stuff
+    [[HPManager sharedManager] setCurrentLoadoutTopInset:[view topIconInset]]; 
+    [[HPManager sharedManager] setCurrentLoadoutLeftInset:0.0];
+    [[HPManager sharedManager] setCurrentLoadoutHorizontalSpacing:[view horizontalIconPadding]];
+
+    // Save values to disk again
     [[HPManager sharedManager] saveCurrentLoadout];
-    // end dumb hack
+
+    // Disable reset mode
+    [[HPManager sharedManager] setResettingIconLayout:NO];
+    // Call the reset class in the manager, which will reset other, non-spacing values and reload internals. 
+    [[HPManager sharedManager] resetCurrentLoadoutToDefaults];
+
+    // Reset scaling
     self.topScaleValueInput.text = [NSString stringWithFormat:@"%.0f", 60.0];
     [self topScaleValueDidChange:self.topScaleValueInput];
-    [[NSNotificationCenter defaultCenter] postNotificationName:@"HPResetIconViews" object:nil];
     [[HPManager sharedManager] setCurrentLoadoutScale: 60.0];
+
+    // *Now,* once everything has been reloaded, reset the vertical spacing by making sure all the other stuff has been set to original values and loaded as such. 
+    // VSpacing is finnicky
+    self.activeButton = self.spacerButton;
+    [self handleTopResetButtonPress:self.topResetButton];
+
+    // Reload everything
+    [[HPManager sharedManager] saveCurrentLoadout];
+    [view layoutIconsNow];
+    [[NSNotificationCenter defaultCenter] postNotificationName:@"HPResetIconViews" object:nil];
+
+    // Deconstruct most of this controller, forcing all of the views nulled to be reloaded. 
     [[self.view subviews]
         makeObjectsPerformSelector:@selector(removeFromSuperview)];
     _spacingControlView = nil;
@@ -991,7 +1052,10 @@ const CGFloat TABLE_HEADER_HEIGHT = 0.458;
     _settingsView = nil;
     _iconCountControlView = nil;
     _scaleControlView = nil;
+
+    // Reload said views
     [self viewDidLoad];
+    // Close editor. 
     [[EditorManager sharedManager] hideEditorView];
 }
 
@@ -1043,7 +1107,7 @@ const CGFloat TABLE_HEADER_HEIGHT = 0.458;
         }
     ];
 
-    [[NSNotificationCenter defaultCenter] postNotificationName:@"HPResetIconViews" object:nil];
+    //[[NSNotificationCenter defaultCenter] postNotificationName:@"HPResetIconViews" object:nil];
 
     self.tapBackView.hidden = NO;
 
@@ -1075,7 +1139,7 @@ const CGFloat TABLE_HEADER_HEIGHT = 0.458;
                 break;
         }
     }  
-    if ([[HPManager sharedManager] currentLoadoutColumns] == 4 && notched) 
+    if ([[HPManager sharedManager] currentLoadoutColumns] == 4 && notched && (kCFCoreFoundationVersionNumber < 1600)) 
     {
         self.leftOffsetLabel.text = @"Left Offset Disabled When\n4 Columns Selected on Notched Devices";
         self.bottomOffsetValueInput.enabled = NO;
@@ -1343,7 +1407,7 @@ const CGFloat TABLE_HEADER_HEIGHT = 0.458;
 }
 - (void)rowPlus
 {
-    if (self.rowsSlider.value != 14.0) self.rowsSlider.value = self.rowsSlider.value + 1.0;
+    if (self.rowsSlider.value != kMaxRowAmount) self.rowsSlider.value = self.rowsSlider.value + 1.0;
     [self rowsSliderChanged:self.rowsSlider];
 }
 - (void)rowMinus
@@ -1353,9 +1417,19 @@ const CGFloat TABLE_HEADER_HEIGHT = 0.458;
 }
 - (void)rowsSliderChanged:(OBSlider *)sender
 {
+    AudioServicesPlaySystemSound(1519);
     if ([self.topIconCountValueInput.text isEqual:[NSString stringWithFormat:@"%.0f", (CGFloat)((NSInteger)(floor([sender value])))]]) return;
     [[HPManager sharedManager] setCurrentLoadoutRows: (NSInteger)(floor([sender value]))];
-    [[HPManager sharedManager] setReloadViewMap:YES];
+
+
+    for (SBRootIconListView *view in self.rootIconListViewsToUpdate) 
+    {
+        // Animation code credit to Cuboid authors
+        [UIView animateWithDuration:(0.15) delay:0.0 options:UIViewAnimationOptionCurveEaseInOut animations:^{
+            [view layoutIconsNow];
+        } completion:NULL];
+    }    
+
     [[NSNotificationCenter defaultCenter] postNotificationName:@"HPResetIconViews" object:nil];
     if ([[HPManager sharedManager] vRowUpdates])
     {
@@ -1363,11 +1437,12 @@ const CGFloat TABLE_HEADER_HEIGHT = 0.458;
         [self handleTopResetButtonPress:self.topResetButton];
         self.activeButton = self.iconCountButton;
     }
+    
     self.topIconCountValueInput.text = [NSString stringWithFormat:@"%.0f", (CGFloat)((NSInteger)(floor([sender value])))];
 }
 - (void)columnPlus
 {
-    if (self.columnsSlider.value != 14.0) self.columnsSlider.value = self.columnsSlider.value + 1.0;
+    if (self.columnsSlider.value != kMaxColumnAmount) self.columnsSlider.value = self.columnsSlider.value + 1.0;
     [self columnsSliderChanged:self.columnsSlider];
 }
 - (void)columnMinus
@@ -1377,10 +1452,16 @@ const CGFloat TABLE_HEADER_HEIGHT = 0.458;
 }
 - (void)columnsSliderChanged:(OBSlider *)sender
 {   
+    AudioServicesPlaySystemSound(1519);
     if ([self.bottomIconCountValueInput.text isEqual:[NSString stringWithFormat:@"%.0f", (CGFloat)((NSInteger)(floor([sender value])))]]) return;
     [[HPManager sharedManager] setCurrentLoadoutColumns: (NSInteger)(floor([sender value]))];
-    [[HPManager sharedManager] setReloadViewMap:YES];
-    [[NSNotificationCenter defaultCenter] postNotificationName:@"HPResetIconViews" object:nil];
+    for (SBRootIconListView *view in self.rootIconListViewsToUpdate) 
+    {
+        // Animation code credit to cuboid authors
+        [UIView animateWithDuration:(0.15) delay:0.0 options:UIViewAnimationOptionCurveEaseInOut animations:^{
+            [view layoutIconsNow];
+        } completion:NULL];
+    }    
     self.bottomIconCountValueInput.text = [NSString stringWithFormat:@"%.0f", (CGFloat)((NSInteger)(floor([sender value])))];
 }
 

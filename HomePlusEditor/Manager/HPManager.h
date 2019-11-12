@@ -1,3 +1,4 @@
+#import <UIKit/UIKit.h>
 @interface HPManager : NSObject
 
 + (instancetype)sharedManager;
@@ -20,10 +21,11 @@
 
 @property (nonatomic, assign) BOOL switcherDisables;
 @property (nonatomic, assign) BOOL vRowUpdates;
-@property (nonatomic, assign) BOOL reloadViewMap;
+@property (nonatomic, assign) BOOL resettingIconLayout;
+
 
 - (BOOL)switcherDisables;
-- (BOOL)reloadViewMap;
+- (BOOL)resettingIconLayout;
 - (void)loadSavedCurrentLoadoutName;
 - (void)saveCurrentLoadoutName;
 - (void)saveLoadout:(NSString *)name;
@@ -43,7 +45,7 @@
 - (CGFloat)currentLoadoutVerticalSpacing;
 - (CGFloat)currentLoadoutHorizontalSpacing;
 - (void)setSwitcherDisables:(BOOL)arg;
-- (void)setReloadViewMap:(BOOL)arg;
+- (void)setResettingIconLayout:(BOOL)arg;
 - (void)setCurrentLoadoutShouldHideIconLabels:(BOOL)arg;
 - (void)setCurrentLoadoutShouldHideIconBadges:(BOOL)arg;
 - (void)setCurrentLoadoutShouldHideIconLabelsInFolders:(BOOL)arg;

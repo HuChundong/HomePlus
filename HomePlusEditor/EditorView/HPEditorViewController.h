@@ -1,15 +1,9 @@
 #import <UIKit/UIKit.h>
 #import "HomePlus.h"
 #import "OBSlider.h"
+#import "HPControllerView.h"
 #import "HPSettingsTableViewController.h"
 #import "HPEditorViewNavigationTabBar.h"
-
-
-@interface HPControllerView : UIView
-@property (nonatomic, retain) UIView *topView;
-@property (nonatomic, retain) UIView *bottomView;
-@end
-
 
 @protocol HPEditorViewControllerDelegate;
 
@@ -24,12 +18,10 @@
     IBOutlet OBSlider *columnsSlider;
     IBOutlet OBSlider *scaleSlider;
     IBOutlet OBSlider *rotationSlider;
-    
 }
 
 
 @property (nonatomic, strong) id <HPEditorViewControllerDelegate> delegate;
-
 
 @property (nonatomic, readonly, strong) HPControllerView *offsetControlView;
 

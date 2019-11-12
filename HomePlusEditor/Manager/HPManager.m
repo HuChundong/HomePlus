@@ -127,16 +127,13 @@
 
     NSUserDefaults *userDefaults = [NSUserDefaults standardUserDefaults];
     [[NSUserDefaults standardUserDefaults] synchronize];
-    self.currentShouldHideIconLabels = NO;
-    self.currentShouldHideIconBadges = NO;
-    self.currentShouldHideIconLabelsInFolders = NO;
+    /*
     self.currentTopInset = [[NSUserDefaults standardUserDefaults] floatForKey:@"defaultTopInset"] ?: 0.0;
     self.currentLeftInset = [[NSUserDefaults standardUserDefaults] floatForKey:@"defaultLeftInset"] ?: 0.0;
     self.currentHSpacing = [[NSUserDefaults standardUserDefaults] floatForKey:@"defaultHSpacing"] ?: 0.0;
     self.currentVSpacing = [[NSUserDefaults standardUserDefaults] floatForKey:@"defaultVSpacing"] ?: 0.0;
-    self.currentColumns = [[NSUserDefaults standardUserDefaults] integerForKey:@"defaultColumns"] ?:4;
-    self.currentRows = [[NSUserDefaults standardUserDefaults] integerForKey:@"defaultRows"] ?:6;
     [self saveCurrentLoadout];
+    */
     
     [userDefaults setBool:NO
                     forKey:[NSString stringWithFormat:@"%@%@", prefix, @"IconLabels"] ];
@@ -144,6 +141,11 @@
                     forKey:[NSString stringWithFormat:@"%@%@", prefix, @"IconBadges"] ];
     [userDefaults setBool:NO
                     forKey:[NSString stringWithFormat:@"%@%@", prefix, @"IconLabelsF"] ];
+    self.currentShouldHideIconLabels = NO;
+    self.currentShouldHideIconBadges = NO;
+    self.currentShouldHideIconLabelsInFolders = NO;
+    [self saveCurrentLoadout];
+    [self saveCurrentLoadout];
 }
 - (BOOL)currentLoadoutShouldHideIconLabels
 {
