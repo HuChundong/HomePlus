@@ -1,9 +1,10 @@
 Package: me.kritanta.homeplus
-Name: HomePlus
+Name: HomePlus Beta
 Depends: mobilesubstrate
-Version: 0.0.58
+Version: 0.0.66
 Architecture: iphoneos-arm
-Description: An awesome MobileSubstrate tweak!
+Description: Dynamic, live homescreen layout with an intuitive UI
 Maintainer: Kritanta
 Author: Kritanta
 Section: Tweaks
+Icon: http://repo.kritanta.me/icon/HomePlus.png

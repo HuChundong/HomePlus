@@ -25,6 +25,7 @@
 #include <AudioToolbox/AudioToolbox.h>
 
 
+
 @implementation HPEditorViewNavigationTabBar
 @end
 
@@ -192,7 +193,7 @@ const CGFloat TABLE_HEADER_HEIGHT = 0.458;
                                             (MENU_BUTTON_TOP_ANCHOR * [[UIScreen mainScreen] bounds].size.height) + MENU_BUTTON_SIZE * 3,
                                             MENU_BUTTON_SIZE, MENU_BUTTON_SIZE);
     self.scaleButton.alpha = 0.7;
-    [self.view addSubview:self.scaleButton];
+    //[self.view addSubview:self.scaleButton];
     
     self.settingsButton = [UIButton buttonWithType:UIButtonTypeCustom];
     [self.settingsButton addTarget:self 
@@ -204,7 +205,7 @@ const CGFloat TABLE_HEADER_HEIGHT = 0.458;
     UIImage *settingsImage = [HPUtilities settingsImage];
     [self.settingsButton setImage:settingsImage forState:UIControlStateNormal];
     self.settingsButton.frame = CGRectMake([[UIScreen mainScreen] bounds].size.width - 47.5,
-                                           (MENU_BUTTON_TOP_ANCHOR * [[UIScreen mainScreen] bounds].size.height) + MENU_BUTTON_SIZE * 4,
+                                           (MENU_BUTTON_TOP_ANCHOR * [[UIScreen mainScreen] bounds].size.height) + MENU_BUTTON_SIZE * 3,
                                            MENU_BUTTON_SIZE, MENU_BUTTON_SIZE);
     self.settingsButton.alpha = 0.7;
     [self.view addSubview:self.settingsButton];
@@ -280,12 +281,37 @@ const CGFloat TABLE_HEADER_HEIGHT = 0.458;
         [_settingsView.topView addSubview:settingsContainerView];
         [_settingsView addSubview:_settingsView.topView];
 
-        UIView *tableHeaderView = [[UIView alloc] initWithFrame:CGRectMake(0,0,[[UIScreen mainScreen] bounds].size.width,(TABLE_HEADER_HEIGHT*[[UIScreen mainScreen] bounds].size.width))];
-        UIImageView *imageView = [[UIImageView alloc] initWithFrame:CGRectMake(0, 0, [[UIScreen mainScreen] bounds].size.width,(TABLE_HEADER_HEIGHT*[[UIScreen mainScreen] bounds].size.width))];
-        imageView.image = [HPUtilities inAppBanner];
+        UIView *tableHeaderView = [[UIView alloc] initWithFrame:CGRectMake(0,0,[[UIScreen mainScreen] bounds].size.width,(([[UIScreen mainScreen] bounds].size.width)/750)*300)];
+        UIImageView *imageView = [[UIImageView alloc] initWithFrame:CGRectMake(0, 0, [[UIScreen mainScreen] bounds].size.width,(([[UIScreen mainScreen] bounds].size.width)/750)*300)];
+
+
+        BOOL notched = NO;
+        if([[UIDevice currentDevice] userInterfaceIdiom] == UIUserInterfaceIdiomPhone) 
+        {
+            switch ((int)[[UIScreen mainScreen] nativeBounds].size.height) 
+            {
+                case 2436:
+                    notched = YES;
+                    break;
+
+                case 2688:
+                    notched = YES;
+                    break;
+
+                case 1792:
+                    notched = YES;
+                    break;
+
+                default:
+                    notched = NO;
+                    break;
+            }
+        } 
+
+        imageView.image = notched ? [HPUtilities inAppBannerNotched] : [HPUtilities inAppBanner];
         [tableHeaderView addSubview:imageView];
 
-        UIView *doneButtonContainerView = [[UIView alloc] initWithFrame:CGRectMake([[UIScreen mainScreen] bounds].size.width-80, (TABLE_HEADER_HEIGHT*[[UIScreen mainScreen] bounds].size.width)-40, [[UIScreen mainScreen] bounds].size.width/2, 40)];
+        UIView *doneButtonContainerView = [[UIView alloc] initWithFrame:CGRectMake([[UIScreen mainScreen] bounds].size.width-80, ((([[UIScreen mainScreen] bounds].size.width)/750)*300)-40, [[UIScreen mainScreen] bounds].size.width/2, 40)];
         
         UIButton *button = [UIButton buttonWithType:UIButtonTypeCustom];
         [button addTarget:self 
@@ -442,7 +468,6 @@ const CGFloat TABLE_HEADER_HEIGHT = 0.458;
     animations:
     ^{
         self.view.transform = CGAffineTransformTranslate(transform, 0, (0-([[UIScreen mainScreen] bounds].size.height * 0.5)));
-        [self.view setBackgroundColor:[UIColor blackColor]];
     }]; 
     self.viewKickedUp = YES;
 }
@@ -639,7 +664,6 @@ const CGFloat TABLE_HEADER_HEIGHT = 0.458;
     animations:
     ^{
         self.view.transform = CGAffineTransformTranslate(transform, 0, (0-([[UIScreen mainScreen] bounds].size.height * 0.5)));
-        [self.view setBackgroundColor:[UIColor blackColor]];
     }]; 
     self.viewKickedUp = YES;
 }
@@ -785,7 +809,6 @@ const CGFloat TABLE_HEADER_HEIGHT = 0.458;
     animations:
     ^{
         self.view.transform = CGAffineTransformTranslate(transform, 0, (0-([[UIScreen mainScreen] bounds].size.height * 0.5)));
-        [self.view setBackgroundColor:[UIColor blackColor]];
     }]; 
     self.viewKickedUp = YES;
 }
@@ -794,11 +817,11 @@ const CGFloat TABLE_HEADER_HEIGHT = 0.458;
     [self.bottomSpacingValueInput resignFirstResponder];
         [UIView animateWithDuration:0.4 
         animations:
-        ^{  
-            self.view.transform = CGAffineTransformIdentity;   
+        ^{  // TODO: make kicker notif just move the rootwindow up.
+            self.view.transform = CGAffineTransformIdentity; [[NSNotificationCenter defaultCenter] postNotificationName:@"HomePlusKickWindowsBack" object:nil];  
         }
         completion:^(BOOL finished) 
-        {    [[NSNotificationCenter defaultCenter] postNotificationName:@"HomePlusKickWindowsBack" object:nil];
+        {    
             [UIView animateWithDuration:0.4 
                 animations:
                 ^{  
@@ -949,7 +972,6 @@ const CGFloat TABLE_HEADER_HEIGHT = 0.458;
     animations:
     ^{
         self.view.transform = CGAffineTransformTranslate(transform, 0, (0-([[UIScreen mainScreen] bounds].size.height * 0.5)));
-        [self.view setBackgroundColor:[UIColor blackColor]];
     }]; 
     [[NSNotificationCenter defaultCenter] postNotificationName:@"HomePlusKickWindowsUp" object:nil];
     self.viewKickedUp = YES;
@@ -1000,63 +1022,125 @@ const CGFloat TABLE_HEADER_HEIGHT = 0.458;
     // Yes, arrays start at 0, but 0 in this case will be the dock :)
     // TODO: Replace with a check for the dock class
     // TODO: Fix dock checks elsewhere in tweak
-    SBRootIconListView *view = self.rootIconListViewsToUpdate[1];
-    
-    // First, we want to set Rows 
-    [[HPManager sharedManager] setCurrentLoadoutRows:[view iconRowsForHomePlusCalculations]];
-    // Also reset columns here, although nothing relies on this
-    [[HPManager sharedManager] setCurrentLoadoutColumns:4.0]; 
+    if (kCFCoreFoundationVersionNumber < 1600)
+    {
+        SBRootIconListView *view = self.rootIconListViewsToUpdate[1];
+        
+        // First, we want to set Rows 
+        [[HPManager sharedManager] setCurrentLoadoutRows:[view iconRowsForHomePlusCalculations]];
+        // Also reset columns here, although nothing relies on this
+        [[HPManager sharedManager] setCurrentLoadoutColumns:4.0]; 
 
-    // Reload the entire structure
-    [[NSNotificationCenter defaultCenter] postNotificationName:@"HPResetIconViews" object:nil]; 
+        // Reload the entire structure
+        [[NSNotificationCenter defaultCenter] postNotificationName:@"HPResetIconViews" object:nil]; 
 
-    // Save it, so the value is sure to be loaded everywhere
-    [[HPManager sharedManager] saveCurrentLoadout]; 
-    
-    // Tell all of the hooks to return their %orig's
-    [[HPManager sharedManager] setResettingIconLayout:YES]; 
+        // Save it, so the value is sure to be loaded everywhere
+        [[HPManager sharedManager] saveCurrentLoadout]; 
+        
+        // Tell all of the hooks to return their %orig's
+        [[HPManager sharedManager] setResettingIconLayout:YES]; 
 
-    // Reset these values. AFAIK they are not dependent on above stuff
-    [[HPManager sharedManager] setCurrentLoadoutTopInset:[view topIconInset]]; 
-    [[HPManager sharedManager] setCurrentLoadoutLeftInset:0.0];
-    [[HPManager sharedManager] setCurrentLoadoutHorizontalSpacing:[view horizontalIconPadding]];
+        // Reset these values. AFAIK they are not dependent on above stuff
+        [[HPManager sharedManager] setCurrentLoadoutTopInset:[view topIconInset]]; 
+        [[HPManager sharedManager] setCurrentLoadoutLeftInset:0.0];
+        [[HPManager sharedManager] setCurrentLoadoutHorizontalSpacing:[view horizontalIconPadding]];
 
-    // Save values to disk again
-    [[HPManager sharedManager] saveCurrentLoadout];
+        // Save values to disk again
+        [[HPManager sharedManager] saveCurrentLoadout];
 
-    // Disable reset mode
-    [[HPManager sharedManager] setResettingIconLayout:NO];
-    // Call the reset class in the manager, which will reset other, non-spacing values and reload internals. 
-    [[HPManager sharedManager] resetCurrentLoadoutToDefaults];
+        // Disable reset mode
+        [[HPManager sharedManager] setResettingIconLayout:NO];
+        // Call the reset class in the manager, which will reset other, non-spacing values and reload internals. 
+        [[HPManager sharedManager] resetCurrentLoadoutToDefaults];
 
-    // Reset scaling
-    self.topScaleValueInput.text = [NSString stringWithFormat:@"%.0f", 60.0];
-    [self topScaleValueDidChange:self.topScaleValueInput];
-    [[HPManager sharedManager] setCurrentLoadoutScale: 60.0];
+        // Reset scaling
+        self.topScaleValueInput.text = [NSString stringWithFormat:@"%.0f", 60.0];
+        [self topScaleValueDidChange:self.topScaleValueInput];
+        [[HPManager sharedManager] setCurrentLoadoutScale: 60.0];
 
-    // *Now,* once everything has been reloaded, reset the vertical spacing by making sure all the other stuff has been set to original values and loaded as such. 
-    // VSpacing is finnicky
-    self.activeButton = self.spacerButton;
-    [self handleTopResetButtonPress:self.topResetButton];
+        // *Now,* once everything has been reloaded, reset the vertical spacing by making sure all the other stuff has been set to original values and loaded as such. 
+        // VSpacing is finnicky
+        self.activeButton = self.spacerButton;
+        [self handleTopResetButtonPress:self.topResetButton];
 
-    // Reload everything
-    [[HPManager sharedManager] saveCurrentLoadout];
-    [view layoutIconsNow];
-    [[NSNotificationCenter defaultCenter] postNotificationName:@"HPResetIconViews" object:nil];
+        // Reload everything
+        [[HPManager sharedManager] saveCurrentLoadout];
+        [view layoutIconsNow];
+        [[NSNotificationCenter defaultCenter] postNotificationName:@"HPResetIconViews" object:nil];
 
-    // Deconstruct most of this controller, forcing all of the views nulled to be reloaded. 
-    [[self.view subviews]
-        makeObjectsPerformSelector:@selector(removeFromSuperview)];
-    _spacingControlView = nil;
-    _offsetControlView = nil;
-    _settingsView = nil;
-    _iconCountControlView = nil;
-    _scaleControlView = nil;
+        // Deconstruct most of this controller, forcing all of the views nulled to be reloaded. 
+        [[self.view subviews]
+            makeObjectsPerformSelector:@selector(removeFromSuperview)];
+        _spacingControlView = nil;
+        _offsetControlView = nil;
+        _settingsView = nil;
+        _iconCountControlView = nil;
+        _scaleControlView = nil;
 
-    // Reload said views
-    [self viewDidLoad];
-    // Close editor. 
-    [[EditorManager sharedManager] hideEditorView];
+        // Reload said views
+        [self viewDidLoad];
+        // Close editor. 
+        [[EditorManager sharedManager] hideEditorView];
+    } 
+    else 
+    {
+
+        SBIconListView *view = self.rootIconListViewsToUpdate[1];
+
+        NSArray *defaults = [view getDefaultValues];
+        // First, we want to set Rows 
+        [[HPManager sharedManager] setCurrentLoadoutRows:[[defaults objectAtIndex:5] intValue]];
+        // Also reset columns here, although nothing relies on this
+        [[HPManager sharedManager] setCurrentLoadoutColumns:4]; 
+
+        // Reload the entire structure
+        [[NSNotificationCenter defaultCenter] postNotificationName:@"HPResetIconViews" object:nil]; 
+
+        // Save it, so the value is sure to be loaded everywhere
+        [[HPManager sharedManager] saveCurrentLoadout]; 
+        
+        // Tell all of the hooks to return their %orig's
+
+        // Reset these values. AFAIK they are not dependent on above stuff
+        [[HPManager sharedManager] setCurrentLoadoutTopInset:[[defaults objectAtIndex:0] floatValue]]; 
+        [[HPManager sharedManager] setCurrentLoadoutLeftInset:0.0];
+        [[HPManager sharedManager] setCurrentLoadoutHorizontalSpacing:[[defaults objectAtIndex:3] floatValue]];
+        [[HPManager sharedManager] setCurrentLoadoutVerticalSpacing:[[defaults objectAtIndex:2] floatValue]];
+
+        // Save values to disk again
+        [[HPManager sharedManager] saveCurrentLoadout];
+
+        // Call the reset class in the manager, which will reset other, non-spacing values and reload internals. 
+        [[HPManager sharedManager] resetCurrentLoadoutToDefaults];
+
+        // Reset scaling
+        self.topScaleValueInput.text = [NSString stringWithFormat:@"%.0f", 60.0];
+        [self topScaleValueDidChange:self.topScaleValueInput];
+        [[HPManager sharedManager] setCurrentLoadoutScale: 60.0];
+
+        // *Now,* once everything has been reloaded, reset the vertical spacing by making sure all the other stuff has been set to original values and loaded as such. 
+        // VSpacing is finnicky
+
+        // Reload everything
+        [[HPManager sharedManager] saveCurrentLoadout];
+        [view layoutIconsNow];
+        [[NSNotificationCenter defaultCenter] postNotificationName:@"HPResetIconViews" object:nil];
+
+
+
+        [[self.view subviews]
+            makeObjectsPerformSelector:@selector(removeFromSuperview)];
+        _spacingControlView = nil;
+        _offsetControlView = nil;
+        _settingsView = nil;
+        _iconCountControlView = nil;
+        _scaleControlView = nil;
+
+        // Reload said views
+        [self viewDidLoad];
+        // Close editor. 
+        [[EditorManager sharedManager] hideEditorView];
+    }
 }
 
 #pragma mark Button Handlers

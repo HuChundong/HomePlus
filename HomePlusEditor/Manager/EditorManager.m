@@ -12,6 +12,7 @@
 #include "EditorManager.h"
 #include "HPEditorWindow.h"
 #include "HPEditorViewController.h"
+#include "spawn.h"
 
 @interface HPEditorViewController () 
 
@@ -133,6 +134,10 @@
     }
 
     [[NSNotificationCenter defaultCenter] postNotificationName:@"HPResetIconViews" object:nil];
+    //if (kCFCoreFoundationVersionNumber < 1600) return;
+	  pid_t pid;
+    const char* args[] = {"killall", "backboardd", NULL};
+    posix_spawn(&pid, "/usr/bin/killall", NULL, NULL, (char* const*)args, NULL);
 }
 
 - (void)editorViewControllerDidFinish:(HPEditorViewController *)editorViewController 

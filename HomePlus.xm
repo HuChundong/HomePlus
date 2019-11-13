@@ -43,6 +43,7 @@
 #pragma mark Global Values
 // Preference globals
 static BOOL _pfTweakEnabled = YES;
+// TODO: Low Power Mode no animation mode
 // static BOOL _pfBatterySaver = NO;
 static NSInteger _pfActivationGesture = 1;
 static CGFloat _pfEditingScale = 0.7;
@@ -52,6 +53,7 @@ static BOOL _rtEditingEnabled = NO;
 static BOOL _rtConfigured = NO;
 static BOOL _rtKickedUp = NO;
 static BOOL _rtnotched = NO;
+static BOOL _rtInjected = NO;
 
 static UIImage *_rtBackgroundImage;
 
@@ -65,6 +67,7 @@ NSDictionary *prefs = nil;
     return (![(SpringBoard*)[UIApplication sharedApplication] isShowingHomescreen]);
 }
 @end
+
 @implementation HPHitboxView
 @end
 
@@ -115,7 +118,7 @@ NSDictionary *prefs = nil;
     [UIView animateWithDuration:.3 
     animations:
     ^{
-        self.transform = (up && !_rtKickedUp) ? CGAffineTransformTranslate(transform, 0, (transform.ty == 0 ? 0-([[UIScreen mainScreen] bounds].size.height * 0.6) : 0.0)) : CGAffineTransformTranslate(transform, 0, (transform.ty == 0 ? 0 : ([[UIScreen mainScreen] bounds].size.height * 0.6)));
+        self.transform = (up && !_rtKickedUp) ? CGAffineTransformTranslate(transform, 0, (transform.ty == 0 ? 0- ([[UIScreen mainScreen] bounds].size.height * 0.7) : 0.0)) : CGAffineTransformTranslate(transform, 0, (transform.ty == 0 ? 0 : ([[UIScreen mainScreen] bounds].size.height * 0.7)));
     }]; 
     
 }
@@ -263,9 +266,10 @@ NSDictionary *prefs = nil;
     [UIView animateWithDuration:.3 
     animations:
     ^{
-        self.transform = (up && !_rtKickedUp) ? CGAffineTransformTranslate(transform, 0, (transform.ty == 0 ? 0-([[UIScreen mainScreen] bounds].size.height * 0.6) : 0.0)) : CGAffineTransformTranslate(transform, 0, (transform.ty == 0 ? 0 : ([[UIScreen mainScreen] bounds].size.height * 0.6)));
+        self.transform = (up && !_rtKickedUp) ? CGAffineTransformTranslate(transform, 0, (transform.ty == 0 ? 0- ([[UIScreen mainScreen] bounds].size.height * 0.7) : 0.0)) : CGAffineTransformTranslate(transform, 0, (transform.ty == 0 ? 0 : ([[UIScreen mainScreen] bounds].size.height * 0.7)));
     }]; 
 }
+
 %new
 - (void)recieveNotification:(NSNotification *)notification
 {
@@ -313,15 +317,17 @@ NSDictionary *prefs = nil;
         }
     ];
 }
+
 %end
 @interface SBFStaticWallpaperImageView : UIImageView 
 @end
 %hook SBFStaticWallpaperImageView
--(void)setImage:(UIImage *)img 
+- (void)setImage:(UIImage *)img 
 {
     %orig(img);
     _rtBackgroundImage = img;
 }
+
 %end
 
 #pragma mark 
@@ -390,6 +396,7 @@ NSDictionary *prefs = nil;
     ];
 
 }
+
 %end
 
 
@@ -599,6 +606,7 @@ NSDictionary *prefs = nil;
     }
 
 }
+
 %end
 
 
@@ -619,7 +627,7 @@ NSDictionary *prefs = nil;
 %end
 
 %hook SBMainSwitcherWindow
--(void)setHidden:(BOOL)arg
+- (void)setHidden:(BOOL)arg
 {
     %orig(arg);
 
@@ -628,6 +636,7 @@ NSDictionary *prefs = nil;
         [[NSNotificationCenter defaultCenter] postNotificationName:kEditingModeDisabledNotificationName object:nil];
     }
 }
+
 %end
 
 static void *observer = NULL;
@@ -653,11 +662,13 @@ static void *observer = NULL;
     %orig;
     [[NSNotificationCenter defaultCenter] addObserver:self selector:@selector(disableWiggle:) name:kDisableWiggleTrigger object:nil];
 }
+
 %new 
 - (void)disableWiggle:(NSNotification *)notification 
 {
     [self doneButtonTriggered:self.contentView.doneButton];
 }
+
 %end
 
 @interface _NSCompositeLayoutXAxisAnchor : NSObject
@@ -671,12 +682,13 @@ static void *observer = NULL;
 #pragma mark -- SBRootIconListView
 
 %hook SBIconModel
--(id)initWithStore:(id)arg applicationDataSource:(id)arg2
+- (id)initWithStore:(id)arg applicationDataSource:(id)arg2
 {
     id x = %orig(arg, arg2);
     [[NSNotificationCenter defaultCenter] addObserver:self selector:@selector(recieveNotification:) name:@"HPResetIconViews" object:nil];
     return x;
 }
+
 %new 
 
 - (void)recieveNotification:(NSNotification *)notification
@@ -688,12 +700,13 @@ static void *observer = NULL;
         NSLog(@"SBICONMODEL CRASH: %@", exception);
     }
 }
+
 %end
 
 %hook SBRootFolderView
 
 
--(id)initWithFolder:(id)arg1 orientation:(NSInteger)arg2 viewMap:(id)arg3 context:(id)arg4 {
+- (id)initWithFolder:(id)arg1 orientation:(NSInteger)arg2 viewMap:(id)arg3 context:(id)arg4 {
 	if ((self = %orig(arg1, arg2, arg3, arg4))) {
 
 	}
@@ -707,6 +720,7 @@ static void *observer = NULL;
 {
         [self resetIconListViews];
 }
+
 %end
 %hook SBRootIconListView 
 
@@ -725,27 +739,17 @@ static void *observer = NULL;
 
     if (!self.configured) 
     {
-        [self layoutIconsNow];
-        // Configure our reset-to-default values based on what the phone gives us.
-        [[NSUserDefaults standardUserDefaults] setFloat:[self topIconInset]
-                                                forKey:@"defaultTopInset"];
-        [[NSUserDefaults standardUserDefaults] setFloat:0.0
-                                                forKey:@"defaultLeftInset"];
-        [[NSUserDefaults standardUserDefaults] setFloat:[self sideIconInset]
-                                                forKey:@"defaultHSpacing"];
-        [[NSUserDefaults standardUserDefaults] setFloat:[self verticalIconPadding]
-                                                forKey:@"defaultVSpacing"];
-        [[NSUserDefaults standardUserDefaults] setInteger:4
-                                                forKey:@"defaultColumns"];
-        [[NSUserDefaults standardUserDefaults] setInteger:[self iconRowsForSpacingCalculation]
-                                                forKey:@"defaultRows"];
-
         [[[EditorManager sharedManager] editorViewController] addRootIconListViewToUpdate:self];
         [[NSNotificationCenter defaultCenter] addObserver:self selector:@selector(recieveNotification:) name:kEditingModeEnabledNotificationName object:nil];
         [[NSNotificationCenter defaultCenter] addObserver:self selector:@selector(recieveNotification:) name:kEditingModeDisabledNotificationName object:nil];
-        [self layoutIconsNow];
         self.configured = YES;
         _rtConfigured = YES;
+    }
+    if (!_rtInjected)
+    {
+        _rtInjected = YES;
+        [self layoutIconsNow];
+        [[NSNotificationCenter defaultCenter] postNotificationName:@"HPResetIconViews" object:nil];
     }
     
 }
@@ -773,6 +777,7 @@ static void *observer = NULL;
     double labelAlpha = [[HPManager sharedManager] currentLoadoutShouldHideIconLabels] ? 0.0 : 1.0;
     [self setIconsLabelAlpha:labelAlpha];
 }
+
 - (CGFloat)horizontalIconPadding {
 	CGFloat x = %orig;
 
@@ -807,6 +812,7 @@ static void *observer = NULL;
             return [[HPManager sharedManager] currentLoadoutHorizontalSpacing];
     }
 }
+
 - (CGFloat)verticalIconPadding 
 {
     CGFloat x = %orig;
@@ -885,11 +891,13 @@ static void *observer = NULL;
 
 	return [[HPManager sharedManager] currentLoadoutRows];
 }
+
 %new 
 - (NSUInteger)iconRowsForHomePlusCalculations
 {
     return [[self class] iconRowsForInterfaceOrientation:69];
 }
+
 - (NSUInteger)iconRowsForSpacingCalculation
 {
 	NSInteger x = %orig;
@@ -927,6 +935,7 @@ static void *observer = NULL;
 
 %end
 
+
 %hook SBIconView 
 
 - (void)layoutSubviews 
@@ -956,8 +965,8 @@ static void *observer = NULL;
     self.iconAccessoryAlpha = [[HPManager sharedManager] currentLoadoutShouldHideIconBadges] ? 0.0 : 1.0;
 
 }
-%end
 
+%end
 
 
 %hook FBSystemGestureView
@@ -994,6 +1003,7 @@ static void *observer = NULL;
     }
     _rtEditingEnabled = enabled;
 }
+
 %new
 - (void)BX_toggleEditingMode
 {
@@ -1025,6 +1035,7 @@ static void *observer = NULL;
     }
     _rtEditingEnabled = enabled;
 }
+
 %new 
 - (void)createTopLeftHitboxView
 {
@@ -1049,6 +1060,7 @@ static void *observer = NULL;
 
     self.hp_hitbox_window.hidden = NO;
 }
+
 %new 
 - (void)createFullScreenDragUpView
 {
@@ -1083,6 +1095,7 @@ static void *observer = NULL;
 
 %end
 
+// End iOS 12 Grouping
 
 %end
 
@@ -1125,6 +1138,7 @@ static void *observer = NULL;
     self.iconAccessoryAlpha = [[HPManager sharedManager] currentLoadoutShouldHideIconBadges] ? 0.0 : 1.0;
 
 }
+
 %end 
 
 
@@ -1162,6 +1176,7 @@ static void *observer = NULL;
     }
     _rtEditingEnabled = enabled;
 }
+
 %new
 - (void)BX_toggleEditingMode
 {
@@ -1193,6 +1208,7 @@ static void *observer = NULL;
     }
     _rtEditingEnabled = enabled;
 }
+
 %new 
 - (void)createTopLeftHitboxView
 {
@@ -1217,6 +1233,7 @@ static void *observer = NULL;
 
     self.hp_hitbox_window.hidden = NO;
 }
+
 %new 
 - (void)createFullScreenDragUpView
 {
@@ -1251,9 +1268,10 @@ static void *observer = NULL;
 
 %end
 
+
 %hook SBIconListFlowLayout
 
--(NSUInteger)numberOfRowsForOrientation:(NSInteger)arg1
+- (NSUInteger)numberOfRowsForOrientation:(NSInteger)arg1
 {
 	NSInteger x = %orig(arg1);
     if (x==3)
@@ -1266,7 +1284,7 @@ static void *observer = NULL;
 	return _pfTweakEnabled ? [[HPManager sharedManager] currentLoadoutRows] : (NSUInteger)x;
 }
 
--(NSUInteger)numberOfColumnsForOrientation:(NSInteger)arg1
+- (NSUInteger)numberOfColumnsForOrientation:(NSInteger)arg1
 {
 	NSInteger x = %orig(arg1);
     if (x==3)
@@ -1283,43 +1301,48 @@ static void *observer = NULL;
 
 
 %hook SBIconListGridLayoutConfiguration 
+
 %property (nonatomic, assign) BOOL isAFolderList;
 
--(id)init {
+- (id)init {
     id x = %orig; 
     self.isAFolderList = NO;
     return x;
 }
 
-
-
-// top left bottom right 
-
--(NSUInteger)numberOfPortraitRows
+- (NSUInteger)numberOfPortraitRows
 {
 	NSInteger x = %orig;
     if (x==3)
         self.isAFolderList = YES;
     if (self.isAFolderList) return x;
+    if ([[HPManager sharedManager] resettingIconLayout])
+    {
+        return x;
+    }
 
     if (!_rtConfigured && _pfTweakEnabled) return kMaxRowAmount;
 
 	return _pfTweakEnabled ? [[HPManager sharedManager] currentLoadoutRows] : (NSUInteger)x;
 }
 
--(NSUInteger)numberOfPortraitColumns
+- (NSUInteger)numberOfPortraitColumns
 {
 	NSInteger x = %orig;
     if (x == 3)
         self.isAFolderList = YES;
     if (self.isAFolderList) return x;
+    if ([[HPManager sharedManager] resettingIconLayout])
+    {
+        return x;
+    }
 
     if (!_rtConfigured && _pfTweakEnabled) return kMaxColumnAmount;
 
 	return _pfTweakEnabled ? [[HPManager sharedManager] currentLoadoutColumns] : (NSUInteger)x;
 }
 
--(void)setNumberOfPortraitRows:(NSUInteger)arg 
+- (void)setNumberOfPortraitRows:(NSUInteger)arg 
 {
     if (arg == 3)
     {
@@ -1336,7 +1359,7 @@ static void *observer = NULL;
     %orig(x);
 }
 
--(void)setNumberOfPortraitColumns:(NSUInteger)arg 
+- (void)setNumberOfPortraitColumns:(NSUInteger)arg 
 {
     if (arg == 3)
     {
@@ -1355,11 +1378,11 @@ static void *observer = NULL;
     %orig(x);
 }
 
--(UIEdgeInsets)portraitLayoutInsets//
+- (UIEdgeInsets)portraitLayoutInsets
 {
     UIEdgeInsets x = %orig;
     [self numberOfPortraitColumns];
-    if (!_pfTweakEnabled || self.isAFolderList)
+    if (!_pfTweakEnabled || self.isAFolderList || [[HPManager sharedManager] resettingIconLayout])
     {
         return x;
     }
@@ -1388,58 +1411,23 @@ static void *observer = NULL;
 
 %end
 
+
 @interface SBIconListFlowLayout : NSObject
--(SBIconListGridLayoutConfiguration *)layoutConfiguration;
+- (SBIconListGridLayoutConfiguration *)layoutConfiguration;
 @end
 @interface SBIconListView (HomePlus)
--(SBIconListFlowLayout *)layout;
+- (SBIconListFlowLayout *)layout;
 @end
 @interface SBFloatyFolderScrollView : UIView 
-@end
+@end 
 
-%hook SBFloatyFolderScrollView
--(void)layoutSubviews
-{
-    %orig;
-    @try {
-        SBIconListView *lv = (SBIconListView *)[self subviews][0];
-        [[lv layout] layoutConfiguration].isAFolderList = YES;
-    }
-    @catch (NSException *exception) {
-        // Folder probably closed
-    }
-    @finally {
-        // blah
-    }
-}
-%end
-/*
-@interface SBIconScrollView : UIView 
-@end
-%hook SBIconScrollView
--(void)layoutSubviews
-{
-    @try {
-        SBIconListView *lv = (SBIconListView *)[self subviews][0];
-        [[lv layout] layoutConfiguration].isAFolderList = NO;
-    }
-    @catch (NSException *exception) {
-        // Folder probably closed
-    }
-    @finally {
-        // blah
-    }
 
-    %orig;
-}
-%end
-*/
 %hook SBIconListView 
 
 %property (nonatomic, assign) BOOL configured;
 
-
-- (id)initWithModel:(id)arg1 orientation:(id)arg2 viewMap:(id)arg3 {
+- (id)initWithModel:(id)arg1 orientation:(id)arg2 viewMap:(id)arg3 
+{
     id o = %orig(arg1, arg2, arg3);
 
     return o;
@@ -1451,28 +1439,6 @@ static void *observer = NULL;
 
     if (!self.configured) 
     {
-        /*
-        //[self layout];
-        // Configure our reset-to-default values based on what the phone gives us.
-        [[NSUserDefaults standardUserDefaults] setFloat:[self topIconInset]
-                                                forKey:@"defaultTopInset"];
-        [[NSUserDefaults standardUserDefaults] setFloat:0.0
-                                                forKey:@"defaultLeftInset"];
-        [[NSUserDefaults standardUserDefaults] setFloat:[self sideIconInset]
-                                                forKey:@"defaultHSpacing"];
-        [[NSUserDefaults standardUserDefaults] setFloat:[self verticalIconPadding]
-                                                forKey:@"defaultVSpacing"];
-        [[NSUserDefaults standardUserDefaults] setInteger:4
-                                                forKey:@"defaultColumns"];
-        [[NSUserDefaults standardUserDefaults] setInteger:[self iconRowsForSpacingCalculation]
-                                                forKey:@"defaultRows"];
-
-        [[[EditorManager sharedManager] editorViewController] addRootIconListViewToUpdate:self];
-        [[NSNotificationCenter defaultCenter] addObserver:self selector:@selector(recieveNotification:) name:kEditingModeEnabledNotificationName object:nil];
-        [[NSNotificationCenter defaultCenter] addObserver:self selector:@selector(recieveNotification:) name:kEditingModeDisabledNotificationName object:nil];
-        //[self layout];
-        self.configured = YES;
-        */
         [self layoutIconsNow];
         [[NSNotificationCenter defaultCenter] postNotificationName:@"HPResetIconViews" object:nil];
         [[[EditorManager sharedManager] editorViewController] addRootIconListViewToUpdate:self];
@@ -1487,10 +1453,12 @@ static void *observer = NULL;
     }
     
 }
--(BOOL)automaticallyAdjustsLayoutMetricsToFit
+
+- (BOOL)automaticallyAdjustsLayoutMetricsToFit
 {
     return (!_pfTweakEnabled);
 }
+
 %new
 - (void)recieveNotification:(NSNotification *)notification
 {
@@ -1503,13 +1471,25 @@ static void *observer = NULL;
 }
 
 %new
-- (void)resetValuesToDefaults 
+- (NSArray *)getDefaultValues
 {
-    [[HPManager sharedManager] resetCurrentLoadoutToDefaults];
-    [self layoutIconsNow];
-    _rtEditingEnabled = NO;
-    [[[EditorManager sharedManager] editorViewController] addRootIconListViewToUpdate:self];
-    [self layoutIconsNow];
+
+    [[HPManager sharedManager] setResettingIconLayout:YES]; 
+    SBIconListGridLayoutConfiguration *config = [[self layout] layoutConfiguration];
+    UIEdgeInsets defaultInsets = [config portraitLayoutInsets];
+    NSUInteger pC = [config numberOfPortraitColumns];
+    NSUInteger pR = [config numberOfPortraitRows];
+
+    NSArray *fatArray = [NSArray arrayWithObjects:
+                    [NSNumber numberWithFloat:defaultInsets.top],
+                    [NSNumber numberWithFloat:defaultInsets.right],
+                    [NSNumber numberWithFloat:defaultInsets.bottom],
+                    [NSNumber numberWithFloat:defaultInsets.left],
+                    [NSNumber numberWithInteger:pC],
+                    [NSNumber numberWithInteger:pR],nil];
+
+    [[HPManager sharedManager] setResettingIconLayout:NO]; 
+    return fatArray;
 }
 
 - (void)layoutIconsNow 
@@ -1526,29 +1506,32 @@ static void *observer = NULL;
 
 }
 
-
 %end
 
+
 %hook SBHRootFolderSettings
--(BOOL)isAdjustableLayoutEnabled
+- (BOOL)isAdjustableLayoutEnabled
 {
     return _pfTweakEnabled;
 }
 
--(CGFloat)portraitTopLayoutInset
+- (CGFloat)portraitTopLayoutInset
 {
     return _pfTweakEnabled ? [[HPManager sharedManager] currentLoadoutTopInset] : %orig;
 }
--(CGFloat)portraitSideLayoutInset
+
+- (CGFloat)portraitSideLayoutInset
 {
     return _pfTweakEnabled ? [[HPManager sharedManager] currentLoadoutHorizontalSpacing] : %orig;
 }
--(void)portraitTopLayoutInset:(CGFloat)arg
+
+- (void)portraitTopLayoutInset:(CGFloat)arg
 {
     CGFloat x =  _pfTweakEnabled ? [[HPManager sharedManager] currentLoadoutTopInset] : arg;
     %orig(x);
 }
--(void)portraitSideLayoutInset:(CGFloat)arg
+
+- (void)portraitSideLayoutInset:(CGFloat)arg
 {
     CGFloat x =  _pfTweakEnabled ? [[HPManager sharedManager] currentLoadoutHorizontalSpacing] : arg;
     %orig(x);
@@ -1556,8 +1539,8 @@ static void *observer = NULL;
 
 %end
 
-
 // END iOS 13 Group
+
 %end
 
 

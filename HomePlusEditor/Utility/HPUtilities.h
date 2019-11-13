@@ -6,4 +6,6 @@
 + (UIImage *)settingsImage;
 + (UIImage *)resetImage;
 + (UIImage *)inAppBanner;
++ (UIImage *)inAppBannerNotched;
++ (UIImage *)inAppFooter;
 @end 

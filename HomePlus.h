@@ -14,6 +14,8 @@
 @interface SBIconListGridLayoutConfiguration
 @property (nonatomic, assign) BOOL isAFolderList;
 -(NSUInteger)numberOfPortraitColumns;
+-(NSUInteger)numberOfPortraitRows;
+-(UIEdgeInsets)portraitLayoutInsets;
 @end
 
 @interface SBEditingDoneButton : UIButton
@@ -66,6 +68,7 @@
 @end
 @interface SBIconListView : SBRootIconListView
 @property(readonly, nonatomic) _Bool automaticallyAdjustsLayoutMetricsToFit;
+- (NSArray *)getDefaultValues;
 @end
 
 @interface HPHitboxView : UIView 
