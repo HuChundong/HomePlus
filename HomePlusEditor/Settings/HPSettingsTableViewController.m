@@ -732,7 +732,7 @@ const int RESET_VALUES = 1;
 - (void)tableView:(UITableView *)tableView didSelectRowAtIndexPath:(NSIndexPath *)indexPath
 {
     switch (indexPath.section) {
-        case 1: {
+        case 2: {
             switch (indexPath.row) {
                 case 0: {
                     UIAlertView *alert = [[UIAlertView alloc] initWithTitle:@"Aye,"

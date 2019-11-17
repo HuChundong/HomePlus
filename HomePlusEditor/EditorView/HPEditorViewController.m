@@ -467,6 +467,14 @@ const CGFloat TABLE_HEADER_HEIGHT = 0.458;
 
         [keyboardToolbar sizeToFit];
 
+
+
+        UIButton *tminusButton = [[UIButton alloc] initWithFrame:CGRectMake(15, 5, 40, 30)];
+        [tminusButton setTitle:@"+/-" forState:UIControlStateNormal];
+        [tminusButton setTitleColor:[UIColor blackColor] forState:UIControlStateNormal];
+        [tminusButton addTarget:self action:@selector(invertTopOffsetValue) forControlEvents:UIControlEventTouchUpInside];
+
+
         UIBarButtonItem *flexBarButton = [[UIBarButtonItem alloc]
                                         initWithBarButtonSystemItem:UIBarButtonSystemItemFlexibleSpace
                                         target:nil action:nil];
@@ -475,6 +483,7 @@ const CGFloat TABLE_HEADER_HEIGHT = 0.458;
                                         target:self.topOffsetValueInput action:@selector(resignFirstResponder)];
         keyboardToolbar.items = @[flexBarButton, doneBarButton];
         self.topOffsetValueInput.inputAccessoryView = keyboardToolbar;
+        [self.topOffsetValueInput.inputAccessoryView addSubview:tminusButton];
 
         self.topOffsetSlider = [[OBSlider alloc] initWithFrame:CGRectMake(0, (0.0369) * [[UIScreen mainScreen] bounds].size.height, (0.7) * [[UIScreen mainScreen] bounds].size.width, (0.0615) * [[UIScreen mainScreen] bounds].size.height)];
         [self.topOffsetSlider addTarget:self action:@selector(topOffsetSliderChanged:) forControlEvents:UIControlEventValueChanged];
@@ -602,6 +611,18 @@ const CGFloat TABLE_HEADER_HEIGHT = 0.458;
         self.bottomOffsetValueInput.text = [NSString stringWithFormat:@"-%@",self.bottomOffsetValueInput.text];
     }
     [self bottomOffsetValueDidChange:self.bottomOffsetValueInput];
+}
+-(void)invertTopOffsetValue
+{
+    if ([self.topOffsetValueInput.text hasPrefix:@"-"])
+    {
+        self.topOffsetValueInput.text = [self.topOffsetValueInput.text substringFromIndex:1];
+    }
+    else
+    {
+        self.topOffsetValueInput.text = [NSString stringWithFormat:@"-%@",self.topOffsetValueInput.text];
+    }
+    [self topOffsetValueDidChange:self.topOffsetValueInput];
 }
 - (HPControllerView *)iconCountControlView
 {

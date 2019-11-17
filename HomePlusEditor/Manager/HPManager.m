@@ -59,6 +59,7 @@
 
 - (void)loadCurrentLoadout
 {
+    [self saveCurrentLoadout];
     [[HPMonitor sharedMonitor] logItem:@"Loading current loadout"];
     [self loadLoadout:self.currentLoadoutName];
 }

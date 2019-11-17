@@ -783,7 +783,7 @@ static void *observer = NULL;
 %new
 - (void)recieveNotification:(NSNotification *)notification
 {
-    if (!([[notification name] isEqualToString:kEditingModeEnabledNotificationName])) 
+    if (([[notification name] isEqualToString:kEditingModeDisabledNotificationName])) 
     {
         [[HPManager sharedManager] saveCurrentLoadoutName];
         [[HPManager sharedManager] saveCurrentLoadout];
@@ -843,9 +843,6 @@ static void *observer = NULL;
 {
     CGFloat x = %orig;
     if (!self.configured || [[HPManager sharedManager] resettingIconLayout]) return x;
-
-    [[NSUserDefaults standardUserDefaults] setFloat:x
-                                                forKey:@"defaultVSpacing"];
 
     return _pfTweakEnabled ? x+[[HPManager sharedManager] currentLoadoutVerticalSpacingForLocation:[self newIconLocation] pageIndex:0] : x;
 }
@@ -1767,7 +1764,7 @@ static void *observer = NULL;
 %new
 - (void)recieveNotification:(NSNotification *)notification
 {
-    if (!([[notification name] isEqualToString:kEditingModeEnabledNotificationName])) 
+    if (([[notification name] isEqualToString:kEditingModeDisabledNotificationName])) 
     {
         [[HPManager sharedManager] saveCurrentLoadoutName];
         [[HPManager sharedManager] saveCurrentLoadout];
