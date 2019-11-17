@@ -24,6 +24,30 @@
 		</dict>
 		<dict>
 			<key>cell</key>
+			<string>PSSwitchCell</string>
+			<key>default</key>
+			<false/>
+			<key>defaults</key>
+			<string>me.kritanta.homeplusprefs</string>
+			<key>key</key>
+			<string>gesturedisabled</string>
+			<key>label</key>
+			<string>Disable Gesture*</string>
+		</dict>
+		<dict>
+			<key>cell</key>
+			<string>PSSwitchCell</string>
+			<key>default</key>
+			<true/>
+			<key>defaults</key>
+			<string>me.kritanta.homeplusprefs</string>
+			<key>key</key>
+			<string>iconsupport</string>
+			<key>label</key>
+			<string>IconSupport Lib Enabled*</string>
+		</dict>
+		<dict>
+			<key>cell</key>
 			<string>PSLinkListCell</string>
 			<key>detail</key>
 			<string>PSListItemsController</string>
@@ -38,12 +62,10 @@
 			<key>validValues</key>
 			<array>
 				<real>1</real>
-				<real>2</real>
 			</array>
 			<key>validTitles</key>
 			<array>
 				<string>Drag Down Top Left</string>
-				<string>Drag Up Anywhere</string>
 			</array>
 		</dict>
 		<dict>

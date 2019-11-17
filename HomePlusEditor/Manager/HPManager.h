@@ -3,25 +3,22 @@
 
 + (instancetype)sharedManager;
 
-@property (nonatomic, assign) NSString *currentLoadout;
+@property (nonatomic, retain) NSString *currentLoadoutName;
 
-@property (nonatomic, assign) NSInteger currentColumns;
-@property (nonatomic, assign) NSInteger currentRows;
-@property (nonatomic, assign) CGFloat currentTopInset;
-@property (nonatomic, assign) CGFloat currentLeftInset;
-@property (nonatomic, assign) CGFloat currentVSpacing;
-@property (nonatomic, assign) CGFloat currentHSpacing;
-@property (nonatomic, assign) CGFloat currentScale;
-@property (nonatomic, assign) CGFloat currentRotation;
+@property (nonatomic, assign) BOOL currentLoadoutLoaded;
+@property (nonatomic, retain) NSMutableDictionary *currentLoadoutData;
 
+@property (nonatomic, assign) BOOL switcherDisables;
+@property (nonatomic, assign) BOOL vRowUpdates;
+@property (nonatomic, assign) BOOL resettingIconLayout;
+@property (nonatomic, assign) BOOL pendingRespring;
 
 @property (nonatomic, assign) BOOL currentShouldHideIconLabels;
 @property (nonatomic, assign) BOOL currentShouldHideIconBadges;
 @property (nonatomic, assign) BOOL currentShouldHideIconLabelsInFolders;
 
-@property (nonatomic, assign) BOOL switcherDisables;
-@property (nonatomic, assign) BOOL vRowUpdates;
-@property (nonatomic, assign) BOOL resettingIconLayout;
+@property (nonatomic, assign) BOOL currentLoadoutModernDock;
+@property (nonatomic, assign) BOOL currentLoadoutShouldHideDockBG;
 
 
 - (BOOL)switcherDisables;
@@ -33,29 +30,47 @@
 - (void)loadCurrentLoadout;
 - (void)loadLoadout:(NSString *)name;
 - (void)resetCurrentLoadoutToDefaults;
-- (BOOL)currentLoadoutShouldHideIconLabels;
-- (BOOL)currentLoadoutShouldHideIconBadges;
-- (BOOL)currentLoadoutShouldHideIconLabelsInFolders;
-- (NSUInteger)currentLoadoutColumns;
-- (NSUInteger)currentLoadoutRows;
-- (CGFloat)currentLoadoutTopInset;
-- (CGFloat)currentLoadoutScale;
-- (CGFloat)currentLoadoutRotation;
-- (CGFloat)currentLoadoutLeftInset;
-- (CGFloat)currentLoadoutVerticalSpacing;
-- (CGFloat)currentLoadoutHorizontalSpacing;
 - (void)setSwitcherDisables:(BOOL)arg;
 - (void)setResettingIconLayout:(BOOL)arg;
-- (void)setCurrentLoadoutShouldHideIconLabels:(BOOL)arg;
-- (void)setCurrentLoadoutShouldHideIconBadges:(BOOL)arg;
-- (void)setCurrentLoadoutShouldHideIconLabelsInFolders:(BOOL)arg;
-- (void)setCurrentLoadoutColumns:(NSInteger)arg;
-- (void)setCurrentLoadoutRows:(NSInteger)arg;
-- (void)setCurrentLoadoutTopInset:(CGFloat)arg;
-- (void)setCurrentLoadoutLeftInset:(CGFloat)arg;
-- (void)setCurrentLoadoutScale:(CGFloat)arg;
-- (void)setCurrentLoadoutRotation:(CGFloat)arg;
-- (void)setCurrentLoadoutVerticalSpacing:(CGFloat)arg;
-- (void)setCurrentLoadoutHorizontalSpacing:(CGFloat)arg;
+
+
+- (BOOL)currentLoadoutShouldHideIconLabelsForLocation:(NSString *)location;
+- (BOOL)currentLoadoutShouldHideIconBadgesForLocation:(NSString *)location;
+
+- (UIEdgeInsets)currentLoadoutInsetsForLocation:(NSString *)location pageIndex:(NSInteger)index withOriginal:(UIEdgeInsets)x;
+
+- (NSUInteger)currentLoadoutColumnsForLocation:(NSString *)location pageIndex:(NSUInteger)index;
+
+- (NSUInteger)currentLoadoutRowsForLocation:(NSString *)location pageIndex:(NSUInteger)index;
+
+- (CGFloat)currentLoadoutTopInsetForLocation:(NSString *)location pageIndex:(NSUInteger)index;
+- (CGFloat)currentLoadoutLeftInsetForLocation:(NSString *)location pageIndex:(NSUInteger)index;
+
+- (CGFloat)currentLoadoutScaleForLocation:(NSString *)location pageIndex:(NSUInteger)index;
+
+- (CGFloat)currentLoadoutRotationForLocation:(NSString *)location pageIndex:(NSUInteger)index;
+
+- (CGFloat)currentLoadoutVerticalSpacingForLocation:(NSString *)location pageIndex:(NSUInteger)index;
+
+- (CGFloat)currentLoadoutHorizontalSpacingForLocation:(NSString *)location pageIndex:(NSUInteger)index;
+- (void)setCurrentLoadoutShouldHideIconLabels:(BOOL)arg forLocation:(NSString *)location;
+
+- (void)setCurrentLoadoutShouldHideIconBadges:(BOOL)arg forLocation:(NSString *)location;
+
+- (void)setCurrentLoadoutColumns:(NSInteger)arg forLocation:(NSString *)location pageIndex:(NSUInteger)index;
+- (void)setCurrentLoadoutRows:(NSInteger)arg forLocation:(NSString *)location pageIndex:(NSUInteger)index;
+- (void)setCurrentLoadoutScale:(CGFloat)arg forLocation:(NSString *)location pageIndex:(NSUInteger)index;
+
+- (void)setCurrentLoadoutRotation:(CGFloat)arg forLocation:(NSString *)location pageIndex:(NSUInteger)index;
+- (void)setCurrentLoadoutTopInset:(CGFloat)arg forLocation:(NSString *)location pageIndex:(NSUInteger)index;
+- (void)setCurrentLoadoutLeftInset:(CGFloat)arg forLocation:(NSString *)location pageIndex:(NSUInteger)index;
+- (void)setCurrentLoadoutVerticalSpacing:(CGFloat)arg forLocation:(NSString *)location pageIndex:(NSUInteger)index;
+- (void)setCurrentLoadoutHorizontalSpacing:(CGFloat)arg forLocation:(NSString *)location pageIndex:(NSUInteger)index;
+
+/* Legacy */
+
+
+- (void)loadLoadoutFromLegacySystem:(NSString *)name;
+
 
 @end

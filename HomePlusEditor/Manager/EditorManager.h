@@ -3,6 +3,7 @@
 @interface EditorManager : NSObject 
 
 + (instancetype)sharedManager;
+@property (nonatomic, retain) NSString *editingLocation;
 @property (nonatomic, readonly, strong) HPEditorWindow *editorView;
 @property (nonatomic, readonly, strong) HPEditorViewController *editorViewController;
 

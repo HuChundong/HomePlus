@@ -1,5 +1,33 @@
 #define kMaxColumnAmount 14
 #define kMaxRowAmount 14
+
+
+#define kUniqueLogIdentifier @"HPD"
+
+#define kEditingModeChangedNotificationName @"HomePlusEditingModeChanged"
+#define kEditingModeEnabledNotificationName @"HomePlusEditingModeEnabled"
+#define kEditingModeDisabledNotificationName @"HomePlusEditingModeDisabled"
+#define kEditorKickViewsUp @"HomePlusKickWindowsUp"
+#define kEditorKickViewsBack @"HomePlusKickWindowsBack"
+#define kDeviceIsLocked @"HomePlusDeviceIsLocked"
+#define kDeviceIsUnlocked @"HomePlusDeviceIsUnlocked"
+#define kWiggleActive @"HomePlusWiggleActive"
+#define kWiggleInactive @"HomePlusWiggleInactive"
+#define kDisableWiggleTrigger @"HomePlusDisableWiggle"
+#define kHighlightViewNotificationName @"HomePlusHighlightRelevantView"
+#define kFadeFloatingDockNotificationName @"HomePlusFadeFloatingDock"
+#define kShowFloatingDockNotificationName @"HomePlusShowFloatingDock"
+#define kReloadIconScaleNotificationName @"HomePlusReloadIconScale"
+#define kGetUpdatedValues @"HomePlusUpdateValues"
+
+#define kIdentifier @"me.kritanta.homeplusprefs"
+#define kSettingsChangedNotification (CFStringRef)@"me.kritanta.homeplusprefs/settingschanged"
+#define kSettingsPath @"/var/mobile/Library/Preferences/me.kritanta.homeplusprefs.plist"
+
+@interface SBFloatyFolderScrollView : UIView 
+@end 
+
+
 @interface SBIconModel : NSObject 
 - (void)layout;
 @end
@@ -12,10 +40,20 @@
 
 
 @interface SBIconListGridLayoutConfiguration
-@property (nonatomic, assign) BOOL isAFolderList;
+@property (nonatomic, assign) NSString *iconLocation;
+@property (nonatomic, retain) NSDictionary *managerValues;
+@property (nonatomic, assign) UIEdgeInsets customInsets;
+-(void)getLatestValuesFromManager;
+- (NSString *)locationIfKnown;
 -(NSUInteger)numberOfPortraitColumns;
 -(NSUInteger)numberOfPortraitRows;
 -(UIEdgeInsets)portraitLayoutInsets;
+@end
+
+@interface SBIconListLayout : NSObject
+- (SBIconListGridLayoutConfiguration *)layoutConfiguration;
+@end
+@interface SBIconListFlowLayout : SBIconListLayout
 @end
 
 @interface SBEditingDoneButton : UIButton
@@ -32,6 +70,11 @@
 @property (nonatomic, retain) SBRootFolderView *contentView;
 @end
 @interface SBRootIconListView : UIView
+
+@property (nonatomic, retain) NSDictionary *managerValues;
+-(void)getLatestValuesFromManager;
+-(NSString *)newIconLocation;
+-(NSInteger)iconLocation;
 - (CGFloat)horizontalIconPadding ;
 @property (nonatomic, assign) CGFloat customTopInset;
 @property (nonatomic, assign) CGFloat customLeftOffset;
@@ -64,11 +107,14 @@
 - (NSUInteger)iconRowsForSpacingCalculation;
 + (NSUInteger)maxIcons;
 + (NSUInteger)iconRowsForInterfaceOrientation:(NSInteger)arg1;
++ (NSUInteger)iconColumnsForInterfaceOrientation:(NSInteger)arg1;
 - (SBRootFolderController *)_viewControllerForAncestor;
 @end
 @interface SBIconListView : SBRootIconListView
+- (NSString *)iconLocation;
 @property(readonly, nonatomic) _Bool automaticallyAdjustsLayoutMetricsToFit;
 - (NSArray *)getDefaultValues;
+- (SBIconListFlowLayout *)layout;
 @end
 
 @interface HPHitboxView : UIView 
@@ -113,8 +159,9 @@
 @interface SBIconView : UIView
 @property (nonatomic, retain) UIView *labelView;
 @property (nonatomic, assign) CGFloat iconAccessoryAlpha;
+-(NSString *)newIconLocation;
 - (void)setLabelAccessoryViewHidden:(BOOL)arg;
-- (NSInteger)location;
+- (NSString *)location;
 - (void)_applyIconLabelAlpha:(CGFloat)a;
 @end
 
@@ -128,4 +175,9 @@
 
 @interface SBIconLegibilityLabelView : UIView
 @property(retain, nonatomic) UIImage *image;
+@property (retain, nonatomic) SBIconView *iconView;
+@end
+
+@interface SBIconBadgeView : UIView 
+@property (nonatomic, retain) SBIconListLayout *listLayout;
 @end

@@ -65,7 +65,7 @@
 @property (nonatomic, readonly, strong) HPSettingsTableViewController *tableViewController;
 
 @property (nonatomic, retain) NSMutableArray *rootIconListViewsToUpdate;
-
+- (void)reload;
 - (void)resetAllValuesToDefaults;
 - (void)addRootIconListViewToUpdate:(SBRootIconListView *)view;
 - (void)handleDoneSettingsButtonPress:(UIButton*)sender;

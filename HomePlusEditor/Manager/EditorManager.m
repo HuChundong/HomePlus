@@ -60,6 +60,11 @@
 - (instancetype)init
 {
     self = [super init];
+
+    if (self) {
+        // set this in hpevc instead . self.editingLocation = @"SBIconLocationRoot";
+    }
+
     return self;
 }
 
@@ -96,6 +101,7 @@
             _editorView.alpha = 1;
         }
     ];
+
 }
 
 - (void)hideEditorView
@@ -106,9 +112,11 @@
 
 - (void)toggleEditorView
 {
+    [[NSNotificationCenter defaultCenter] postNotificationName:kShowFloatingDockNotificationName object:nil];
     if (_editorView.hidden) 
     {
         [self showEditorView];
+        [[self editorViewController] reload];
     } 
     else 
     {

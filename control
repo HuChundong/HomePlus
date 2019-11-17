@@ -1,7 +1,7 @@
 Package: me.kritanta.homeplus
 Name: HomePlus Beta
 Depends: mobilesubstrate
-Version: 0.0.66
+Version: 0.1.2
 Architecture: iphoneos-arm
 Description: Dynamic, live homescreen layout with an intuitive UI
 Maintainer: Kritanta
