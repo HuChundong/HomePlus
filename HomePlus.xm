@@ -860,6 +860,15 @@ NSDictionary *prefs = nil;
 
 	return [[NSUserDefaults standardUserDefaults] integerForKey:@"HPThemeDefaultRootRows"]?:x;
 }
++ (NSUInteger)maxVisibleIconRowsInterfaceOrientation:(NSInteger)arg1
+{
+	NSInteger x = %orig(arg1);
+    if (_pfTweakEnabled)
+    {
+        return 100;
+    }
+    return %orig;
+}
 
 %new 
 - (NSUInteger)iconRowsForHomePlusCalculations
@@ -1057,10 +1066,26 @@ NSDictionary *prefs = nil;
     NSString *x = @"";
     switch ( loc )
     {
-        case 1: x = @"Root";
-        case 3: x = @"Dock";
-        case 6: x = @"Folder";
-        default: x = @"Root";
+        case 1: 
+        {   
+            x = @"Root";
+            break;
+        }
+        case 3: 
+        {
+            x = @"Dock";
+            break;
+        }
+        case 6: 
+        {
+            x = @"Folder";
+            break;
+        }
+        default: 
+        {
+            x = @"Folder";
+            break;
+        }
     }
     CGFloat sx = ([[NSUserDefaults standardUserDefaults] floatForKey:[NSString stringWithFormat:@"%@%@%@", @"HPThemeDefault", x, @"Scale"]]?:60) / 60.0;
     [self.layer setSublayerTransform:CATransform3DMakeScale(sx, sx, 1)];
