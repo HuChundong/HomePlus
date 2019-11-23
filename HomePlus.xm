@@ -736,13 +736,12 @@ NSDictionary *prefs = nil;
         return x;
     }
 
-    BOOL buggedSpacing = [[NSUserDefaults standardUserDefaults] integerForKey:@"HPThemeDefaultRootColumns"]?:4 == 4 
-                         && [[HPUtility deviceName] isEqualToString:@"iPhone X"]; // Afaik, the "Boxy" bug only happens on iOS 12 iPX w/ 4 columns
+    BOOL buggedSpacing = ((([[NSUserDefaults standardUserDefaults] integerForKey:@"HPThemeDefaultRootColumns"]?:4) == 4) && ([[HPUtility deviceName] isEqualToString:@"iPhone X"])); // Afaik, the "Boxy" bug only happens on iOS 12 iPX w/ 4 columns
                                                                                   // We dont need to check version because we're in a group block
                                                                                   //    that only executes on iOS 12 and below
                          
 
-    BOOL leftInsetZeroed = [[NSUserDefaults standardUserDefaults] floatForKey:@"HPThemeDefaultLeftInset"]?:0.0 == 0.0; // Enable more intuitive behavior 
+    BOOL leftInsetZeroed = ([[NSUserDefaults standardUserDefaults] floatForKey:@"HPThemeDefaultRootLeftInset"]?:0.0) == 0.0; // Enable more intuitive behavior 
     if ([[[UIDevice currentDevice] systemVersion] floatValue] >= 12.0)
     {
         // This gets confusing and is the result of a lot of experimentation
@@ -794,9 +793,12 @@ NSDictionary *prefs = nil;
         return x;
     }
 
-    BOOL buggedSpacing = [[NSUserDefaults standardUserDefaults] integerForKey:@"HPThemeDefaultRootColumns"]?:4 == 4 
-                                                                    && [[HPUtility deviceName] isEqualToString:@"iPhone X"]; // fix iPX 4col bug
-    BOOL leftInsetZeroed = [[NSUserDefaults standardUserDefaults] floatForKey:@"HPThemeDefaultRootLeftInset"]?:0.0 == 0.0;
+    BOOL buggedSpacing = ((([[NSUserDefaults standardUserDefaults] integerForKey:@"HPThemeDefaultRootColumns"]?:4) == 4) && ([[HPUtility deviceName] isEqualToString:@"iPhone X"])); // Afaik, the "Boxy" bug only happens on iOS 12 iPX w/ 4 columns
+                                                                                  // We dont need to check version because we're in a group block
+                                                                                  //    that only executes on iOS 12 and below
+                         
+
+    BOOL leftInsetZeroed = ([[NSUserDefaults standardUserDefaults] floatForKey:@"HPThemeDefaultRootLeftInset"]?:0.0) == 0.0; // Enable more intuitive behavior 
 
     if ([[[UIDevice currentDevice] systemVersion] floatValue] >= 12.0)
     {
@@ -1070,15 +1072,7 @@ NSDictionary *prefs = nil;
 
 - (void)setHidden:(BOOL)arg
 {    
-    NSInteger loc = MSHookIvar<NSInteger>(self, "_iconLocation");
-    NSString *x = @"";
-    switch ( loc )
-    {
-        case 1: x = @"Root";
-        case 3: x = @"Dock";
-        case 6: x = @"Folder";
-        default: x = @"Root";
-    }
+    NSString *x = @"Icon";
     if (_pfTweakEnabled && [[NSUserDefaults standardUserDefaults] integerForKey:[NSString stringWithFormat:@"%@%@%@", @"HPThemeDefault", x, @"Badges"]] )
     {
         %orig(YES);
@@ -1089,15 +1083,7 @@ NSDictionary *prefs = nil;
 }
 - (BOOL)isHidden 
 {    
-    NSInteger loc = MSHookIvar<NSInteger>(self, "_iconLocation");
-    NSString *x = @"";
-    switch ( loc )
-    {
-        case 1: x = @"Root";
-        case 3: x = @"Dock";
-        case 6: x = @"Folder";
-        default: x = @"Root";
-    }
+    NSString *x = @"Icon";
     if (_pfTweakEnabled && [[NSUserDefaults standardUserDefaults] floatForKey:[NSString stringWithFormat:@"%@%@%@", @"HPThemeDefault", x, @"Badges"]])
     {
         return YES;
@@ -1106,36 +1092,14 @@ NSDictionary *prefs = nil;
 }
 - (CGFloat)alpha
 {    
-    NSInteger loc = MSHookIvar<NSInteger>(self, "_iconLocation");
-    NSString *x = @"";
-    switch ( loc )
-    {
-        case 1: x = @"Root";
-        case 3: x = @"Dock";
-        case 6: x = @"Folder";
-        default: x = @"Root";
-    }
+    NSString *x = @"Icon";
     CGFloat a = [[NSUserDefaults standardUserDefaults] floatForKey:[NSString stringWithFormat:@"%@%@%@", @"HPThemeDefault", x, @"Badges"]] ? 0.0 : %orig;
     return a;
 }
 - (void)setAlpha:(CGFloat)arg
 {   
-    NSString *x = @"";
-    @try 
-    { 
-        NSInteger loc = MSHookIvar<NSInteger>(self, "_iconLocation");
-        switch ( loc )
-        {
-            case 1: x = @"Root";
-            case 3: x = @"Dock";
-            case 6: x = @"Folder";
-            default: x = @"Root";
-        }
-    }
-    @catch (NSException *ex) 
-    {
-        x = @"Root";
-    }
+    NSString *x = @"Icon";
+
     %orig([[NSUserDefaults standardUserDefaults] floatForKey:[NSString stringWithFormat:@"%@%@%@", @"HPThemeDefault", x, @"Badges"]] ? 0.0 : arg);
 }
 %end
@@ -1403,9 +1367,9 @@ NSDictionary *prefs = nil;
     {
         return UIEdgeInsetsMake(
             x.top + ([[NSUserDefaults standardUserDefaults] floatForKey:[NSString stringWithFormat:@"%@%@%@", @"HPThemeDefault", [self locationIfKnown], @"TopInset"]]?:0) ,
-            x.left + ([[NSUserDefaults standardUserDefaults] floatForKey:[NSString stringWithFormat:@"%@%@%@", @"HPThemeDefault", [self locationIfKnown], @"SideInset"]]?:0),
-            x.bottom - ([[NSUserDefaults standardUserDefaults] floatForKey:[NSString stringWithFormat:@"%@%@%@", @"HPThemeDefault", [self locationIfKnown], @"TopInset"]]?:0) + ([[NSUserDefaults standardUserDefaults] floatForKey:[NSString stringWithFormat:@"%@%@%@", @"HPThemeDefault", [self locationIfKnown], @"VerticalSpacing"]]?:0) *2, // * 2 because regularly it was too slow
-            x.right + ([[NSUserDefaults standardUserDefaults] floatForKey:[NSString stringWithFormat:@"%@%@%@", @"HPThemeDefault", [self locationIfKnown], @"SideInset"]]?:0)
+            x.left + ([[NSUserDefaults standardUserDefaults] floatForKey:[NSString stringWithFormat:@"%@%@%@", @"HPThemeDefault", [self locationIfKnown], @"SideInset"]]?:0)*-2,
+            x.bottom - ([[NSUserDefaults standardUserDefaults] floatForKey:[NSString stringWithFormat:@"%@%@%@", @"HPThemeDefault", [self locationIfKnown], @"TopInset"]]?:0) + ([[NSUserDefaults standardUserDefaults] floatForKey:[NSString stringWithFormat:@"%@%@%@", @"HPThemeDefault", [self locationIfKnown], @"VerticalSpacing"]]?:0) *-2, // * 2 because regularly it was too slow
+            x.right + ([[NSUserDefaults standardUserDefaults] floatForKey:[NSString stringWithFormat:@"%@%@%@", @"HPThemeDefault", [self locationIfKnown], @"SideInset"]]?:0)*-2
         );
     }
 }
