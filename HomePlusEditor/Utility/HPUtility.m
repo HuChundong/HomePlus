@@ -124,6 +124,20 @@
 
     return deviceName;
 }
++ (UIImage*)imageByCombiningImage:(UIImage*)firstImage withImage:(UIImage*)secondImage {
+    UIImage *image = nil;
 
+    CGSize newImageSize = secondImage.size;
+    UIGraphicsBeginImageContext(newImageSize); 
+
+    [firstImage drawAtPoint:CGPointMake(roundf((newImageSize.width-firstImage.size.width)/2), 
+                                        roundf((newImageSize.height-firstImage.size.height)/2))]; 
+    [secondImage drawAtPoint:CGPointMake(roundf((newImageSize.width-secondImage.size.width)/2), 
+                                         roundf((newImageSize.height-secondImage.size.height)/2))]; 
+    image = UIGraphicsGetImageFromCurrentImageContext();
+    UIGraphicsEndImageContext();
+
+    return image;
+}
 
 @end

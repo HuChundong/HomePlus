@@ -11,6 +11,8 @@
 
 #include "EditorManager.h"
 #include "HPEditorWindow.h"
+#include "HPUtility.h"
+#include "HPResources.h"
 #include "HPEditorViewController.h"
 #include "spawn.h"
 
@@ -66,6 +68,22 @@
     }
 
     return self;
+}
+-(void)loadUpImagesFromWallpaper:(UIImage *)image 
+    {
+    /*
+    @property (nonatomic, retain) UIImage *wallpaper;
+    @property (nonatomic, retain) UIImage *dynamicallyGeneratedSettingsHeaderImage;
+    @property (nonatomic, retain) UIImage *blurredAndDarkenedWallpaper;
+    @property (nonatomic, retain) UIImage *blurredMoreBackgroundImage;
+    */
+    self.wallpaper = image;
+    self.blurredAndDarkenedWallpaper = [self bdBackgroundImage];
+    self.blurredMoreBackgroundImage = [self blurredMoreBGImage];
+
+    UIImage *a = [HPUtility isCurrentDeviceNotched]? [HPResources inAppBannerNotched] : [HPResources inAppBanner];
+    UIImage *b = [[EditorManager sharedManager] blurredMoreBGImage];
+    self.dynamicallyGeneratedSettingsHeaderImage = [HPUtility imageByCombiningImage:b withImage:a];
 }
 -(UIImage *)bdBackgroundImage
 {   

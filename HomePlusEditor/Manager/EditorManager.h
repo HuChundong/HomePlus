@@ -8,9 +8,13 @@
 @property (nonatomic, readonly, strong) HPEditorViewController *editorViewController;
 
 @property (nonatomic, retain) UIImage *wallpaper;
+@property (nonatomic, retain) UIImage *dynamicallyGeneratedSettingsHeaderImage;
+@property (nonatomic, retain) UIImage *blurredAndDarkenedWallpaper;
+@property (nonatomic, retain) UIImage *blurredMoreBackgroundImage;
 -(UIImage *)bdBackgroundImage;
 -(UIImage *)blurredMoreBGImage;
 
+-(void)loadUpImagesFromWallpaper:(UIImage *)image;
 -(HPEditorWindow *)editorView;
 -(HPEditorViewController *)editorViewController;
 -(void)resetAllValuesToDefaults;

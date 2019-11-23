@@ -310,7 +310,7 @@ const int RESET_VALUES = 1;
                         cell.selectionStyle = UITableViewCellSelectionStyleNone;
                         UISwitch *switchView = [[UISwitch alloc] initWithFrame:CGRectZero];
                         cell.accessoryView = switchView;
-                        [switchView setOn:[[[HPManager sharedManager] config] currentLoadoutShouldHideIconLabelsForLocation:@"SBIconLocationRoot"] animated:NO];
+                        [switchView setOn:[[NSUserDefaults standardUserDefaults] integerForKey:@"HPThemeDefaultIconLabelsF"] animated:NO];
                         [switchView addTarget:self action:@selector(iconLabelSwitchChanged:) forControlEvents:UIControlEventValueChanged];
 
                         //[cell.layer setCornerRadius:10];
@@ -340,7 +340,7 @@ const int RESET_VALUES = 1;
                         cell.selectionStyle = UITableViewCellSelectionStyleNone;
                         UISwitch *switchView = [[UISwitch alloc] initWithFrame:CGRectZero];
                         cell.accessoryView = switchView;
-                        [switchView setOn:[[[HPManager sharedManager] config] currentLoadoutShouldHideIconBadgesForLocation:@"SBIconLocationRoot"] animated:NO];
+                        [switchView setOn: [[NSUserDefaults standardUserDefaults] integerForKey:@"HPThemeDefaultIconBadges"] animated:NO];
                         [switchView addTarget:self action:@selector(iconBadgeSwitchChanged:) forControlEvents:UIControlEventValueChanged];
 
                         //[cell.layer setCornerRadius:10];
@@ -370,7 +370,7 @@ const int RESET_VALUES = 1;
                         cell.selectionStyle = UITableViewCellSelectionStyleNone;
                         UISwitch *switchView = [[UISwitch alloc] initWithFrame:CGRectZero];
                         cell.accessoryView = switchView;
-                        [switchView setOn:[[[HPManager sharedManager] config] currentLoadoutShouldHideIconLabelsForLocation:@"SBIconLocationFolder"] animated:NO];
+                        [switchView setOn:[[NSUserDefaults standardUserDefaults] integerForKey:@"HPThemeDefaultIconLabelsF"] animated:NO];
                         [switchView addTarget:self action:@selector(iconLabelFolderSwitchChanged:) forControlEvents:UIControlEventValueChanged];
 
                         //[cell.layer setCornerRadius:10];
@@ -645,7 +645,6 @@ const int RESET_VALUES = 1;
 - (void)dockbGSwitchChanged:(id)sender 
 {
     UISwitch *switchControl = sender;
-    [[[HPManager sharedManager] config] setCurrentLoadoutShouldHideDockBG:switchControl.on];
     [[NSNotificationCenter defaultCenter] postNotificationName:@"HPLayoutDockView" object:nil];
 }
 

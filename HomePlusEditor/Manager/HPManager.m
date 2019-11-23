@@ -81,7 +81,7 @@
 }
 
 -(HPConfig *)loadConfigFromFilesystem:(NSString *)name 
-{
+{/*
     NSMutableDictionary *currentLoadoutData;
     NSString *prefix = [NSString stringWithFormat:@"%@%@", @"HPTheme", name];
     [[NSUserDefaults standardUserDefaults] synchronize];
@@ -140,7 +140,7 @@
     config.currentLoadoutModernDock = [[NSUserDefaults standardUserDefaults] objectForKey:[NSString stringWithFormat:@"%@%@", prefix, @"ModernDock"]] 
                                         ? [[NSUserDefaults standardUserDefaults] boolForKey:[NSString stringWithFormat:@"%@%@", prefix, @"ModernDock"]]
                                         : NO;
-
+*/
     self.vRowUpdates = [[NSUserDefaults standardUserDefaults] objectForKey:@"HPvRowUpdates"] 
                                         ? [[NSUserDefaults standardUserDefaults] boolForKey:@"HPvRowUpdates"]
                                         : YES;
@@ -150,11 +150,12 @@
     self.useUserDefaults = [[NSUserDefaults standardUserDefaults] objectForKey:@"HPuseUserDefaults"] 
                                         ? [[NSUserDefaults standardUserDefaults] boolForKey:@"HPuseUserDefaults"]
                                         : YES;
-    return config;
+    return nil;
 }
 
 - (HPConfig *)loadConfigFromUserDefaultSystem:(NSString *)name
 {
+    /*
     [[HPMonitor sharedMonitor] logItem:@"Creating dictionary from legacy loadout system."];
     NSString *location = @"Root";
     NSString *prefix = [NSString stringWithFormat:@"%@%@%@", @"HPTheme", location, name];
@@ -222,6 +223,7 @@
     config.currentLoadoutModernDock = [[NSUserDefaults standardUserDefaults] objectForKey:[NSString stringWithFormat:@"%@%@", prefix, @"ModernDock"]] 
                                         ? [[NSUserDefaults standardUserDefaults] boolForKey:[NSString stringWithFormat:@"%@%@", prefix, @"ModernDock"]]
                                         : NO;
+                                        */
     self.vRowUpdates = [[NSUserDefaults standardUserDefaults] objectForKey:@"HPvRowUpdates"] 
                                         ? [[NSUserDefaults standardUserDefaults] boolForKey:@"HPvRowUpdates"]
                                         : YES;
@@ -232,12 +234,13 @@
                                         ? [[NSUserDefaults standardUserDefaults] boolForKey:@"HPuseUserDefaults"]
                                         : YES;
 
-    return config;
+    return nil;
 }
 
 - (void)saveLoadoutToUserDefaults:(NSString *)name 
 {
     NSUserDefaults *userDefaults = [NSUserDefaults standardUserDefaults];
+    /*
     NSString *location = @"Root";
     NSString *prefix = [NSString stringWithFormat:@"%@%@", @"HPTheme", name];
     [userDefaults setBool:self.config.currentShouldHideIconLabels
@@ -332,7 +335,7 @@
                     forKey:[NSString stringWithFormat:@"%@%@", prefix, @"DockBG"] ];
     [userDefaults setBool:self.config.currentLoadoutModernDock
                     forKey:[NSString stringWithFormat:@"%@%@", prefix, @"ModernDock"] ];
-
+*/
 
     [userDefaults setBool:self.useUserDefaults
                     forKey:@"HPuseUserDefaults"];

@@ -15,7 +15,7 @@
 #include "HPEditorViewController.h"
 #include "HPControllerView.h"
 #include "../../HomePlus.h"
-#include "HPConfig.h"
+#include "HPUtility.h"
 #include "../Manager/EditorManager.h"
 #include "../Manager/HPManager.h"
 #include "../Utility/HPResources.h"
@@ -397,32 +397,11 @@ const CGFloat TABLE_HEADER_HEIGHT = 0.458;
         UIView *tableHeaderView = [[UIView alloc] initWithFrame:CGRectMake(0,0,[[UIScreen mainScreen] bounds].size.width,(([[UIScreen mainScreen] bounds].size.width)/750)*300)];
         UIImageView *imageView = [[UIImageView alloc] initWithFrame:CGRectMake(0, 0, [[UIScreen mainScreen] bounds].size.width,(([[UIScreen mainScreen] bounds].size.width)/750)*300)];
 
+        BOOL notched = [HPUtility isCurrentDeviceNotched];
 
-        BOOL notched = NO;
-        if([[UIDevice currentDevice] userInterfaceIdiom] == UIUserInterfaceIdiomPhone) 
-        {
-            switch ((int)[[UIScreen mainScreen] nativeBounds].size.height) 
-            {
-                case 2436:
-                    notched = YES;
-                    break;
-
-                case 2688:
-                    notched = YES;
-                    break;
-
-                case 1792:
-                    notched = YES;
-                    break;
-
-                default:
-                    notched = NO;
-                    break;
-            }
-        } 
-
-        imageView.image = notched ? [HPResources inAppBannerNotched] : [HPResources inAppBanner];// [[EditorManager sharedManager] blurredMoreBGImage];
-        imageView.contentMode = UIViewContentModeScaleAspectFill;imageView.clipsToBounds = YES;
+        imageView.image = [EditorManager sharedManager].dynamicallyGeneratedSettingsHeaderImage;
+        imageView.contentMode = UIViewContentModeScaleAspectFill;
+        imageView.clipsToBounds = YES;
         [tableHeaderView addSubview:imageView];
 
         UIView *doneButtonContainerView = [[UIView alloc] initWithFrame:CGRectMake([[UIScreen mainScreen] bounds].size.width-80, ((([[UIScreen mainScreen] bounds].size.width)/750)*300)-40, [[UIScreen mainScreen] bounds].size.width/2, 40)];
@@ -443,6 +422,7 @@ const CGFloat TABLE_HEADER_HEIGHT = 0.458;
     _settingsView.hidden = NO;
     return _settingsView;
 }
+
 - (HPSettingsTableViewController *)tableViewController
 {
     if (!_tableViewController) 

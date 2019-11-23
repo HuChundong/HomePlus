@@ -362,7 +362,7 @@ NSDictionary *prefs = nil;
 - (void)setImage:(UIImage *)img 
 {
     %orig(img);
-    [[EditorManager sharedManager] setWallpaper:img];
+    [[EditorManager sharedManager] loadUpImagesFromWallpaper:img];
 }
 
 %end
@@ -502,7 +502,7 @@ NSDictionary *prefs = nil;
     
     if (enabled)
     {
-        self.backgroundColor = [UIColor colorWithPatternImage:[[EditorManager sharedManager] bdBackgroundImage]];
+        self.backgroundColor = [UIColor colorWithPatternImage:[EditorManager sharedManager].blurredAndDarkenedWallpaper];
     }
     else 
     {
@@ -903,12 +903,12 @@ NSDictionary *prefs = nil;
     if (((SBIconLabelImage *)self.image).parameters.iconLocation == 1) // this works, somehow. 
     {
         // home screen
-        hide = [[NSUserDefaults standardUserDefaults] integerForKey:@"HPThemeDefaultRootLabels"]?:0 == 1;
+        hide = [[NSUserDefaults standardUserDefaults] integerForKey:@"HPThemeDefaultIconLabels"]?:0 == 1;
     } 
     else if (((SBIconLabelImage *)self.image).parameters.iconLocation == 6)
     {
         // folder
-        hide = [[NSUserDefaults standardUserDefaults] integerForKey:@"HPThemeDefaultRootLabelsFolders"]?:0 == 1;
+        hide = [[NSUserDefaults standardUserDefaults] integerForKey:@"HPThemeDefaultIconLabelsF"]?:0 == 1;
     }
     hide = (hide || arg1);
 
@@ -1378,7 +1378,7 @@ NSDictionary *prefs = nil;
         }
         return [self portraitLayoutInsets];
     }
-
+    if ([self.iconLocation isEqualToString:@"Folder"]) return x;
     if (!([[NSUserDefaults standardUserDefaults] floatForKey:[NSString stringWithFormat:@"%@%@%@", @"HPThemeDefault", [self locationIfKnown], @"LeftInset"]]?:0) == 0)
     {
         return UIEdgeInsetsMake(
@@ -1421,33 +1421,77 @@ NSDictionary *prefs = nil;
 
 %hook SBIconLegibilityLabelView
 
-
 - (void)setHidden:(BOOL)arg
 {
-    if (_pfTweakEnabled && NO)
+    @try
     {
-        %orig(YES);
-    }
-    else {
+        SBIconView *superv = (SBIconView *)self.superview;
+        NSString *x = @"";
+        if ([[superv location] isEqualToString:@"SBIconLocationRoot"]) x = @"";
+        else if ([[superv location] isEqualToString:@"SBIconLocationFolder"]) x = @"F";
+        if (_pfTweakEnabled && [[NSUserDefaults standardUserDefaults] integerForKey:[NSString stringWithFormat:@"%@%@", @"HPThemeDefaultIconLabels", x]])
+        {
+            %orig(YES);
+        }
+        else {
+            %orig(arg);
+        }
+    } 
+    @catch (NSException *ex)
+    {
+        // Icon being dragged
         %orig(arg);
     }
 }
 - (BOOL)isHidden 
 {
-    if (_pfTweakEnabled && NO)
+    @try 
     {
-        return YES;
+        SBIconView *superv = (SBIconView *)self.superview;
+        NSString *x = @"";
+        if ([[superv location] isEqualToString:@"SBIconLocationRoot"]) x = @"";
+        else if ([[superv location] isEqualToString:@"SBIconLocationFolder"]) x = @"F";
+        if (_pfTweakEnabled && [[NSUserDefaults standardUserDefaults] integerForKey:[NSString stringWithFormat:@"%@%@", @"HPThemeDefaultIconLabels", x]])
+        {
+            return YES;
+        }
+        return %orig;
+    } 
+    @catch (NSException *ex)
+    {
+        return %orig;
     }
-    return %orig;
 }
 - (CGFloat)alpha
 {
-    CGFloat a =  NO ? 0.0 : %orig;
-    return a;
+    @try 
+    {
+        SBIconView *superv = (SBIconView *)self.superview;
+        NSString *x = @"";
+        if ([[superv location] isEqualToString:@"SBIconLocationRoot"]) x = @"";
+        else if ([[superv location] isEqualToString:@"SBIconLocationFolder"]) x = @"F";
+        return (_pfTweakEnabled && [[NSUserDefaults standardUserDefaults] integerForKey:[NSString stringWithFormat:@"%@%@", @"HPThemeDefaultIconLabels", x]]) ? 0.0 : %orig;
+    } 
+    @catch (NSException *ex)
+    {
+        return %orig;
+    }
 }
 - (void)setAlpha:(CGFloat)arg
 {
-    %orig(arg);
+    @try 
+    {
+        SBIconView *superv = (SBIconView *)self.superview;
+        NSString *x = @"";
+        if ([[superv location] isEqualToString:@"SBIconLocationRoot"]) x = @"";
+        else if ([[superv location] isEqualToString:@"SBIconLocationFolder"]) x = @"F";
+        %orig((_pfTweakEnabled && [[NSUserDefaults standardUserDefaults] integerForKey:[NSString stringWithFormat:@"%@%@", @"HPThemeDefaultIconLabels", x]]) ? 0.0 : arg);
+    } 
+    @catch (NSException *ex)
+    {
+        // Icon being dragged
+        %orig(arg);
+    }
 }
 
 %end
@@ -1456,7 +1500,7 @@ NSDictionary *prefs = nil;
 
 - (void)setHidden:(BOOL)arg
 {
-    if (_pfTweakEnabled && NO)
+    if (_pfTweakEnabled && [[NSUserDefaults standardUserDefaults] integerForKey:@"HPThemeDefaultIconBadges"])
     {
         %orig(YES);
     }
@@ -1466,7 +1510,7 @@ NSDictionary *prefs = nil;
 }
 - (BOOL)isHidden 
 {
-    if (_pfTweakEnabled && NO)
+    if (_pfTweakEnabled && [[NSUserDefaults standardUserDefaults] integerForKey:@"HPThemeDefaultIconBadges"])
     {
         return YES;
     }
@@ -1474,12 +1518,11 @@ NSDictionary *prefs = nil;
 }
 - (CGFloat)alpha
 {
-    CGFloat a = %orig;
-    return a;
+    return (([[NSUserDefaults standardUserDefaults] integerForKey:@"HPThemeDefaultIconBadges"]?:0) == 0) ? %orig : 0;
 }
 - (void)setAlpha:(CGFloat)arg
 {
-    %orig(arg);
+    %orig((([[NSUserDefaults standardUserDefaults] integerForKey:@"HPThemeDefaultIconBadges"]?:0) == 0) ? arg : 0);
 }
 %end
 
@@ -1543,7 +1586,7 @@ NSDictionary *prefs = nil;
     
     if (enabled)
     {
-        self.backgroundColor = [UIColor colorWithPatternImage:[[EditorManager sharedManager] bdBackgroundImage]];
+        self.backgroundColor = [UIColor colorWithPatternImage:[EditorManager sharedManager].blurredAndDarkenedWallpaper];
     }
     else 
     {
@@ -1555,8 +1598,7 @@ NSDictionary *prefs = nil;
             } 
             completion:^(BOOL finished) 
             {
-            self.backgroundColor = [UIColor blackColor];
-            self.transform = CGAffineTransformIdentity;
+                self.transform = CGAffineTransformIdentity;
             }
         ];
     }
@@ -1790,15 +1832,24 @@ NSDictionary *prefs = nil;
 
 - (NSUInteger)iconRowsForCurrentOrientation
 {
-    NSUInteger x = %orig;
-    if (_tcDockyInstalled && (x<=2 || x==100)) return %orig;
-    return [[NSUserDefaults standardUserDefaults] integerForKey:[NSString stringWithFormat:@"%@%@%@", @"HPThemeDefault", @"Root", @"Rows"]] ;
+    if (_tcDockyInstalled && (%orig<=2 || %orig==100)) return %orig;
+    // This is cleaner and easier to write than if/elif/else - fight me
+    NSString *x = [[self iconLocation] isEqualToString:@"SBIconLocationRoot"] 
+                        ? @"Root" 
+                        : [[self iconLocation] isEqualToString:@"SBIconLocationDock"] 
+                                            ? @"Dock" : @"Folder" ;
+    return [[NSUserDefaults standardUserDefaults] integerForKey:[NSString stringWithFormat:@"%@%@%@", @"HPThemeDefault", x, @"Rows"]]?:%orig;
 }
 
 - (NSUInteger)iconColumnsForCurrentOrientation
 {
     if (_tcDockyInstalled && ([self iconRowsForCurrentOrientation]<=2 || [self iconRowsForCurrentOrientation]==100))return %orig;
-    return [[NSUserDefaults standardUserDefaults] integerForKey:[NSString stringWithFormat:@"%@%@%@", @"HPThemeDefault", @"Root", @"Columns"]] ;
+    NSString *x = [[self iconLocation] isEqualToString:@"SBIconLocationRoot"] 
+                        ? @"Root" 
+                        : [[self iconLocation] isEqualToString:@"SBIconLocationDock"] 
+                                            ? @"Dock" : @"Folder" ;
+
+    return [[NSUserDefaults standardUserDefaults] integerForKey:[NSString stringWithFormat:@"%@%@%@", @"HPThemeDefault", x, @"Columns"]]?:%orig;
 }
 
 %end
