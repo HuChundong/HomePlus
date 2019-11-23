@@ -15,9 +15,10 @@
 #include "HPEditorViewController.h"
 #include "HPControllerView.h"
 #include "../../HomePlus.h"
+#include "HPConfig.h"
 #include "../Manager/EditorManager.h"
 #include "../Manager/HPManager.h"
-#include "../Utility/HPUtilities.h"
+#include "../Utility/HPResources.h"
 #include "../Settings/HPSettingsTableViewController.h"
 #include "HPEditorViewNavigationTabBar.h"
 #include "../Utility/OBSlider.h"
@@ -25,10 +26,8 @@
 #include <AudioToolbox/AudioToolbox.h>
 
 
-
 @implementation HPEditorViewNavigationTabBar
 @end
-
 
 @interface HPEditorViewController () 
 @property (nonatomic, readwrite, strong) HPControllerView *offsetControlView;
@@ -108,21 +107,32 @@ const CGFloat TABLE_HEADER_HEIGHT = 0.458;
 {
     [super viewDidLoad];
 
+    BOOL _tcDockyInstalled = [[NSFileManager defaultManager] fileExistsAtPath:@"/var/lib/dpkg/info/me.nepeta.docky.list"];
+    BOOL excludeForDocky = (_tcDockyInstalled && [[[EditorManager sharedManager] editingLocation] isEqualToString:@"SBIconLocationDock"]);
     // Load latest values from the manager. Crucial. 
-    [[HPManager sharedManager] loadCurrentLoadout];
 
     // Add subviews to self. Any time viewDidLoad is called manually, unload these view beforehand
-    [self.view addSubview:[self offsetControlView]];
-    [self.view addSubview:[self spacingControlView]];
-    [self.view addSubview:[self iconCountControlView]];
+    if (!excludeForDocky)
+    {
+        [self.view addSubview:[self offsetControlView]];
+        [self.view addSubview:[self spacingControlView]];
+        [self.view addSubview:[self iconCountControlView]];
+    }
     [self.view addSubview:[self scaleControlView]];
     [self.view addSubview:[self settingsView]];
     // Load the view
-    [self loadControllerView:[self offsetControlView]];
+    if (!excludeForDocky)
+    {
+        [self loadControllerView:[self offsetControlView]];
+        [self scaleControlView].alpha = 0;
+    }
+    else 
+    {
+        [self loadControllerView:[self scaleControlView]];
+    }
     // Set the alpha of the rest to 0
     [self spacingControlView].alpha = 0;
     [self iconCountControlView].alpha = 0;
-    [self scaleControlView].alpha = 0;
     [self settingsView].alpha = 0;
 
     // Side Navigation Bar
@@ -135,12 +145,13 @@ const CGFloat TABLE_HEADER_HEIGHT = 0.458;
     [self.offsetButton addTarget:self
             action:@selector(buttonPressDown:)
             forControlEvents:UIControlEventTouchDown];
-    UIImage *offsetImage = [HPUtilities offsetImage];
+    UIImage *offsetImage = [HPResources offsetImage];
     [self.offsetButton setImage:offsetImage forState:UIControlStateNormal];
     self.offsetButton.frame = CGRectMake([[UIScreen mainScreen] bounds].size.width - 47.5,
                                          MENU_BUTTON_TOP_ANCHOR * [[UIScreen mainScreen] bounds].size.height,
                                          MENU_BUTTON_SIZE, MENU_BUTTON_SIZE);
-    [self.view addSubview:self.offsetButton];
+    
+    if (!excludeForDocky) [self.view addSubview:self.offsetButton];
     // Since the offset view will be the first loaded, we dont need to lower alpha
     //      on the button. 
 
@@ -154,7 +165,7 @@ const CGFloat TABLE_HEADER_HEIGHT = 0.458;
             action:@selector(buttonPressDown:)
             forControlEvents:UIControlEventTouchDown];
 
-    UIImage *spacerImage = [HPUtilities spacerImage];
+    UIImage *spacerImage = [HPResources spacerImage];
     [self.spacerButton setImage:spacerImage forState:UIControlStateNormal];
 
     self.spacerButton.frame = CGRectMake([[UIScreen mainScreen] bounds].size.width - 47.5,
@@ -163,7 +174,8 @@ const CGFloat TABLE_HEADER_HEIGHT = 0.458;
     // Lower alpha on the rest. 
     // TODO: const these
     self.spacerButton.alpha = 0.5;
-    [self.view addSubview:self.spacerButton];
+    
+    if (!excludeForDocky) [self.view addSubview:self.spacerButton];
 
 
     self.iconCountButton = [UIButton buttonWithType:UIButtonTypeCustom];
@@ -173,13 +185,14 @@ const CGFloat TABLE_HEADER_HEIGHT = 0.458;
     [self.iconCountButton addTarget:self
             action:@selector(buttonPressDown:)
             forControlEvents:UIControlEventTouchDown];
-    UIImage *iCImage = [HPUtilities iconCountImage];
+    UIImage *iCImage = [HPResources iconCountImage];
     [self.iconCountButton setImage:iCImage forState:UIControlStateNormal];
     self.iconCountButton.frame = CGRectMake([[UIScreen mainScreen] bounds].size.width - 47.5,
                                             (MENU_BUTTON_TOP_ANCHOR * [[UIScreen mainScreen] bounds].size.height) + MENU_BUTTON_SIZE * 2,
                                             MENU_BUTTON_SIZE, MENU_BUTTON_SIZE);
     self.iconCountButton.alpha = 0.5;
-    [self.view addSubview:self.iconCountButton];
+    
+    if (!excludeForDocky) [self.view addSubview:self.iconCountButton];
 
 
     self.scaleButton = [UIButton buttonWithType:UIButtonTypeCustom];
@@ -189,12 +202,12 @@ const CGFloat TABLE_HEADER_HEIGHT = 0.458;
     [self.scaleButton addTarget:self
             action:@selector(buttonPressDown:)
             forControlEvents:UIControlEventTouchDown];
-    UIImage *sImage = [HPUtilities scaleImage];
+    UIImage *sImage = [HPResources scaleImage];
     [self.scaleButton setImage:sImage forState:UIControlStateNormal];
     self.scaleButton.frame = CGRectMake([[UIScreen mainScreen] bounds].size.width - 47.5,
-                                            (MENU_BUTTON_TOP_ANCHOR * [[UIScreen mainScreen] bounds].size.height) + MENU_BUTTON_SIZE * 3,
+                                            (MENU_BUTTON_TOP_ANCHOR * [[UIScreen mainScreen] bounds].size.height) + MENU_BUTTON_SIZE * (excludeForDocky ? 0 : 3),
                                             MENU_BUTTON_SIZE, MENU_BUTTON_SIZE);
-    self.scaleButton.alpha = 0.5;
+    self.scaleButton.alpha = (excludeForDocky ? 1 : 0.5);
     [self.view addSubview:self.scaleButton];
     
     self.settingsButton = [UIButton buttonWithType:UIButtonTypeCustom];
@@ -204,12 +217,13 @@ const CGFloat TABLE_HEADER_HEIGHT = 0.458;
     [self.settingsButton addTarget:self
             action:@selector(buttonPressDown:)
             forControlEvents:UIControlEventTouchDown];
-    UIImage *settingsImage = [HPUtilities settingsImage];
+    UIImage *settingsImage = [HPResources settingsImage];
     [self.settingsButton setImage:settingsImage forState:UIControlStateNormal];
     self.settingsButton.frame = CGRectMake([[UIScreen mainScreen] bounds].size.width - 47.5,
-                                           (MENU_BUTTON_TOP_ANCHOR * [[UIScreen mainScreen] bounds].size.height) + MENU_BUTTON_SIZE * 4,
+                                           (MENU_BUTTON_TOP_ANCHOR * [[UIScreen mainScreen] bounds].size.height) + MENU_BUTTON_SIZE * (excludeForDocky ? 1 : 4),
                                            MENU_BUTTON_SIZE, MENU_BUTTON_SIZE);
     self.settingsButton.alpha = 0.5;
+    
     [self.view addSubview:self.settingsButton];
 
     self.rootButton = [UIButton buttonWithType:UIButtonTypeCustom];
@@ -219,7 +233,7 @@ const CGFloat TABLE_HEADER_HEIGHT = 0.458;
     [self.rootButton addTarget:self
             action:@selector(buttonPressDown:)
             forControlEvents:UIControlEventTouchDown];
-    UIImage *rootImage = [HPUtilities rootImage];
+    UIImage *rootImage = [HPResources rootImage];
     [self.rootButton setImage:rootImage forState:UIControlStateNormal];
     self.rootButton.frame = CGRectMake([[UIScreen mainScreen] bounds].size.width - 47.5,
                                            (MENU_BUTTON_TOP_ANCHOR * [[UIScreen mainScreen] bounds].size.height) + MENU_BUTTON_SIZE * 7,
@@ -234,7 +248,7 @@ const CGFloat TABLE_HEADER_HEIGHT = 0.458;
     [self.dockButton addTarget:self
             action:@selector(buttonPressDown:)
             forControlEvents:UIControlEventTouchDown];
-    UIImage *dockImage = [HPUtilities dockImage];
+    UIImage *dockImage = [HPResources dockImage];
     [self.dockButton setImage:dockImage forState:UIControlStateNormal];
     self.dockButton.frame = CGRectMake([[UIScreen mainScreen] bounds].size.width - 47.5,
                                            (MENU_BUTTON_TOP_ANCHOR * [[UIScreen mainScreen] bounds].size.height) + MENU_BUTTON_SIZE * 8,
@@ -249,7 +263,7 @@ const CGFloat TABLE_HEADER_HEIGHT = 0.458;
     [self.topResetButton addTarget:self
             action:@selector(buttonPressDown:)
             forControlEvents:UIControlEventTouchDown];
-    UIImage *rsImage = [HPUtilities resetImage];
+    UIImage *rsImage = [HPResources resetImage];
     [self.topResetButton setImage:rsImage forState:UIControlStateNormal];
     self.topResetButton.frame = CGRectMake(20,(0.084) * [[UIScreen mainScreen] bounds].size.height, RESET_BUTTON_SIZE, RESET_BUTTON_SIZE);
     self.topResetButton.alpha = 0.8;
@@ -407,7 +421,8 @@ const CGFloat TABLE_HEADER_HEIGHT = 0.458;
             }
         } 
 
-        imageView.image = notched ? [HPUtilities inAppBannerNotched] : [HPUtilities inAppBanner];
+        imageView.image = notched ? [HPResources inAppBannerNotched] : [HPResources inAppBanner];// [[EditorManager sharedManager] blurredMoreBGImage];
+        imageView.contentMode = UIViewContentModeScaleAspectFill;imageView.clipsToBounds = YES;
         [tableHeaderView addSubview:imageView];
 
         UIView *doneButtonContainerView = [[UIView alloc] initWithFrame:CGRectMake([[UIScreen mainScreen] bounds].size.width-80, ((([[UIScreen mainScreen] bounds].size.width)/750)*300)-40, [[UIScreen mainScreen] bounds].size.width/2, 40)];
@@ -441,6 +456,12 @@ const CGFloat TABLE_HEADER_HEIGHT = 0.458;
 {
     if (!_offsetControlView) 
     {
+
+        NSString *x = @"";
+        if ([[[EditorManager sharedManager] editingLocation] isEqualToString:@"SBIconLocationRoot"]) x = @"Root";
+        else if ([[[EditorManager sharedManager] editingLocation] isEqualToString:@"SBIconLocationDock"]) x = @"Dock";
+        else x = @"Folder";
+
         _offsetControlView = [[HPControllerView alloc] initWithFrame:[[UIScreen mainScreen] bounds]];
 
         _offsetControlView.topView = [
@@ -493,7 +514,7 @@ const CGFloat TABLE_HEADER_HEIGHT = 0.458;
         self.topOffsetSlider.minimumValue = -100;
         self.topOffsetSlider.maximumValue = [[UIScreen mainScreen] bounds].size.height;
         self.topOffsetSlider.continuous = YES;
-        self.topOffsetSlider.value = [[HPManager sharedManager] currentLoadoutTopInsetForLocation:[[EditorManager sharedManager] editingLocation] pageIndex:0];
+        self.topOffsetSlider.value = [[NSUserDefaults standardUserDefaults] floatForKey:[NSString stringWithFormat:@"%@%@%@", @"HPThemeDefault", x, @"TopInset"]];
         [_offsetControlView addSubview:_offsetControlView.topView];
         [_offsetControlView.topView addSubview:topLabel];
         [_offsetControlView.topView addSubview:self.topOffsetSlider];
@@ -549,7 +570,7 @@ const CGFloat TABLE_HEADER_HEIGHT = 0.458;
         self.sideOffsetSlider.minimumValue = -400.0;
         self.sideOffsetSlider.maximumValue = 400.0;
         self.sideOffsetSlider.continuous = YES;
-        self.sideOffsetSlider.value = [[HPManager sharedManager] currentLoadoutLeftInsetForLocation:[[EditorManager sharedManager] editingLocation] pageIndex:0];
+        self.sideOffsetSlider.value = [[NSUserDefaults standardUserDefaults] floatForKey:[NSString stringWithFormat:@"%@%@%@", @"HPThemeDefault", x, @"LeftInset"]];
         [_offsetControlView addSubview:_offsetControlView.bottomView];
         [_offsetControlView.bottomView addSubview:sideLabel];
         [_offsetControlView.bottomView addSubview:self.sideOffsetSlider];
@@ -628,6 +649,11 @@ const CGFloat TABLE_HEADER_HEIGHT = 0.458;
 {
     if (!_iconCountControlView) 
     {
+
+        NSString *x = @"";
+        if ([[[EditorManager sharedManager] editingLocation] isEqualToString:@"SBIconLocationRoot"]) x = @"Root";
+        else if ([[[EditorManager sharedManager] editingLocation] isEqualToString:@"SBIconLocationDock"]) x = @"Dock";
+        else x = @"Folder";
         _iconCountControlView = [[HPControllerView alloc] initWithFrame:[[UIScreen mainScreen] bounds]];
 
         _iconCountControlView.topView = [
@@ -670,7 +696,7 @@ const CGFloat TABLE_HEADER_HEIGHT = 0.458;
         self.rowsSlider.minimumValue = 1;
         self.rowsSlider.maximumValue = kMaxRowAmount;
         self.rowsSlider.continuous = YES;
-        self.rowsSlider.value = (CGFloat)[[HPManager sharedManager] currentLoadoutRowsForLocation:[[EditorManager sharedManager] editingLocation] pageIndex:0];
+        self.rowsSlider.value = (CGFloat)[[NSUserDefaults standardUserDefaults] integerForKey:[NSString stringWithFormat:@"%@%@%@", @"HPThemeDefault", x, @"Rows"]];
         
         [_iconCountControlView addSubview:_iconCountControlView.topView];
         [_iconCountControlView.topView addSubview:topLabel];
@@ -737,7 +763,7 @@ const CGFloat TABLE_HEADER_HEIGHT = 0.458;
         self.columnsSlider.minimumValue = 1.0;
         self.columnsSlider.maximumValue = kMaxColumnAmount;
         self.columnsSlider.continuous = YES;
-        self.columnsSlider.value = (CGFloat)[[HPManager sharedManager] currentLoadoutColumnsForLocation:[[EditorManager sharedManager] editingLocation] pageIndex:0];
+        self.columnsSlider.value = (CGFloat)[[NSUserDefaults standardUserDefaults] integerForKey:[NSString stringWithFormat:@"%@%@%@", @"HPThemeDefault", x, @"Columns"]];
         [_iconCountControlView addSubview:_iconCountControlView.bottomView];
         self.bottomIconCountValueInput.text = [NSString stringWithFormat:@"%.0f", self.columnsSlider.value];
         [_iconCountControlView.bottomView addSubview:sideLabel];
@@ -813,6 +839,11 @@ const CGFloat TABLE_HEADER_HEIGHT = 0.458;
 {
     if (!_spacingControlView) 
     {
+
+        NSString *x = @"";
+        if ([[[EditorManager sharedManager] editingLocation] isEqualToString:@"SBIconLocationRoot"]) x = @"Root";
+        else if ([[[EditorManager sharedManager] editingLocation] isEqualToString:@"SBIconLocationDock"]) x = @"Dock";
+        else x = @"Folder";
         _spacingControlView = [[HPControllerView alloc] initWithFrame:[[UIScreen mainScreen] bounds]];
 
         _spacingControlView.topView =[[UIView alloc] initWithFrame:
@@ -857,7 +888,7 @@ const CGFloat TABLE_HEADER_HEIGHT = 0.458;
         self.verticalSpacingSlider.minimumValue = -100.0;
         self.verticalSpacingSlider.maximumValue = 200.0;
         self.verticalSpacingSlider.continuous = YES;
-        self.verticalSpacingSlider.value = [[HPManager sharedManager] currentLoadoutVerticalSpacingForLocation:[[EditorManager sharedManager] editingLocation] pageIndex:0];
+        self.verticalSpacingSlider.value = [[NSUserDefaults standardUserDefaults] floatForKey:[NSString stringWithFormat:@"%@%@%@", @"HPThemeDefault", x, @"VerticalSpacing"]];
         [_spacingControlView addSubview:_spacingControlView.topView];
         [_spacingControlView.topView addSubview:topLabel];
         [_spacingControlView.topView addSubview:self.verticalSpacingSlider];
@@ -910,7 +941,7 @@ const CGFloat TABLE_HEADER_HEIGHT = 0.458;
         self.horizontalSpacingSlider.minimumValue = -100.0;
         self.horizontalSpacingSlider.maximumValue = 200.0;
         self.horizontalSpacingSlider.continuous = YES;
-        self.horizontalSpacingSlider.value = [[HPManager sharedManager] currentLoadoutHorizontalSpacingForLocation:[[EditorManager sharedManager] editingLocation] pageIndex:0];
+        self.horizontalSpacingSlider.value = [[NSUserDefaults standardUserDefaults] floatForKey:[NSString stringWithFormat:@"%@%@%@", @"HPThemeDefault", x, @"SideInset"]];
         [_spacingControlView addSubview:_spacingControlView.bottomView];
         self.bottomSpacingValueInput.text = [NSString stringWithFormat:@"%.0f", self.horizontalSpacingSlider.value];
         [_spacingControlView.bottomView addSubview:sideLabel];
@@ -983,6 +1014,11 @@ const CGFloat TABLE_HEADER_HEIGHT = 0.458;
 {
     if (!_scaleControlView) 
     {
+
+        NSString *x = @"";
+        if ([[[EditorManager sharedManager] editingLocation] isEqualToString:@"SBIconLocationRoot"]) x = @"Root";
+        else if ([[[EditorManager sharedManager] editingLocation] isEqualToString:@"SBIconLocationDock"]) x = @"Dock";
+        else x = @"Folder";
         _scaleControlView = [[HPControllerView alloc] initWithFrame:[[UIScreen mainScreen] bounds]];
 
         _scaleControlView.topView = [
@@ -1025,7 +1061,7 @@ const CGFloat TABLE_HEADER_HEIGHT = 0.458;
         self.scaleSlider.minimumValue = 1.0;
         self.scaleSlider.maximumValue = 100.0;
         self.scaleSlider.continuous = YES;
-        self.scaleSlider.value = [[HPManager sharedManager] currentLoadoutScaleForLocation:[[EditorManager sharedManager] editingLocation] pageIndex:0];
+        self.scaleSlider.value = [[NSUserDefaults standardUserDefaults] floatForKey:[NSString stringWithFormat:@"%@%@%@", @"HPThemeDefault", x, @"Scale"]];
         [_scaleControlView addSubview:_scaleControlView.topView];
         [_scaleControlView.topView addSubview:topLabel];
         [_scaleControlView.topView addSubview:self.scaleSlider];
@@ -1033,53 +1069,26 @@ const CGFloat TABLE_HEADER_HEIGHT = 0.458;
         [_scaleControlView.topView addSubview:self.topScaleValueInput];
 
 
+        BOOL _tcDockyInstalled = [[NSFileManager defaultManager] fileExistsAtPath:@"/var/lib/dpkg/info/me.nepeta.docky.list"];
+        BOOL excludeForDocky = (_tcDockyInstalled && [[[EditorManager sharedManager] editingLocation] isEqualToString:@"SBIconLocationDock"]);
+
         _scaleControlView.bottomView = [[UIView alloc] initWithFrame:CGRectMake((0.146) * [[UIScreen mainScreen] bounds].size.width, (0.862) * [[UIScreen mainScreen] bounds].size.height, (1) * [[UIScreen mainScreen] bounds].size.width, (0.123) * [[UIScreen mainScreen] bounds].size.height)];
 
-        UILabel *sideLabel = [[UILabel alloc] initWithFrame:CGRectMake(0, 0, (0.706) * [[UIScreen mainScreen] bounds].size.width, 50)];
-        [sideLabel setText:@"Icon Rotation:"];
+        UILabel *sideLabel = [[UILabel alloc] initWithFrame:CGRectMake(0, 20, (0.706) * [[UIScreen mainScreen] bounds].size.width, 50)];
+        if (!excludeForDocky)
+        {
+             [sideLabel setText:@""];
+        }
+        else 
+        {
+            [sideLabel setText:@"Docky Compatibility Mode Enabled \n Most of the dock configuration is now disabled"];
+            [sideLabel setFont:[UIFont systemFontOfSize:12]];
+            sideLabel.numberOfLines = 2;
+        }
         sideLabel.textColor=[UIColor whiteColor];
         sideLabel.textAlignment=NSTextAlignmentCenter;
-
-
-        self.bottomScaleValueInput = [[UITextField alloc] initWithFrame:CGRectMake((0.730) * [[UIScreen mainScreen] bounds].size.width, (0.048) * [[UIScreen mainScreen] bounds].size.height, 50, 30)];
-        [self.bottomScaleValueInput addTarget:self
-                action:@selector(bottomScaleValueDidChange:)
-                forControlEvents:UIControlEventEditingChanged];
-        
-        [self.bottomScaleValueInput addTarget:self
-                action:@selector(bottomScaleEditingStarted)
-                forControlEvents:UIControlEventEditingDidBegin];
-
-        self.bottomScaleValueInput.keyboardType = UIKeyboardTypeNumberPad;
-        self.bottomScaleValueInput.textColor = [UIColor whiteColor];
-
-        UIToolbar* bkeyboardToolbar = [[UIToolbar alloc] init];
-
-        [bkeyboardToolbar sizeToFit];
-        UIBarButtonItem *bflexBarButton = [[UIBarButtonItem alloc]
-                                        initWithBarButtonSystemItem:UIBarButtonSystemItemFlexibleSpace
-                                        target:nil action:nil];
-        UIBarButtonItem *bdoneBarButton = [[UIBarButtonItem alloc]
-                                        initWithBarButtonSystemItem:UIBarButtonSystemItemDone
-                                        target:self action:@selector(bottomScaleEditingEnded)];
-        bkeyboardToolbar.items = @[bflexBarButton, bdoneBarButton];
-        self.bottomScaleValueInput.inputAccessoryView = bkeyboardToolbar;
-
-
-        self.rotationSlider = [[OBSlider alloc] initWithFrame:CGRectMake(0, (0.0369) * [[UIScreen mainScreen] bounds].size.height, (0.700) * [[UIScreen mainScreen] bounds].size.width, 50)];
-        [self.rotationSlider addTarget:self action:@selector(rotationSliderChanged:) forControlEvents:UIControlEventValueChanged];
-        [self.rotationSlider setBackgroundColor:[UIColor clearColor]];
-        self.rotationSlider.maximumTrackTintColor = [UIColor colorWithWhite:1.0 alpha:0.2];
-        self.rotationSlider.minimumTrackTintColor = [UIColor colorWithWhite:1.0 alpha: 0.9];
-        self.rotationSlider.minimumValue = 0;
-        self.rotationSlider.maximumValue = 359;
-        self.rotationSlider.continuous = YES;
-        self.rotationSlider.value = [[HPManager sharedManager] currentLoadoutRotationForLocation:[[EditorManager sharedManager] editingLocation] pageIndex:0];
-        //[_scaleControlView addSubview:_scaleControlView.bottomView];
         [_scaleControlView.bottomView addSubview:sideLabel];
-        [_scaleControlView.bottomView addSubview:self.rotationSlider];
-        self.bottomScaleValueInput.text = [NSString stringWithFormat:@"%.0f", self.rotationSlider.value];
-        [_scaleControlView.bottomView addSubview:self.bottomScaleValueInput];
+        [_scaleControlView addSubview:_scaleControlView.bottomView];
 
     }
     return _scaleControlView;
@@ -1115,6 +1124,7 @@ const CGFloat TABLE_HEADER_HEIGHT = 0.458;
             ];
         }
     ]; 
+
     self.viewKickedUp = NO;
 }
 
@@ -1146,7 +1156,7 @@ const CGFloat TABLE_HEADER_HEIGHT = 0.458;
     [self handleRootButtonPress:self.rootButton];
     [[HPManager sharedManager] saveCurrentLoadoutName];
     [[HPManager sharedManager] saveCurrentLoadout];
-    [[HPManager sharedManager] loadCurrentLoadout];
+    [[HPManager sharedManager] loadCurrentLoadout]; // Will Save + Load
 
     [self loadControllerView:[self settingsView]];
     self.activeButton.userInteractionEnabled = YES; 
@@ -1221,7 +1231,7 @@ const CGFloat TABLE_HEADER_HEIGHT = 0.458;
                 break;
         }
     }  
-    if ([[HPManager sharedManager] currentLoadoutColumnsForLocation:[[EditorManager sharedManager] editingLocation] pageIndex:0] == 4 && notched && (kCFCoreFoundationVersionNumber < 1600)) 
+    if ([[[HPManager sharedManager] config] currentLoadoutColumnsForLocation:[[EditorManager sharedManager] editingLocation] pageIndex:0] == 4 && notched && (kCFCoreFoundationVersionNumber < 1600)) 
     {
         self.leftOffsetLabel.text = @"Left Offset Disabled When\n4 Columns Selected on Notched Devices";
         self.bottomOffsetValueInput.enabled = NO;
@@ -1241,6 +1251,7 @@ const CGFloat TABLE_HEADER_HEIGHT = 0.458;
         animations:
         ^{
             sender.alpha = 1;
+            self.bottomResetButton.alpha = 0.8;
         }
     ];
     self.activeButton = sender; 
@@ -1257,6 +1268,7 @@ const CGFloat TABLE_HEADER_HEIGHT = 0.458;
         animations:
         ^{
             sender.alpha = 1;
+            self.bottomResetButton.alpha = 0;
         }
     ];
     self.activeButton = sender; 
@@ -1329,6 +1341,7 @@ const CGFloat TABLE_HEADER_HEIGHT = 0.458;
         animations:
         ^{
             sender.alpha = 1;
+            self.bottomResetButton.alpha = 0.8;
         }
     ];
 
@@ -1344,6 +1357,7 @@ const CGFloat TABLE_HEADER_HEIGHT = 0.458;
         animations:
         ^{
             sender.alpha = 1;
+            self.bottomResetButton.alpha = 0.8;
         }
     ];
     self.activeButton = sender;
@@ -1362,8 +1376,6 @@ const CGFloat TABLE_HEADER_HEIGHT = 0.458;
 - (void)loadControllerView:(HPControllerView *)arg1 
 {
     [self resignAllTextFields];
-    [[HPManager sharedManager] saveCurrentLoadoutName];
-    [[HPManager sharedManager] saveCurrentLoadout];
     self.activeButton.alpha = 0.5;
     AudioServicesPlaySystemSound(1519);
 
@@ -1397,7 +1409,7 @@ const CGFloat TABLE_HEADER_HEIGHT = 0.458;
 }
 - (void)bottomScaleValueDidChange:(UITextField *)textField
 {
-    self.scaleSlider.value = [[textField text] floatValue];
+    self.rotationSlider.value = [[textField text] floatValue];
     [self rotationSliderChanged:self.rotationSlider];
 }
 - (void)topSpacingValueDidChange:(UITextField *)textField
@@ -1424,8 +1436,12 @@ const CGFloat TABLE_HEADER_HEIGHT = 0.458;
 
 - (void)verticalSpacingSliderChanged:(OBSlider *)sender
 {
-    [[HPManager sharedManager] setCurrentLoadoutVerticalSpacing: [sender value] forLocation:[[EditorManager sharedManager] editingLocation] pageIndex:0];
-        [[NSNotificationCenter defaultCenter] postNotificationName:kGetUpdatedValues object:nil];
+    NSString *x = @"";
+    if ([[[EditorManager sharedManager] editingLocation] isEqualToString:@"SBIconLocationRoot"]) x = @"Root";
+    else if ([[[EditorManager sharedManager] editingLocation] isEqualToString:@"SBIconLocationDock"]) x = @"Dock";
+    else x = @"Folder";
+    [[NSUserDefaults standardUserDefaults]  setFloat:sender.value
+                forKey:[NSString stringWithFormat:@"HPThemeDefault%@%@", x, @"VerticalSpacing"]];
     for (SBRootIconListView *view in self.rootIconListViewsToUpdate) 
     {
         [view layoutIconsNow];
@@ -1433,9 +1449,13 @@ const CGFloat TABLE_HEADER_HEIGHT = 0.458;
     self.topSpacingValueInput.text = [NSString stringWithFormat:@"%.0f", sender.value];
 }
 - (void)horizontalSpacingSliderChanged:(OBSlider *)sender
-{
-    [[HPManager sharedManager] setCurrentLoadoutHorizontalSpacing: [sender value] forLocation:[[EditorManager sharedManager] editingLocation] pageIndex:0];
-        [[NSNotificationCenter defaultCenter] postNotificationName:kGetUpdatedValues object:nil];
+{    
+    NSString *x = @"";
+    if ([[[EditorManager sharedManager] editingLocation] isEqualToString:@"SBIconLocationRoot"]) x = @"Root";
+    else if ([[[EditorManager sharedManager] editingLocation] isEqualToString:@"SBIconLocationDock"]) x = @"Dock";
+    else x = @"Folder";
+    [[NSUserDefaults standardUserDefaults]  setFloat:sender.value
+                forKey:[NSString stringWithFormat:@"HPThemeDefault%@%@", x, @"SideInset"]];
     for (SBRootIconListView *view in self.rootIconListViewsToUpdate) 
     {
         [view layoutIconsNow];
@@ -1444,8 +1464,12 @@ const CGFloat TABLE_HEADER_HEIGHT = 0.458;
 }
 - (void)topOffsetSliderChanged:(OBSlider *)sender
 {
-    [[HPManager sharedManager] setCurrentLoadoutTopInset: [sender value] forLocation:[[EditorManager sharedManager] editingLocation] pageIndex:0];
-        [[NSNotificationCenter defaultCenter] postNotificationName:kGetUpdatedValues object:nil];
+    NSString *x = @"";
+    if ([[[EditorManager sharedManager] editingLocation] isEqualToString:@"SBIconLocationRoot"]) x = @"Root";
+    else if ([[[EditorManager sharedManager] editingLocation] isEqualToString:@"SBIconLocationDock"]) x = @"Dock"; 
+    else x = @"Folder";
+    [[NSUserDefaults standardUserDefaults]  setFloat:sender.value
+                forKey:[NSString stringWithFormat:@"HPThemeDefault%@%@", x, @"TopInset"]];
     for (SBRootIconListView *view in self.rootIconListViewsToUpdate) 
     {
         [view layoutIconsNow];
@@ -1454,8 +1478,12 @@ const CGFloat TABLE_HEADER_HEIGHT = 0.458;
 }
 - (void)scaleSliderChanged:(OBSlider *)sender
 {
-    [[HPManager sharedManager] setCurrentLoadoutScale: [sender value] forLocation:[[EditorManager sharedManager] editingLocation] pageIndex:0];
-        [[NSNotificationCenter defaultCenter] postNotificationName:kGetUpdatedValues object:nil];
+    NSString *x = @"";
+    if ([[[EditorManager sharedManager] editingLocation] isEqualToString:@"SBIconLocationRoot"]) x = @"Root";
+    else if ([[[EditorManager sharedManager] editingLocation] isEqualToString:@"SBIconLocationDock"]) x = @"Dock"; 
+    else x = @"Folder";
+    [[NSUserDefaults standardUserDefaults]  setFloat:sender.value
+                forKey:[NSString stringWithFormat:@"HPThemeDefault%@%@", x, @"Scale"]];
     for (SBRootIconListView *view in self.rootIconListViewsToUpdate) 
     {
         [view layoutIconsNow];
@@ -1468,8 +1496,12 @@ const CGFloat TABLE_HEADER_HEIGHT = 0.458;
 }
 - (void)rotationSliderChanged:(OBSlider *)sender
 {
-    [[HPManager sharedManager] setCurrentLoadoutRotation: [sender value] forLocation:[[EditorManager sharedManager] editingLocation] pageIndex:0];
-        [[NSNotificationCenter defaultCenter] postNotificationName:kGetUpdatedValues object:nil];
+    NSString *x = @"";
+    if ([[[EditorManager sharedManager] editingLocation] isEqualToString:@"SBIconLocationRoot"]) x = @"Root";
+    else if ([[[EditorManager sharedManager] editingLocation] isEqualToString:@"SBIconLocationDock"]) x = @"Dock"; 
+    else x = @"Folder";
+    [[NSUserDefaults standardUserDefaults]  setFloat:sender.value
+                forKey:[NSString stringWithFormat:@"HPThemeDefault%@%@", x, @"Rotation"]];
     for (SBRootIconListView *view in self.rootIconListViewsToUpdate) 
     {
         [view layoutIconsNow];
@@ -1478,15 +1510,12 @@ const CGFloat TABLE_HEADER_HEIGHT = 0.458;
 }
 - (void)sideOffsetSliderChanged:(OBSlider *)sender
 {
-    BOOL wasZero = [[HPManager sharedManager] currentLoadoutLeftInsetForLocation:[[EditorManager sharedManager] editingLocation] pageIndex:0] == 0.0;
-    BOOL isZero  = [sender value] == 0.0;
-    if (!isZero && wasZero)
-    {
-        self.horizontalSpacingSlider.value = 0.0;
-        [self horizontalSpacingSliderChanged:self.horizontalSpacingSlider];
-    }
-    [[HPManager sharedManager] setCurrentLoadoutLeftInset:[sender value] forLocation:[[EditorManager sharedManager] editingLocation] pageIndex:0];
-        [[NSNotificationCenter defaultCenter] postNotificationName:kGetUpdatedValues object:nil];
+    NSString *x = @"";
+    if ([[[EditorManager sharedManager] editingLocation] isEqualToString:@"SBIconLocationRoot"]) x = @"Root";
+    else if ([[[EditorManager sharedManager] editingLocation] isEqualToString:@"SBIconLocationDock"]) x = @"Dock"; 
+    else x = @"Folder";
+    [[NSUserDefaults standardUserDefaults]  setFloat:sender.value
+                forKey:[NSString stringWithFormat:@"HPThemeDefault%@%@", x, @"LeftInset"]];
     for (SBRootIconListView *view in self.rootIconListViewsToUpdate) 
     {
         [view layoutIconsNow];
@@ -1507,7 +1536,13 @@ const CGFloat TABLE_HEADER_HEIGHT = 0.458;
 {
     AudioServicesPlaySystemSound(1519);
     if ([self.topIconCountValueInput.text isEqual:[NSString stringWithFormat:@"%.0f", (CGFloat)((NSInteger)(floor([sender value])))]]) return;
-    [[HPManager sharedManager] setCurrentLoadoutRows: (NSInteger)(floor([sender value])) forLocation:[[EditorManager sharedManager] editingLocation] pageIndex:0];
+    
+    NSString *x = @"";
+    if ([[[EditorManager sharedManager] editingLocation] isEqualToString:@"SBIconLocationRoot"]) x = @"Root";
+    else if ([[[EditorManager sharedManager] editingLocation] isEqualToString:@"SBIconLocationDock"]) x = @"Dock"; 
+    else x = @"Folder";
+    [[NSUserDefaults standardUserDefaults]  setInteger:sender.value
+                forKey:[NSString stringWithFormat:@"HPThemeDefault%@%@", x, @"Rows"]];
 
     [[NSNotificationCenter defaultCenter] postNotificationName:kGetUpdatedValues object:nil];
     for (SBRootIconListView *view in self.rootIconListViewsToUpdate) 
@@ -1542,8 +1577,14 @@ const CGFloat TABLE_HEADER_HEIGHT = 0.458;
 {   
     AudioServicesPlaySystemSound(1519);
     if ([self.bottomIconCountValueInput.text isEqual:[NSString stringWithFormat:@"%.0f", (CGFloat)((NSInteger)(floor([sender value])))]]) return;
-    [[HPManager sharedManager] setCurrentLoadoutColumns: (NSInteger)(floor([sender value])) forLocation:[[EditorManager sharedManager] editingLocation] pageIndex:0];
-        [[NSNotificationCenter defaultCenter] postNotificationName:kGetUpdatedValues object:nil];
+    
+    NSString *x = @"";
+    if ([[[EditorManager sharedManager] editingLocation] isEqualToString:@"SBIconLocationRoot"]) x = @"Root";
+    else if ([[[EditorManager sharedManager] editingLocation] isEqualToString:@"SBIconLocationDock"]) x = @"Dock"; 
+    else x = @"Folder";
+    [[NSUserDefaults standardUserDefaults]  setFloat:sender.value
+                forKey:[NSString stringWithFormat:@"HPThemeDefault%@%@", x, @"Columns"]];
+
     for (SBRootIconListView *view in self.rootIconListViewsToUpdate) 
     {
         // Animation code credit to cuboid authors

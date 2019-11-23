@@ -7,6 +7,10 @@
 @property (nonatomic, readonly, strong) HPEditorWindow *editorView;
 @property (nonatomic, readonly, strong) HPEditorViewController *editorViewController;
 
+@property (nonatomic, retain) UIImage *wallpaper;
+-(UIImage *)bdBackgroundImage;
+-(UIImage *)blurredMoreBGImage;
+
 -(HPEditorWindow *)editorView;
 -(HPEditorViewController *)editorViewController;
 -(void)resetAllValuesToDefaults;

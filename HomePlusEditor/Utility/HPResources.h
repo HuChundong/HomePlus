@@ -1,4 +1,4 @@
-@interface HPUtilities : NSObject
+@interface HPResources : NSObject
 + (UIImage *)spacerImage;
 + (UIImage *)offsetImage;
 + (UIImage *)rootImage;

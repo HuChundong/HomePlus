@@ -16,7 +16,7 @@
 #define kShowFloatingDockNotificationName @"HomePlusShowFloatingDock"
 #define kReloadIconScaleNotificationName @"HomePlusReloadIconScale"
 
-#define kMonitorEnabled NO
+#define kMonitorEnabled YES
 
 @implementation HPMonitor
 
