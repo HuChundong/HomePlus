@@ -2,7 +2,7 @@ include $(THEOS)/makefiles/common.mk
 
 BUNDLE_NAME = HomePlusPrefs
 
-ARCHS = arm64 arm64e
+ARCHS = armv7 arm64 arm64e
 
 HomePlusPrefs_FILES = HPPRootListController.m
 HomePlusPrefs_INSTALL_PATH = /Library/PreferenceBundles

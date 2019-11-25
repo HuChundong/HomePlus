@@ -405,7 +405,7 @@ const int RESET_VALUES = 1;
                         cell.selectionStyle = UITableViewCellSelectionStyleNone;
                         UISwitch *switchView = [[UISwitch alloc] initWithFrame:CGRectZero];
                         cell.accessoryView = switchView;
-                        [switchView setOn:[[[HPManager sharedManager] config] currentLoadoutShouldHideDockBG] animated:NO];
+                        [switchView setOn:[[NSUserDefaults standardUserDefaults] integerForKey:@"HPThemeDefaultHideDock"]?:0 == 1  animated:NO];
                         [switchView addTarget:self action:@selector(dockbGSwitchChanged:) forControlEvents:UIControlEventValueChanged];
 
                         //[cell.layer setCornerRadius:10];
@@ -645,6 +645,8 @@ const int RESET_VALUES = 1;
 - (void)dockbGSwitchChanged:(id)sender 
 {
     UISwitch *switchControl = sender;
+    [[NSUserDefaults standardUserDefaults] setBool:switchControl.on
+                    forKey:[NSString stringWithFormat:@"%@%@", @"HPThemeDefault", @"HideDock"] ];
     [[NSNotificationCenter defaultCenter] postNotificationName:@"HPLayoutDockView" object:nil];
 }
 
@@ -702,6 +704,7 @@ const int RESET_VALUES = 1;
             {
                 case 0: 
                 {
+                    /*
                     UIAlertView *alert = [[UIAlertView alloc] initWithTitle:@"Aye,"
                                                                     message:@"Are you sure you want to reset everything?"
                                                                 delegate:self
@@ -709,6 +712,8 @@ const int RESET_VALUES = 1;
                                                         otherButtonTitles:@"Yes", nil];
                     [alert show];
                     break;
+                    */
+                    [[NSUserDefaults standardUserDefaults] setInteger:0 forKey:@"HPTutorialGiven"];
                 }
                 case 3: 
                 {

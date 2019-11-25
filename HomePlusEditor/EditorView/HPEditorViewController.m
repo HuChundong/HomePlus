@@ -177,7 +177,6 @@ const CGFloat TABLE_HEADER_HEIGHT = 0.458;
     
     if (!excludeForDocky) [self.view addSubview:self.spacerButton];
 
-
     self.iconCountButton = [UIButton buttonWithType:UIButtonTypeCustom];
     [self.iconCountButton addTarget:self 
             action:@selector(handleIconCountButtonPress:)
@@ -334,10 +333,8 @@ const CGFloat TABLE_HEADER_HEIGHT = 0.458;
     AudioServicesPlaySystemSound(1519);
     [[EditorManager sharedManager] setEditingLocation:@"SBIconLocationRoot"];
     [[HPManager sharedManager] saveCurrentLoadout];
-
-
-        [[self.view subviews]
-            makeObjectsPerformSelector:@selector(removeFromSuperview)];
+    [[self.view subviews]
+        makeObjectsPerformSelector:@selector(removeFromSuperview)];
     _spacingControlView = nil;
     _offsetControlView = nil;
     _settingsView = nil;
@@ -492,7 +489,7 @@ const CGFloat TABLE_HEADER_HEIGHT = 0.458;
         self.topOffsetSlider.maximumTrackTintColor = [UIColor colorWithWhite:1.0 alpha:0.2];
         self.topOffsetSlider.minimumTrackTintColor = [UIColor colorWithWhite:1.0 alpha: 0.9];
         self.topOffsetSlider.minimumValue = -100;
-        self.topOffsetSlider.maximumValue = [[UIScreen mainScreen] bounds].size.height;
+        self.topOffsetSlider.maximumValue = [[UIScreen mainScreen] bounds].size.height/2;
         self.topOffsetSlider.continuous = YES;
         self.topOffsetSlider.value = [[NSUserDefaults standardUserDefaults] floatForKey:[NSString stringWithFormat:@"%@%@%@", @"HPThemeDefault", x, @"TopInset"]];
         [_offsetControlView addSubview:_offsetControlView.topView];
@@ -1416,54 +1413,34 @@ const CGFloat TABLE_HEADER_HEIGHT = 0.458;
 
 - (void)verticalSpacingSliderChanged:(OBSlider *)sender
 {
-    NSString *x = @"";
-    if ([[[EditorManager sharedManager] editingLocation] isEqualToString:@"SBIconLocationRoot"]) x = @"Root";
-    else if ([[[EditorManager sharedManager] editingLocation] isEqualToString:@"SBIconLocationDock"]) x = @"Dock";
-    else x = @"Folder";
-    [[NSUserDefaults standardUserDefaults]  setFloat:sender.value
+    NSString *x = [[[EditorManager sharedManager] editingLocation] substringFromIndex:14];
+    [[NSUserDefaults standardUserDefaults] setFloat:sender.value
                 forKey:[NSString stringWithFormat:@"HPThemeDefault%@%@", x, @"VerticalSpacing"]];
-    for (SBRootIconListView *view in self.rootIconListViewsToUpdate) 
-    {
-        [view layoutIconsNow];
-    }    
     self.topSpacingValueInput.text = [NSString stringWithFormat:@"%.0f", sender.value];
+    [[NSNotificationCenter defaultCenter] postNotificationName:@"HPlayoutIconViews" object:nil];
 }
 - (void)horizontalSpacingSliderChanged:(OBSlider *)sender
 {    
-    NSString *x = @"";
-    if ([[[EditorManager sharedManager] editingLocation] isEqualToString:@"SBIconLocationRoot"]) x = @"Root";
-    else if ([[[EditorManager sharedManager] editingLocation] isEqualToString:@"SBIconLocationDock"]) x = @"Dock";
-    else x = @"Folder";
-    [[NSUserDefaults standardUserDefaults]  setFloat:sender.value
+    NSString *x = [[[EditorManager sharedManager] editingLocation] substringFromIndex:14];
+    [[NSUserDefaults standardUserDefaults] setFloat:sender.value
                 forKey:[NSString stringWithFormat:@"HPThemeDefault%@%@", x, @"SideInset"]];
-    for (SBRootIconListView *view in self.rootIconListViewsToUpdate) 
-    {
-        [view layoutIconsNow];
-    }
     self.bottomSpacingValueInput.text = [NSString stringWithFormat:@"%.0f", sender.value];
+    [[NSNotificationCenter defaultCenter] postNotificationName:@"HPlayoutIconViews" object:nil];
 }
 - (void)topOffsetSliderChanged:(OBSlider *)sender
 {
-    NSString *x = @"";
-    if ([[[EditorManager sharedManager] editingLocation] isEqualToString:@"SBIconLocationRoot"]) x = @"Root";
-    else if ([[[EditorManager sharedManager] editingLocation] isEqualToString:@"SBIconLocationDock"]) x = @"Dock"; 
-    else x = @"Folder";
-    [[NSUserDefaults standardUserDefaults]  setFloat:sender.value
+    NSString *x = [[[EditorManager sharedManager] editingLocation] substringFromIndex:14];
+    [[NSUserDefaults standardUserDefaults] setFloat:sender.value
                 forKey:[NSString stringWithFormat:@"HPThemeDefault%@%@", x, @"TopInset"]];
-    for (SBRootIconListView *view in self.rootIconListViewsToUpdate) 
-    {
-        [view layoutIconsNow];
-    }    
     self.topOffsetValueInput.text = [NSString stringWithFormat:@"%.0f", sender.value];
+    [[NSNotificationCenter defaultCenter] postNotificationName:@"HPlayoutIconViews" object:nil];
 }
 - (void)scaleSliderChanged:(OBSlider *)sender
 {
-    NSString *x = @"";
-    if ([[[EditorManager sharedManager] editingLocation] isEqualToString:@"SBIconLocationRoot"]) x = @"Root";
-    else if ([[[EditorManager sharedManager] editingLocation] isEqualToString:@"SBIconLocationDock"]) x = @"Dock"; 
-    else x = @"Folder";
-    [[NSUserDefaults standardUserDefaults]  setFloat:sender.value
+    NSString *x = [[[EditorManager sharedManager] editingLocation] substringFromIndex:14];
+    [[NSUserDefaults standardUserDefaults] setFloat:sender.value
                 forKey:[NSString stringWithFormat:@"HPThemeDefault%@%@", x, @"Scale"]];
+    self.topScaleValueInput.text = [NSString stringWithFormat:@"%.0f", sender.value];
     for (SBRootIconListView *view in self.rootIconListViewsToUpdate) 
     {
         [view layoutIconsNow];
@@ -1472,35 +1449,22 @@ const CGFloat TABLE_HEADER_HEIGHT = 0.458;
             [icon layoutSubviews];
         }
     }
-    self.topScaleValueInput.text = [NSString stringWithFormat:@"%.0f", sender.value];
 }
 - (void)rotationSliderChanged:(OBSlider *)sender
 {
-    NSString *x = @"";
-    if ([[[EditorManager sharedManager] editingLocation] isEqualToString:@"SBIconLocationRoot"]) x = @"Root";
-    else if ([[[EditorManager sharedManager] editingLocation] isEqualToString:@"SBIconLocationDock"]) x = @"Dock"; 
-    else x = @"Folder";
+    NSString *x = [[[EditorManager sharedManager] editingLocation] substringFromIndex:14];
     [[NSUserDefaults standardUserDefaults]  setFloat:sender.value
                 forKey:[NSString stringWithFormat:@"HPThemeDefault%@%@", x, @"Rotation"]];
-    for (SBRootIconListView *view in self.rootIconListViewsToUpdate) 
-    {
-        [view layoutIconsNow];
-    }    
     self.bottomScaleValueInput.text = [NSString stringWithFormat:@"%.0f", sender.value];
+    [[NSNotificationCenter defaultCenter] postNotificationName:@"HPlayoutIconViews" object:nil];
 }
 - (void)sideOffsetSliderChanged:(OBSlider *)sender
 {
-    NSString *x = @"";
-    if ([[[EditorManager sharedManager] editingLocation] isEqualToString:@"SBIconLocationRoot"]) x = @"Root";
-    else if ([[[EditorManager sharedManager] editingLocation] isEqualToString:@"SBIconLocationDock"]) x = @"Dock"; 
-    else x = @"Folder";
+    NSString *x = [[[EditorManager sharedManager] editingLocation] substringFromIndex:14];
     [[NSUserDefaults standardUserDefaults]  setFloat:sender.value
                 forKey:[NSString stringWithFormat:@"HPThemeDefault%@%@", x, @"LeftInset"]];
-    for (SBRootIconListView *view in self.rootIconListViewsToUpdate) 
-    {
-        [view layoutIconsNow];
-    }    
     self.bottomOffsetValueInput.text = [NSString stringWithFormat:@"%.0f", sender.value];
+    [[NSNotificationCenter defaultCenter] postNotificationName:@"HPlayoutIconViews" object:nil];
 }
 - (void)rowPlus
 {
@@ -1564,7 +1528,7 @@ const CGFloat TABLE_HEADER_HEIGHT = 0.458;
     else x = @"Folder";
     [[NSUserDefaults standardUserDefaults]  setFloat:sender.value
                 forKey:[NSString stringWithFormat:@"HPThemeDefault%@%@", x, @"Columns"]];
-
+    
     for (SBRootIconListView *view in self.rootIconListViewsToUpdate) 
     {
         // Animation code credit to cuboid authors
@@ -1572,6 +1536,7 @@ const CGFloat TABLE_HEADER_HEIGHT = 0.458;
             [view layoutIconsNow];
         } completion:NULL];
     }    
+    
     self.bottomIconCountValueInput.text = [NSString stringWithFormat:@"%.0f", (CGFloat)((NSInteger)(floor([sender value])))];
 }
 

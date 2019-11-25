@@ -49,17 +49,17 @@
 }
 - (void)saveCurrentLoadoutName
 {
-    [[NSUserDefaults standardUserDefaults] synchronize];
+    //[[NSUserDefaults standardUserDefaults] synchronize];
     [[NSUserDefaults standardUserDefaults] setObject:self.currentLoadoutName
                                                forKey:@"HPCurrentLoadout"];
-    [[NSUserDefaults standardUserDefaults] synchronize];
+    //[[NSUserDefaults standardUserDefaults] synchronize];
 }
 
 - (void)loadSavedCurrentLoadoutName
 {
-    [[NSUserDefaults standardUserDefaults] synchronize];
+    //[[NSUserDefaults standardUserDefaults] synchronize];
     self.currentLoadoutName = [[NSUserDefaults standardUserDefaults] stringForKey:@"HPCurrentLoadout"] ?: @"Default";
-    [[NSUserDefaults standardUserDefaults] synchronize];
+    //[[NSUserDefaults standardUserDefaults] synchronize];
 }
 
 - (void)saveCurrentLoadout
@@ -340,7 +340,7 @@
     [userDefaults setBool:self.useUserDefaults
                     forKey:@"HPuseUserDefaults"];
 
-    [[NSUserDefaults standardUserDefaults] synchronize];
+    //[[NSUserDefaults standardUserDefaults] synchronize];
     [[HPMonitor sharedMonitor] logItem:[NSString stringWithFormat:@"Saving loadout with name %@", name]];
 
     self.config.currentLoadoutData[@"vRowUpdates"] = @(self.vRowUpdates);

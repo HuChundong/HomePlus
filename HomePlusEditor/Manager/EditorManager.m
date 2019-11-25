@@ -45,6 +45,11 @@
 @property (nonatomic, readwrite, strong) HPEditorViewController *editorViewController;
 @property (nonatomic, readwrite, strong) HPEditorWindow *editorView;
 
+@property (nonatomic, assign) BOOL tutorialActive;
+
+@property (nonatomic, readwrite, strong) HPTutorialViewController *tutorialViewController;
+@property (nonatomic, readwrite, strong) HPEditorWindow *tutorialView;
+
 @end
 
 @implementation EditorManager 
@@ -64,7 +69,7 @@
     self = [super init];
 
     if (self) {
-        // set this in hpevc instead . self.editingLocation = @"SBIconLocationRoot";
+        self.editingLocation = @"SBIconLocationRoot";
     }
 
     return self;
@@ -152,6 +157,31 @@
 
     return blurredAndDarkenedImage;
 }
+
+
+- (HPEditorWindow *)tutorialView 
+{
+    [self tutorialViewController];
+    if (!_tutorialView) 
+    {
+        _tutorialView = [[HPEditorWindow alloc] initWithFrame:[[UIScreen mainScreen] bounds]];
+        _tutorialView.rootViewController = self.tutorialViewController;
+        [_tutorialView addSubview:[self tutorialViewController].view];
+        [_tutorialViewController introView];
+        _tutorialView.hidden = YES;
+    }
+    return _tutorialView;
+}
+
+- (HPTutorialViewController *)tutorialViewController 
+{
+    if (!_tutorialViewController) 
+    {
+        _tutorialViewController = [[HPTutorialViewController alloc] init];
+    }
+    return _tutorialViewController;
+}
+
 - (HPEditorWindow *)editorView 
 {
     if (!_editorView) 
@@ -177,21 +207,47 @@
 {
     [self editorViewController];
     [self editorView];
-    _editorView.alpha = 0;
     _editorView.hidden = NO;
-    [UIView animateWithDuration:.2 
+    _editorView.alpha = 0;
+    [UIView animateWithDuration:.2
         animations:
         ^{
             _editorView.alpha = 1;
         }
     ];
-
+    
+    if (self.tutorialActive)
+    {
+        self.tutorialActive = NO;
+        [_tutorialViewController explainOffsets];
+    }
 }
-
+- (void)showTutorialView
+{
+    self.tutorialActive = YES;
+    [self tutorialViewController];
+    [self tutorialView];
+    _tutorialView.alpha = 0;
+    _tutorialView.hidden = NO;
+    _tutorialViewController.viewOne.alpha = 1;
+    [UIView animateWithDuration:.2 
+        animations:
+        ^{
+            _tutorialView.alpha = 1;
+        }
+    ];
+}
+- (void)hideTutorialView
+{
+    self.tutorialActive = NO;
+    _tutorialView.hidden = YES;
+}
 - (void)hideEditorView
 {
     [_editorViewController handleDoneSettingsButtonPress:_editorViewController.settingsDoneButton];
+    [self hideTutorialView];
     _editorView.hidden = YES;
+    [[self editorViewController] reload];
 }
 
 - (void)toggleEditorView
@@ -200,7 +256,6 @@
     if (_editorView.hidden) 
     {
         [self showEditorView];
-        [[self editorViewController] reload];
     } 
     else 
     {
