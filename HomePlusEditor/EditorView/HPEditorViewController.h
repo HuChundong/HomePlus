@@ -70,6 +70,8 @@
 - (void)addRootIconListViewToUpdate:(SBRootIconListView *)view;
 - (void)handleDoneSettingsButtonPress:(UIButton*)sender;
 
+-(void)transitionViewsToActivationPercentage:(CGFloat)amount;
+-(void)transitionViewsToActivationPercentage:(CGFloat)amount withDuration:(CGFloat)duration ;
 @end
 
 @protocol HPEditorViewControllerDelegate <NSObject>

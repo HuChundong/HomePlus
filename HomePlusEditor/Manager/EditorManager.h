@@ -11,6 +11,7 @@
 @property (nonatomic, readonly, strong) HPTutorialViewController *tutorialViewController;
 @property (nonatomic, readonly, strong) HPEditorWindow *tutorialView;
 
+@property (nonatomic, assign) BOOL tutorialActive;
 @property (nonatomic, retain) UIImage *wallpaper;
 @property (nonatomic, retain) UIImage *dynamicallyGeneratedSettingsHeaderImage;
 @property (nonatomic, retain) UIImage *blurredAndDarkenedWallpaper;

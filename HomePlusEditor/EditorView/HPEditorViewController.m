@@ -101,7 +101,8 @@ const CGFloat TABLE_HEADER_HEIGHT = 0.458;
 @implementation HPEditorViewController
 @synthesize topOffsetSlider, sideOffsetSlider, verticalSpacingSlider, horizontalSpacingSlider, 
             rootIconListViewsToUpdate, topOffsetValueInput, bottomOffsetValueInput,
-            topSpacingValueInput, bottomSpacingValueInput;
+            topSpacingValueInput, bottomSpacingValueInput, rowsSlider, columnsSlider, scaleSlider,
+            rotationSlider;
 
 - (void)viewDidLoad
 {
@@ -135,6 +136,11 @@ const CGFloat TABLE_HEADER_HEIGHT = 0.458;
     [self iconCountControlView].alpha = 0;
     [self settingsView].alpha = 0;
 
+    self.tabBar = [[HPEditorViewNavigationTabBar alloc] initWithFrame:CGRectMake(
+                                        [[UIScreen mainScreen] bounds].size.width - 47.5,
+                                         MENU_BUTTON_TOP_ANCHOR * [[UIScreen mainScreen] bounds].size.height,
+                                         MENU_BUTTON_SIZE, MENU_BUTTON_SIZE*9)];
+
     // Side Navigation Bar
     // TODO: Add these as a subview of HPEditorViewNavigationTabBar and expand that class. 
     // TODO: Generate these with a switch-case generator
@@ -147,11 +153,9 @@ const CGFloat TABLE_HEADER_HEIGHT = 0.458;
             forControlEvents:UIControlEventTouchDown];
     UIImage *offsetImage = [HPResources offsetImage];
     [self.offsetButton setImage:offsetImage forState:UIControlStateNormal];
-    self.offsetButton.frame = CGRectMake([[UIScreen mainScreen] bounds].size.width - 47.5,
-                                         MENU_BUTTON_TOP_ANCHOR * [[UIScreen mainScreen] bounds].size.height,
-                                         MENU_BUTTON_SIZE, MENU_BUTTON_SIZE);
+    self.offsetButton.frame = CGRectMake(0,0, MENU_BUTTON_SIZE, MENU_BUTTON_SIZE);
     
-    if (!excludeForDocky) [self.view addSubview:self.offsetButton];
+    if (!excludeForDocky) [self.tabBar addSubview:self.offsetButton];
     // Since the offset view will be the first loaded, we dont need to lower alpha
     //      on the button. 
 
@@ -168,14 +172,12 @@ const CGFloat TABLE_HEADER_HEIGHT = 0.458;
     UIImage *spacerImage = [HPResources spacerImage];
     [self.spacerButton setImage:spacerImage forState:UIControlStateNormal];
 
-    self.spacerButton.frame = CGRectMake([[UIScreen mainScreen] bounds].size.width - 47.5,
-                                         (MENU_BUTTON_TOP_ANCHOR * [[UIScreen mainScreen] bounds].size.height) + MENU_BUTTON_SIZE,
-                                         MENU_BUTTON_SIZE, MENU_BUTTON_SIZE);
+    self.spacerButton.frame = CGRectMake(0, 0 + MENU_BUTTON_SIZE, MENU_BUTTON_SIZE, MENU_BUTTON_SIZE);
     // Lower alpha on the rest. 
     // TODO: const these
     self.spacerButton.alpha = 0.5;
     
-    if (!excludeForDocky) [self.view addSubview:self.spacerButton];
+    if (!excludeForDocky) [self.tabBar addSubview:self.spacerButton];
 
     self.iconCountButton = [UIButton buttonWithType:UIButtonTypeCustom];
     [self.iconCountButton addTarget:self 
@@ -186,12 +188,10 @@ const CGFloat TABLE_HEADER_HEIGHT = 0.458;
             forControlEvents:UIControlEventTouchDown];
     UIImage *iCImage = [HPResources iconCountImage];
     [self.iconCountButton setImage:iCImage forState:UIControlStateNormal];
-    self.iconCountButton.frame = CGRectMake([[UIScreen mainScreen] bounds].size.width - 47.5,
-                                            (MENU_BUTTON_TOP_ANCHOR * [[UIScreen mainScreen] bounds].size.height) + MENU_BUTTON_SIZE * 2,
-                                            MENU_BUTTON_SIZE, MENU_BUTTON_SIZE);
+    self.iconCountButton.frame = CGRectMake(0, 0 + MENU_BUTTON_SIZE * 2,  MENU_BUTTON_SIZE, MENU_BUTTON_SIZE);
     self.iconCountButton.alpha = 0.5;
     
-    if (!excludeForDocky) [self.view addSubview:self.iconCountButton];
+    if (!excludeForDocky) [self.tabBar addSubview:self.iconCountButton];
 
 
     self.scaleButton = [UIButton buttonWithType:UIButtonTypeCustom];
@@ -203,11 +203,9 @@ const CGFloat TABLE_HEADER_HEIGHT = 0.458;
             forControlEvents:UIControlEventTouchDown];
     UIImage *sImage = [HPResources scaleImage];
     [self.scaleButton setImage:sImage forState:UIControlStateNormal];
-    self.scaleButton.frame = CGRectMake([[UIScreen mainScreen] bounds].size.width - 47.5,
-                                            (MENU_BUTTON_TOP_ANCHOR * [[UIScreen mainScreen] bounds].size.height) + MENU_BUTTON_SIZE * (excludeForDocky ? 0 : 3),
-                                            MENU_BUTTON_SIZE, MENU_BUTTON_SIZE);
+    self.scaleButton.frame = CGRectMake(0, 0 + MENU_BUTTON_SIZE * 3,  MENU_BUTTON_SIZE, MENU_BUTTON_SIZE);
     self.scaleButton.alpha = (excludeForDocky ? 1 : 0.5);
-    [self.view addSubview:self.scaleButton];
+    [self.tabBar addSubview:self.scaleButton];
     
     self.settingsButton = [UIButton buttonWithType:UIButtonTypeCustom];
     [self.settingsButton addTarget:self 
@@ -218,12 +216,10 @@ const CGFloat TABLE_HEADER_HEIGHT = 0.458;
             forControlEvents:UIControlEventTouchDown];
     UIImage *settingsImage = [HPResources settingsImage];
     [self.settingsButton setImage:settingsImage forState:UIControlStateNormal];
-    self.settingsButton.frame = CGRectMake([[UIScreen mainScreen] bounds].size.width - 47.5,
-                                           (MENU_BUTTON_TOP_ANCHOR * [[UIScreen mainScreen] bounds].size.height) + MENU_BUTTON_SIZE * (excludeForDocky ? 1 : 4),
-                                           MENU_BUTTON_SIZE, MENU_BUTTON_SIZE);
+    self.settingsButton.frame = CGRectMake(0, 0 + MENU_BUTTON_SIZE * (excludeForDocky ? 1 : 4), MENU_BUTTON_SIZE, MENU_BUTTON_SIZE);
     self.settingsButton.alpha = 0.5;
     
-    [self.view addSubview:self.settingsButton];
+    [self.tabBar addSubview:self.settingsButton];
 
     self.rootButton = [UIButton buttonWithType:UIButtonTypeCustom];
     [self.rootButton addTarget:self 
@@ -234,11 +230,9 @@ const CGFloat TABLE_HEADER_HEIGHT = 0.458;
             forControlEvents:UIControlEventTouchDown];
     UIImage *rootImage = [HPResources rootImage];
     [self.rootButton setImage:rootImage forState:UIControlStateNormal];
-    self.rootButton.frame = CGRectMake([[UIScreen mainScreen] bounds].size.width - 47.5,
-                                           (MENU_BUTTON_TOP_ANCHOR * [[UIScreen mainScreen] bounds].size.height) + MENU_BUTTON_SIZE * 7,
-                                           MENU_BUTTON_SIZE, MENU_BUTTON_SIZE);
+    self.rootButton.frame = CGRectMake(0, 0 + MENU_BUTTON_SIZE * 7, MENU_BUTTON_SIZE, MENU_BUTTON_SIZE);
     self.rootButton.alpha = 1;
-    [self.view addSubview:self.rootButton];
+    [self.tabBar addSubview:self.rootButton];
 
     self.dockButton = [UIButton buttonWithType:UIButtonTypeCustom];
     [self.dockButton addTarget:self 
@@ -249,11 +243,10 @@ const CGFloat TABLE_HEADER_HEIGHT = 0.458;
             forControlEvents:UIControlEventTouchDown];
     UIImage *dockImage = [HPResources dockImage];
     [self.dockButton setImage:dockImage forState:UIControlStateNormal];
-    self.dockButton.frame = CGRectMake([[UIScreen mainScreen] bounds].size.width - 47.5,
-                                           (MENU_BUTTON_TOP_ANCHOR * [[UIScreen mainScreen] bounds].size.height) + MENU_BUTTON_SIZE * 8,
-                                           MENU_BUTTON_SIZE, MENU_BUTTON_SIZE);
+    self.dockButton.frame = CGRectMake(0, 0 + MENU_BUTTON_SIZE * 8,  MENU_BUTTON_SIZE, MENU_BUTTON_SIZE);
     self.dockButton.alpha = 0.5;
-    [self.view addSubview:self.dockButton];
+    [self.tabBar addSubview:self.dockButton];
+    [self.view addSubview:self.tabBar];
 
     self.topResetButton = [UIButton buttonWithType:UIButtonTypeCustom];
     [self.topResetButton addTarget:self 
@@ -280,20 +273,47 @@ const CGFloat TABLE_HEADER_HEIGHT = 0.458;
     self.bottomResetButton.alpha = 0.8;
     [self.view addSubview:self.bottomResetButton];
 
-    [self.view addSubview:[self tapBackView]];
     self.tapBackView.hidden = NO;
     
     self.activeButton = self.offsetButton;
 
 }
 
+-(void)transitionViewsToActivationPercentage:(CGFloat)amount 
+{ // amount being float 0<x<1
+
+    CGFloat fullAmt = (([[UIScreen mainScreen] bounds].size.height) * 0.15);
+    CGFloat topTranslation = 0-fullAmt + (amount * fullAmt);
+    CGFloat bottomTranslation = fullAmt - (amount * fullAmt);
+    self.activeView.topView.transform = CGAffineTransformTranslate(CGAffineTransformIdentity, 0, topTranslation);
+    self.activeView.bottomView.transform = CGAffineTransformTranslate(CGAffineTransformIdentity, 0, bottomTranslation);
+    self.topResetButton.transform = CGAffineTransformTranslate(CGAffineTransformIdentity, 0, topTranslation);
+    self.bottomResetButton.transform = CGAffineTransformTranslate(CGAffineTransformIdentity, 0, bottomTranslation);
+    self.tabBar.transform = CGAffineTransformTranslate(CGAffineTransformIdentity, (50 - (50 * amount)), 0);
+}
+-(void)transitionViewsToActivationPercentage:(CGFloat)amount withDuration:(CGFloat)duration 
+{
+    [UIView animateWithDuration:duration
+        animations:
+        ^{  
+            CGFloat fullAmt = (([[UIScreen mainScreen] bounds].size.height) * 0.15);
+            CGFloat topTranslation = 0-fullAmt + (amount * fullAmt);
+            CGFloat bottomTranslation = fullAmt - (amount * fullAmt);
+            self.activeView.topView.transform = CGAffineTransformTranslate(CGAffineTransformIdentity, 0, topTranslation);
+            self.activeView.bottomView.transform = CGAffineTransformTranslate(CGAffineTransformIdentity, 0, bottomTranslation);
+            self.topResetButton.transform = CGAffineTransformTranslate(CGAffineTransformIdentity, 0, topTranslation);
+            self.bottomResetButton.transform = CGAffineTransformTranslate(CGAffineTransformIdentity, 0, bottomTranslation);
+            self.tabBar.transform = CGAffineTransformTranslate(CGAffineTransformIdentity, (50 - (50 * amount)), 0);
+        }
+    ];
+}
 -(void)reload 
 {
     [[EditorManager sharedManager] setEditingLocation:@"SBIconLocationRoot"];
     [[HPManager sharedManager] saveCurrentLoadout];
 
-        [[self.view subviews]
-            makeObjectsPerformSelector:@selector(removeFromSuperview)];
+    [[self.view subviews]
+        makeObjectsPerformSelector:@selector(removeFromSuperview)];
     _spacingControlView = nil;
     _offsetControlView = nil;
     _settingsView = nil;
@@ -394,8 +414,6 @@ const CGFloat TABLE_HEADER_HEIGHT = 0.458;
         UIView *tableHeaderView = [[UIView alloc] initWithFrame:CGRectMake(0,0,[[UIScreen mainScreen] bounds].size.width,(([[UIScreen mainScreen] bounds].size.width)/750)*300)];
         UIImageView *imageView = [[UIImageView alloc] initWithFrame:CGRectMake(0, 0, [[UIScreen mainScreen] bounds].size.width,(([[UIScreen mainScreen] bounds].size.width)/750)*300)];
 
-        BOOL notched = [HPUtility isCurrentDeviceNotched];
-
         imageView.image = [EditorManager sharedManager].dynamicallyGeneratedSettingsHeaderImage;
         imageView.contentMode = UIViewContentModeScaleAspectFill;
         imageView.clipsToBounds = YES;
@@ -489,7 +507,7 @@ const CGFloat TABLE_HEADER_HEIGHT = 0.458;
         self.topOffsetSlider.maximumTrackTintColor = [UIColor colorWithWhite:1.0 alpha:0.2];
         self.topOffsetSlider.minimumTrackTintColor = [UIColor colorWithWhite:1.0 alpha: 0.9];
         self.topOffsetSlider.minimumValue = -100;
-        self.topOffsetSlider.maximumValue = [[UIScreen mainScreen] bounds].size.height/2;
+        self.topOffsetSlider.maximumValue = [[UIScreen mainScreen] bounds].size.height;
         self.topOffsetSlider.continuous = YES;
         self.topOffsetSlider.value = [[NSUserDefaults standardUserDefaults] floatForKey:[NSString stringWithFormat:@"%@%@%@", @"HPThemeDefault", x, @"TopInset"]];
         [_offsetControlView addSubview:_offsetControlView.topView];
@@ -580,7 +598,7 @@ const CGFloat TABLE_HEADER_HEIGHT = 0.458;
 - (void)bottomOffsetEditingEnded
 {
     [self.bottomOffsetValueInput resignFirstResponder];
-        [UIView animateWithDuration:0.4 
+    [UIView animateWithDuration:0.4 
         animations:
         ^{  
             self.view.transform = CGAffineTransformIdentity;   
@@ -590,7 +608,6 @@ const CGFloat TABLE_HEADER_HEIGHT = 0.458;
             [UIView animateWithDuration:0.4 
                 animations:
                 ^{  
-                    
                     [self.view setBackgroundColor:[UIColor clearColor]];  
                 }
             ];
@@ -991,7 +1008,6 @@ const CGFloat TABLE_HEADER_HEIGHT = 0.458;
 {
     if (!_scaleControlView) 
     {
-
         NSString *x = @"";
         if ([[[EditorManager sharedManager] editingLocation] isEqualToString:@"SBIconLocationRoot"]) x = @"Root";
         else if ([[[EditorManager sharedManager] editingLocation] isEqualToString:@"SBIconLocationDock"]) x = @"Dock";
@@ -1185,30 +1201,8 @@ const CGFloat TABLE_HEADER_HEIGHT = 0.458;
 - (void)handleOffsetButtonPress:(UIButton*)sender 
 {
     [self loadControllerView:[self offsetControlView]];
-    BOOL notched = NO;
 
-    if([[UIDevice currentDevice] userInterfaceIdiom] == UIUserInterfaceIdiomPhone) 
-    {
-        switch ((int)[[UIScreen mainScreen] nativeBounds].size.height) 
-        {
-            case 2436:
-                notched = YES;
-                break;
-
-            case 2688:
-                notched = YES;
-                break;
-
-            case 1792:
-                notched = YES;
-                break;
-
-            default:
-                notched = NO;
-                break;
-        }
-    }  
-    if ([[[HPManager sharedManager] config] currentLoadoutColumnsForLocation:[[EditorManager sharedManager] editingLocation] pageIndex:0] == 4 && notched && (kCFCoreFoundationVersionNumber < 1600)) 
+    if (((([[NSUserDefaults standardUserDefaults] integerForKey:@"HPThemeDefaultRootColumns"]?:4) == 4) && ([[HPUtility deviceName] isEqualToString:@"iPhone X"])) && (kCFCoreFoundationVersionNumber < 1600)) 
     {
         self.leftOffsetLabel.text = @"Left Offset Disabled When\n4 Columns Selected on Notched Devices";
         self.bottomOffsetValueInput.enabled = NO;

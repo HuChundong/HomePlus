@@ -1,4 +1,6 @@
 @interface HPResources : NSObject
++ (UIImage *)tutorialOne;
++ (UIImage *)tutorialTwo;
 + (UIImage *)spacerImage;
 + (UIImage *)offsetImage;
 + (UIImage *)rootImage;

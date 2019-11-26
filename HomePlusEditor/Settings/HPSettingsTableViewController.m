@@ -100,7 +100,7 @@ const int RESET_VALUES = 1;
     UIView *footerView = [[UIView alloc] initWithFrame:CGRectMake(0,0,[[UIScreen mainScreen] bounds].size.width,10+(([[UIScreen mainScreen] bounds].size.width)/750)*300)];
 
     UILabel *dInfoLabel = [[UILabel alloc] initWithFrame:CGRectMake(20,0,[[UIScreen mainScreen] bounds].size.width, 10)];
-    NSString *DN = [NSString stringWithFormat:[HPUtility deviceName]];
+    NSString *DN = [HPUtility deviceName];
     NSString *CF = [NSString stringWithFormat:@"%0.3f", kCFCoreFoundationVersionNumber];
     NSString *FV = [NSString stringWithFormat:@"%@ %@", [[UIDevice currentDevice] systemName], [[UIDevice currentDevice] systemVersion]];
     dInfoLabel.text = [NSString stringWithFormat:@"Device: %@ | Firmware: %@ | CFVersion: %@", DN, FV, CF];
@@ -305,7 +305,7 @@ const int RESET_VALUES = 1;
 
                     if( cell == nil ) 
                     {
-                        cell = [[HPTableCell alloc] initWithFrame:CGRectZero reuseIdentifier:@"SwitchCell"];
+                        cell = [[HPTableCell alloc] initWithStyle:UITableViewCellStyleDefault reuseIdentifier:@"SwitchCell"];
                         cell.textLabel.text = @"Hide Icon Labels";
                         cell.selectionStyle = UITableViewCellSelectionStyleNone;
                         UISwitch *switchView = [[UISwitch alloc] initWithFrame:CGRectZero];
@@ -335,7 +335,7 @@ const int RESET_VALUES = 1;
 
                     if( cell == nil ) 
                     {
-                        cell = [[HPTableCell alloc] initWithFrame:CGRectZero reuseIdentifier:@"SwitchCell"];
+                        cell = [[HPTableCell alloc] initWithStyle:UITableViewCellStyleDefault reuseIdentifier:@"SwitchCell"];
                         cell.textLabel.text = @"Hide Badges";
                         cell.selectionStyle = UITableViewCellSelectionStyleNone;
                         UISwitch *switchView = [[UISwitch alloc] initWithFrame:CGRectZero];
@@ -365,7 +365,7 @@ const int RESET_VALUES = 1;
 
                     if( cell == nil ) 
                     {
-                        cell = [[HPTableCell alloc] initWithFrame:CGRectZero reuseIdentifier:@"SwitchCell"];
+                        cell = [[HPTableCell alloc] initWithStyle:UITableViewCellStyleDefault reuseIdentifier:@"SwitchCell"];
                         cell.textLabel.text = @"Hide Labels in Folders";
                         cell.selectionStyle = UITableViewCellSelectionStyleNone;
                         UISwitch *switchView = [[UISwitch alloc] initWithFrame:CGRectZero];
@@ -400,7 +400,7 @@ const int RESET_VALUES = 1;
 
                     if( cell == nil ) 
                     {
-                        cell = [[HPTableCell alloc] initWithFrame:CGRectZero reuseIdentifier:@"SwitchCell"];
+                        cell = [[HPTableCell alloc] initWithStyle:UITableViewCellStyleDefault reuseIdentifier:@"SwitchCell"];
                         cell.textLabel.text = @"Hide Dock BG";
                         cell.selectionStyle = UITableViewCellSelectionStyleNone;
                         UISwitch *switchView = [[UISwitch alloc] initWithFrame:CGRectZero];
@@ -430,12 +430,12 @@ const int RESET_VALUES = 1;
 
                     if( cell == nil ) 
                     {
-                        cell = [[HPTableCell alloc] initWithFrame:CGRectZero reuseIdentifier:@"SwitchCell"];
+                        cell = [[HPTableCell alloc] initWithStyle:UITableViewCellStyleDefault reuseIdentifier:@"SwitchCell"];
                         cell.textLabel.text = @"Force iPX Dock";
                         cell.selectionStyle = UITableViewCellSelectionStyleNone;
                         UISwitch *switchView = [[UISwitch alloc] initWithFrame:CGRectZero];
                         cell.accessoryView = switchView;
-                        [switchView setOn:[[[HPManager sharedManager] config] currentLoadoutModernDock] animated:NO];
+                        [switchView setOn:[[NSUserDefaults standardUserDefaults] integerForKey:@"HPThemeDefaultModernDock"]?:0 == 1  animated:NO];
                         [switchView addTarget:self action:@selector(modernDockSwitchChanged:) forControlEvents:UIControlEventValueChanged];
 
                         //[cell.layer setCornerRadius:10];
@@ -495,7 +495,7 @@ const int RESET_VALUES = 1;
 
                     if( cell == nil ) 
                     {
-                        cell = [[HPTableCell alloc] initWithFrame:CGRectZero reuseIdentifier:@"SwitchCell"];
+                        cell = [[HPTableCell alloc] initWithStyle:UITableViewCellStyleDefault reuseIdentifier:@"SwitchCell"];
                         cell.textLabel.text = @"App Switcher Disables Editor";
                         cell.selectionStyle = UITableViewCellSelectionStyleNone;
                         UISwitch *switchView = [[UISwitch alloc] initWithFrame:CGRectZero];
@@ -524,7 +524,7 @@ const int RESET_VALUES = 1;
 
                     if( cell == nil ) 
                     {
-                        cell = [[HPTableCell alloc] initWithFrame:CGRectZero reuseIdentifier:@"SwitchCell"];
+                        cell = [[HPTableCell alloc] initWithStyle:UITableViewCellStyleDefault reuseIdentifier:@"SwitchCell"];
                         cell.textLabel.text = @"Update V. Spacing W/ Rows";
                         cell.selectionStyle = UITableViewCellSelectionStyleNone;
                         UISwitch *switchView = [[UISwitch alloc] initWithFrame:CGRectZero];
@@ -590,12 +590,11 @@ const int RESET_VALUES = 1;
                     HPTableCell *cell = [tableView dequeueReusableCellWithIdentifier:CellIdentifier];
                     if (!cell) 
                     {
-                        cell = [[HPTableCell alloc] initWithFrame:CGRectZero reuseIdentifier:@"SegmentedCell"];
+                        cell = [[HPTableCell alloc] initWithStyle:UITableViewCellStyleDefault reuseIdentifier:@"SegmentedCell"];
                         cell.selectionStyle = UITableViewCellSelectionStyleNone;
                         NSArray *itemArray = [NSArray arrayWithObjects: @"Filesystem", @"UserDefaults", nil];
                         UISegmentedControl *segmentedControl = [[UISegmentedControl alloc] initWithItems:itemArray];
                         segmentedControl.frame = CGRectMake(30, 5, 330, 30);
-                        segmentedControl.segmentedControlStyle = UISegmentedControlStylePlain;
                         [segmentedControl addTarget:self action:@selector(storageControlAction:) forControlEvents: UIControlEventValueChanged];
                         segmentedControl.selectedSegmentIndex = [[HPManager sharedManager] useUserDefaults] ? 1 : 0;  
                         cell.accessoryView = segmentedControl;
@@ -684,16 +683,6 @@ const int RESET_VALUES = 1;
 
 
 
-- (void)alertView:(UIAlertView *)alertView clickedButtonAtIndex:(NSInteger)buttonIndex
-{
-    switch(buttonIndex) {
-        case 0: //"No" pressed
-            break;
-        case 1: //"Yes" pressed
-            [[EditorManager sharedManager] resetAllValuesToDefaults];
-            break;
-    }
-}
 - (void)tableView:(UITableView *)tableView didSelectRowAtIndexPath:(NSIndexPath *)indexPath
 {
     switch (indexPath.section) 
@@ -704,16 +693,33 @@ const int RESET_VALUES = 1;
             {
                 case 0: 
                 {
-                    /*
-                    UIAlertView *alert = [[UIAlertView alloc] initWithTitle:@"Aye,"
-                                                                    message:@"Are you sure you want to reset everything?"
-                                                                delegate:self
-                                                        cancelButtonTitle:@"Nah"
-                                                        otherButtonTitles:@"Yes", nil];
-                    [alert show];
+                    UIAlertController * alert = [UIAlertController
+                                    alertControllerWithTitle:@"Are you sure?"
+                                                    message:@"This will Reset Everything!"
+                                            preferredStyle:UIAlertControllerStyleAlert];
+                    UIAlertAction* yesButton = [UIAlertAction
+                                        actionWithTitle:@"Yes"
+                                                style:UIAlertActionStyleDefault
+                                                handler:^(UIAlertAction * action) {
+                                                    [[NSUserDefaults standardUserDefaults] setInteger:0 forKey:@"HPTutorialGiven"];
+                                                    [[NSUserDefaults standardUserDefaults] synchronize];
+                                                    pid_t pid;
+                                                    const char* args[] = {"killall", "backboardd", NULL};
+                                                    posix_spawn(&pid, "/usr/bin/killall", NULL, NULL, (char* const*)args, NULL);
+                                                }];
+
+                    UIAlertAction* noButton = [UIAlertAction
+                                            actionWithTitle:@"Nah"
+                                                    style:UIAlertActionStyleDefault
+                                                    handler:^(UIAlertAction * action) {
+                                                    //Handle no, thanks button                
+                                                    }];
+
+                    [alert addAction:yesButton];
+                    [alert addAction:noButton];
+
+                    [self presentViewController:alert animated:YES completion:nil];
                     break;
-                    */
-                    [[NSUserDefaults standardUserDefaults] setInteger:0 forKey:@"HPTutorialGiven"];
                 }
                 case 3: 
                 {

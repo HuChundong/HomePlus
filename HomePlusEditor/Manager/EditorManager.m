@@ -45,7 +45,6 @@
 @property (nonatomic, readwrite, strong) HPEditorViewController *editorViewController;
 @property (nonatomic, readwrite, strong) HPEditorWindow *editorView;
 
-@property (nonatomic, assign) BOOL tutorialActive;
 
 @property (nonatomic, readwrite, strong) HPTutorialViewController *tutorialViewController;
 @property (nonatomic, readwrite, strong) HPEditorWindow *tutorialView;
@@ -215,12 +214,6 @@
             _editorView.alpha = 1;
         }
     ];
-    
-    if (self.tutorialActive)
-    {
-        self.tutorialActive = NO;
-        [_tutorialViewController explainOffsets];
-    }
 }
 - (void)showTutorialView
 {
@@ -268,17 +261,12 @@
     [_editorViewController resetAllValuesToDefaults];
     [[NSNotificationCenter defaultCenter] postNotificationName:@"HomePlusEditingModeDisabled" object:nil];
     [self hideEditorView];
-    NSMutableArray *views = _editorViewController.rootIconListViewsToUpdate;
     _editorView = nil;
     _editorViewController = nil;
     _editorViewController = [[HPEditorViewController alloc] init];
     _editorViewController.delegate = self;
     _editorView = [[HPEditorWindow alloc] initWithFrame:[[UIScreen mainScreen] bounds]];
     _editorView.rootViewController = self.editorViewController;
-    for (SBRootIconListView *view in views) 
-    {
-        //[view resetValuesToDefaults];
-    }
 
     [[NSNotificationCenter defaultCenter] postNotificationName:@"HPResetIconViews" object:nil];
     //if (kCFCoreFoundationVersionNumber < 1600) return;

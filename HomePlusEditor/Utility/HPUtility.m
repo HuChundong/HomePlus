@@ -28,7 +28,8 @@
                 break;
             }
         }
-    }   
+    }  
+    return NO; 
 }
 
 +(NSString *)deviceName
@@ -124,6 +125,89 @@
 
     return deviceName;
 }
+
++ (NSInteger)defaultRows
+{
+    // lol
+    struct utsname systemInfo;
+
+    uname(&systemInfo);
+
+    NSString* code = [NSString stringWithCString:systemInfo.machine
+                                        encoding:NSUTF8StringEncoding];
+
+    static NSDictionary* deviceNamesByCode = nil;
+
+    if (!deviceNamesByCode) {
+
+        deviceNamesByCode = @{@"i386"      : @5,
+                              @"x86_64"    : @5,
+                              @"iPod1,1"   : @4,        // (Original)
+                              @"iPod2,1"   : @4,        // (Second Generation)
+                              @"iPod3,1"   : @4,        // (Third Generation)
+                              @"iPod4,1"   : @4,        // (Fourth Generation)
+                              @"iPod7,1"   : @4,        // (6th Generation)       
+                              @"iPhone1,1" : @4,            // (Original)
+                              @"iPhone1,2" : @4,            // (3G)
+                              @"iPhone2,1" : @4,            // (3GS)
+                              @"iPad1,1"   : @4,              // (Original)
+                              @"iPad2,1"   : @4,            //
+                              @"iPad3,1"   : @4,              // (3rd Generation)
+                              @"iPhone3,1" : @4,          // (GSM)
+                              @"iPhone3,3" : @4,          // (CDMA/Verizon/Sprint)
+                              @"iPhone4,1" : @4,         //
+                              @"iPhone5,1" : @5,          // (model A1428, AT&T/Canada)
+                              @"iPhone5,2" : @5,          // (model A1429, everything else)
+                              @"iPad3,4"   : @4,              // (4th Generation)
+                              @"iPad2,5"   : @4,         // (Original)
+                              @"iPhone5,3" : @5,         // (model A1456, A1532 | GSM)
+                              @"iPhone5,4" : @5,         // (model A1507, A1516, A1526 (China), A1529 | Global)
+                              @"iPhone6,1" : @5,         // (model A1433, A1533 | GSM)
+                              @"iPhone6,2" : @5,         // (model A1457, A1518, A1528 (China), A1530 | Global)
+                              @"iPhone7,1" : @6,     //
+                              @"iPhone7,2" : @6,          //
+                              @"iPhone8,1" : @6,         //
+                              @"iPhone8,2" : @6,    //
+                              @"iPhone8,4" : @5,         //
+                              @"iPhone9,1" : @6,          //
+                              @"iPhone9,3" : @6,          //
+                              @"iPhone9,2" : @6,     //
+                              @"iPhone9,4" : @6,     //
+                              @"iPhone10,1": @6,          // CDMA
+                              @"iPhone10,4": @6,          // GSM
+                              @"iPhone10,2": @6,     // CDMA
+                              @"iPhone10,5": @6,     // GSM
+                              @"iPhone10,3": @6,          // CDMA
+                              @"iPhone10,6": @6,          // GSM
+                              @"iPhone11,2": @6,         //
+                              @"iPhone11,4": @6,     //
+                              @"iPhone11,6": @6,     // China
+                              @"iPhone11,8": @6,         //
+                              @"iPhone12,1": @6,         //
+                              @"iPhone12,3": @6,     //
+                              @"iPhone12,5": @6, //
+
+                              @"iPad4,1"   : @5,          // 5th Generation iPad (iPad Air) - Wifi
+                              @"iPad4,2"   : @5,          // 5th Generation iPad (iPad Air) - Cellular
+                              @"iPad4,4"   : @4,         // (2nd Generation iPad Mini - Wifi)
+                              @"iPad4,5"   : @4,         // (2nd Generation iPad Mini - Cellular)
+                              @"iPad4,7"   : @4,         // (3rd Generation iPad Mini - Wifi (model A1599))
+                              @"iPad6,7"   : @5, // iPad Pro 12.9 inches - (model A1584) 
+                              @"iPad6,8"   : @5, // iPad Pro 12.9 inches - (model A1652) 
+                              @"iPad6,3"   : @5,  // iPad Pro 9.7 inches - (model A1673)
+                              @"iPad6,4"   : @5  // iPad Pro 9.7 inches - (models A1674 and A1675)
+                              };
+    }
+
+    NSInteger rows = [[deviceNamesByCode valueForKey:code] intValue];
+
+    if (!rows) {
+        rows = 5;
+    }
+
+    return rows;
+}
+
 + (UIImage*)imageByCombiningImage:(UIImage*)firstImage withImage:(UIImage*)secondImage {
     UIImage *image = nil;
 
