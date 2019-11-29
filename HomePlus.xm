@@ -37,6 +37,8 @@ static BOOL _rtConfigured = NO;
 static BOOL _rtKickedUp = NO;
 static BOOL _rtInjected = NO;
 static BOOL _rtIconSupportInjected = NO;
+// On <iOS 13 we need to reload the icon view initially several times to update our changes :)
+static int _rtIconViewInitialReloadCount = 0;
 
 // Tweak compatability stuff. 
 // See the %ctor at the bottom of the file for more info
@@ -274,53 +276,6 @@ NSDictionary *prefs = nil;
 %end
 
 
-%hook SBMainScreenActiveInterfaceOrientationWindow
-
-// Scale floaty docks with the rest of the views
-// For some (maybe dumb, maybe not) reason, they get their own oddly named window
-// on iOS 13, the window is renamed, but it subclasses this one, so we're still good
-//      (for now)
-// This mostly mocks the handling of SBHomeScreenWindow, most documentation can be found there
-- (id)_initWithScreen:(id)arg1 layoutStrategy:(id)arg2 debugName:(id)arg3 rootViewController:(id)arg4 scene:(id)arg5
-{
-    id o = %orig(arg1, arg2, arg3, arg4, arg5);
-
-    [[NSNotificationCenter defaultCenter] addObserver:self selector:@selector(recieveNotification:) name:kEditingModeDisabledNotificationName object:nil];
-
-    [[NSNotificationCenter defaultCenter] addObserver:self selector:@selector(fader:) name:kFadeFloatingDockNotificationName object:nil];
-    [[NSNotificationCenter defaultCenter] addObserver:self selector:@selector(fader:) name:kShowFloatingDockNotificationName object:nil];
-    floatingDockWindow = self;
-    return o;
-}
-
-%new 
-- (void)fader:(NSNotification *)notification
-{
-    // In the settings view and keyboard view, floatydock (annoyingly) sits above it. 
-    // So we need to fade it at times using a notification. 
-    [UIView animateWithDuration:.2 
-        animations:
-        ^{
-            self.alpha = ([[notification name] isEqualToString:kFadeFloatingDockNotificationName]) ? 0 : 1;
-        } 
-        completion:^(BOOL finished) 
-        {
-            
-        }
-    ];
-}
-
-%new
-- (void)recieveNotification:(NSNotification *)notification
-{
-    BOOL enabled = ([[notification name] isEqualToString:kEditingModeEnabledNotificationName]);
-    _rtEditingEnabled = enabled;
-    self.userInteractionEnabled = !enabled;
-}
-
-%end
-
-
 @interface FBRootWindow : UIView 
 @end
 
@@ -492,8 +447,11 @@ NSDictionary *prefs = nil;
     }
     else 
     {
-        if ([[[UIDevice currentDevice] systemVersion] floatValue] < 13.0)
+        if ([[[UIDevice currentDevice] systemVersion] floatValue] < 13.0 && _rtIconViewInitialReloadCount < 2)
+        {
+            _rtIconViewInitialReloadCount += 1;
             [[NSNotificationCenter defaultCenter] postNotificationName:@"HPResetIconViews" object:nil];
+        }
         _rtHitboxWindow.hidden = NO;
     }
     if (%orig && [[NSUserDefaults standardUserDefaults] integerForKey:@"HPTutorialGiven"] == 0)
@@ -602,6 +560,53 @@ NSDictionary *prefs = nil;
     }
     //[[NSNotificationCenter defaultCenter] addObserver:self selector:@selector(dismissSpotlightIfVisible) name:kEditingModeEnabledNotificationName object:nil];
     return self;
+}
+
+%end
+
+
+%hook SBMainScreenActiveInterfaceOrientationWindow
+
+// Scale floaty docks with the rest of the views
+// For some (maybe dumb, maybe not) reason, they get their own oddly named window
+// on iOS 13, the window is renamed, but it subclasses this one, so we're still good
+//      (for now)
+// This mostly mocks the handling of SBHomeScreenWindow, most documentation can be found there
+- (id)_initWithScreen:(id)arg1 layoutStrategy:(id)arg2 debugName:(id)arg3 rootViewController:(id)arg4 scene:(id)arg5
+{
+    id o = %orig(arg1, arg2, arg3, arg4, arg5);
+
+    [[NSNotificationCenter defaultCenter] addObserver:self selector:@selector(recieveNotification:) name:kEditingModeDisabledNotificationName object:nil];
+
+    [[NSNotificationCenter defaultCenter] addObserver:self selector:@selector(fader:) name:kFadeFloatingDockNotificationName object:nil];
+    [[NSNotificationCenter defaultCenter] addObserver:self selector:@selector(fader:) name:kShowFloatingDockNotificationName object:nil];
+    floatingDockWindow = self;
+    return o;
+}
+
+%new 
+- (void)fader:(NSNotification *)notification
+{
+    // In the settings view and keyboard view, floatydock (annoyingly) sits above it. 
+    // So we need to fade it at times using a notification. 
+    [UIView animateWithDuration:.2 
+        animations:
+        ^{
+            self.alpha = ([[notification name] isEqualToString:kFadeFloatingDockNotificationName]) ? 0 : 1;
+        } 
+        completion:^(BOOL finished) 
+        {
+            
+        }
+    ];
+}
+
+%new
+- (void)recieveNotification:(NSNotification *)notification
+{
+    BOOL enabled = ([[notification name] isEqualToString:kEditingModeEnabledNotificationName]);
+    _rtEditingEnabled = enabled;
+    self.userInteractionEnabled = !enabled;
 }
 
 %end
@@ -1095,6 +1100,7 @@ NSDictionary *prefs = nil;
 @property (nonatomic, assign) CGFloat hpPanAmount;
 @property (nonatomic, assign) BOOL editorOpened;
 @property (nonatomic, assign) BOOL editorActivated;
+@property (nonatomic, assign) BOOL hitboxMaxed;
 @end
 
 
@@ -1105,12 +1111,14 @@ NSDictionary *prefs = nil;
 // Create the drag down gesture bits here. 
 //
 
+
 %property (nonatomic, assign) BOOL hitboxViewExists;
 %property (nonatomic, assign) BOOL editorOpened;
 %property (nonatomic, assign) BOOL editorActivated;
 %property (nonatomic, retain) HPHitboxView *hp_hitbox;
 %property (nonatomic, retain) HPHitboxWindow *hp_hitbox_window;
 %property (nonatomic, assign) CGFloat hpPanAmount;
+%property (nonatomic, assign) BOOL hitboxMaxed;
 
 %new
 - (void)TL_toggleEditingMode
@@ -1129,7 +1137,8 @@ NSDictionary *prefs = nil;
 - (void)createTopLeftHitboxView
 {
     self.editorOpened = NO;
-    self.hp_hitbox_window = [[HPHitboxWindow alloc] initWithFrame:CGRectMake(0, 0, 80, ([HPUtility isCurrentDeviceNotched] ?40:20))];
+    self.hitboxMaxed = NO;
+    self.hp_hitbox_window = [[HPHitboxWindow alloc] initWithFrame:CGRectMake(0, 0,  ([HPUtility isCurrentDeviceNotched] ?120:80), ([HPUtility isCurrentDeviceNotched] ?40:20))];
     _rtHitboxWindow = self.hp_hitbox_window;
     self.hp_hitbox = [[HPTouchKillerHitboxView alloc] init];
     // This is useful for debugging hitbox locations on weird devices
@@ -1144,7 +1153,7 @@ NSDictionary *prefs = nil;
     _rtGestureRecognizer = pan;
     [self.hp_hitbox addGestureRecognizer:pan];
     
-    CGSize hitboxSize = CGSizeMake(80, ([HPUtility isCurrentDeviceNotched] ?40:20));
+    CGSize hitboxSize = CGSizeMake( ([HPUtility isCurrentDeviceNotched] ?120:80), ([HPUtility isCurrentDeviceNotched] ?40:20));
     self.hp_hitbox.frame = CGRectMake(0, 0, hitboxSize.width, hitboxSize.height);
     [self.hp_hitbox_window addSubview:self.hp_hitbox];
     [self addSubview:self.hp_hitbox_window];
@@ -1162,9 +1171,15 @@ NSDictionary *prefs = nil;
     homeWindow.layer.borderWidth = 0;
     homeWindow.layer.cornerRadius = 0;
     wallpaperView.layer.cornerRadius = 0;
-    self.hp_hitbox_window.frame = CGRectMake(0, 0, 80, ([HPUtility isCurrentDeviceNotched] ?40:20));
-    self.hp_hitbox.frame = CGRectMake(0, 0, 80, ([HPUtility isCurrentDeviceNotched] ?40:20));
-    self.hp_hitbox_window.transform = CGAffineTransformIdentity;
+    if (self.hitboxMaxed)
+    {
+        self.hitboxMaxed = NO;
+        self.hp_hitbox_window.frame = CGRectMake(0, 0, 40, 20);
+        self.hp_hitbox.frame = CGRectMake(0, 0, ([HPUtility isCurrentDeviceNotched] ?120:80), ([HPUtility isCurrentDeviceNotched] ?10:20));
+        self.hp_hitbox_window.transform = CGAffineTransformIdentity;
+        [self.hp_hitbox_window setFrame:CGRectMake(0, 0, 40, 20)];
+        [self.hp_hitbox setFrame: CGRectMake(0, 0, ([HPUtility isCurrentDeviceNotched] ?120:80), ([HPUtility isCurrentDeviceNotched] ?10:20))];
+    }
     self.editorActivated = NO;
     self.editorOpened = NO;
 }
@@ -1240,9 +1255,12 @@ NSDictionary *prefs = nil;
                     {
                         // If the editor was open, disable it and move the hitbox frame back 
                         // to the original spot
-                        self.hp_hitbox_window.frame = CGRectMake(0, 0, 60, 20);
-                        self.hp_hitbox.frame = CGRectMake(0, 0, 60, 20);
-                        self.hp_hitbox_window.transform = CGAffineTransformIdentity;
+                        if (self.hitboxMaxed)
+                        {
+                            //self.hp_hitbox_window.frame = CGRectMake(0, 0, 60, 20);
+                            //self.hp_hitbox.frame = CGRectMake(0, 0, 60, 20);
+                            //self.hp_hitbox_window.transform = CGAffineTransformIdentity;
+                        }
                         [[NSNotificationCenter defaultCenter] postNotificationName:kEditingModeDisabledNotificationName object:nil];
                         AudioServicesPlaySystemSound(1519);
                         self.editorActivated = NO;
@@ -1273,9 +1291,13 @@ NSDictionary *prefs = nil;
                     if ([[EditorManager sharedManager] tutorialActive]) [[[EditorManager sharedManager] tutorialViewController] explainExit];
                     if ([[EditorManager sharedManager] tutorialActive]) [[EditorManager sharedManager] setTutorialActive:NO];
                     self.editorOpened = YES;
-                    self.hp_hitbox_window.frame = [[UIScreen mainScreen] bounds];
-                    self.hp_hitbox.frame = [[UIScreen mainScreen] bounds];
-                    self.hp_hitbox_window.transform = CGAffineTransformMakeScale(0.7, 0.7);
+                    if (!self.hitboxMaxed)
+                    {
+                        self.hitboxMaxed = YES;
+                        self.hp_hitbox_window.frame = [[UIScreen mainScreen] bounds];
+                        self.hp_hitbox.frame = [[UIScreen mainScreen] bounds];
+                        self.hp_hitbox_window.transform = CGAffineTransformMakeScale(0.7, 0.7);
+                    }
                 }
             ];
         }
@@ -1312,12 +1334,12 @@ NSDictionary *prefs = nil;
     }
     else 
     {
-        /*
         // If we're zeroed out, clear out the colors and stuff
         homeWindow.layer.borderColor = [[UIColor clearColor] CGColor];
         homeWindow.layer.borderWidth = 0;
         homeWindow.layer.cornerRadius = 0;
         wallpaperView.layer.cornerRadius = 0;
+        /*
         if (self.editorOpened)
         {
             // If the editor was open, disable it and move the hitbox frame back 
@@ -1334,6 +1356,13 @@ NSDictionary *prefs = nil;
 
     if (self.hpPanAmount >= maxAmt)
     {
+        if (!self.hitboxMaxed)
+        {
+            self.hitboxMaxed = YES;
+            self.hp_hitbox_window.frame = [[UIScreen mainScreen] bounds];
+            self.hp_hitbox.frame = [[UIScreen mainScreen] bounds];
+            self.hp_hitbox_window.transform = CGAffineTransformMakeScale(0.7, 0.7);
+        }
         if (self.editorOpened) 
         {
             // If the editor view is open, just cap it
@@ -1344,9 +1373,6 @@ NSDictionary *prefs = nil;
             self.hpPanAmount = maxAmt; // cap the value
             // If it hasn't been done yet, then create the new hitbox view that covers up the homescreen view
             self.editorOpened = YES;
-            self.hp_hitbox_window.frame = [[UIScreen mainScreen] bounds];
-            self.hp_hitbox.frame = [[UIScreen mainScreen] bounds];
-            self.hp_hitbox_window.transform = CGAffineTransformMakeScale(0.7, 0.7);
             if ([[EditorManager sharedManager] tutorialActive]) [[[EditorManager sharedManager] tutorialViewController] explainExit];
             if ([[EditorManager sharedManager] tutorialActive]) [[EditorManager sharedManager] setTutorialActive:NO];
             AudioServicesPlaySystemSound(1519);
@@ -1396,6 +1422,7 @@ NSDictionary *prefs = nil;
         [self createTopLeftHitboxView];
     }
 }
+
 
 %end
 
@@ -1541,6 +1568,55 @@ NSDictionary *prefs = nil;
             x.right + ([[NSUserDefaults standardUserDefaults] floatForKey:[NSString stringWithFormat:@"%@%@%@", @"HPThemeDefault", [self locationIfKnown], @"SideInset"]]?:0)*-2
         );
     }
+}
+
+%end
+
+@interface SBFloatingDockWindow : UIView
+@end
+
+%hook SBFloatingDockWindow
+
+// Scale floaty docks with the rest of the views
+// For some (maybe dumb, maybe not) reason, they get their own oddly named window
+// on iOS 13, the window is renamed, but it subclasses this one, so we're still good
+//      (for now)
+// This mostly mocks the handling of SBHomeScreenWindow, most documentation can be found there
+- (id)_initWithScreen:(id)arg1 layoutStrategy:(id)arg2 debugName:(id)arg3 rootViewController:(id)arg4 scene:(id)arg5
+{
+    id o = %orig(arg1, arg2, arg3, arg4, arg5);
+
+    [[NSNotificationCenter defaultCenter] addObserver:self selector:@selector(recieveNotification:) name:kEditingModeDisabledNotificationName object:nil];
+
+    [[NSNotificationCenter defaultCenter] addObserver:self selector:@selector(fader:) name:kFadeFloatingDockNotificationName object:nil];
+    [[NSNotificationCenter defaultCenter] addObserver:self selector:@selector(fader:) name:kShowFloatingDockNotificationName object:nil];
+    floatingDockWindow = self;
+    return o;
+}
+
+%new 
+- (void)fader:(NSNotification *)notification
+{
+    // In the settings view and keyboard view, floatydock (annoyingly) sits above it. 
+    // So we need to fade it at times using a notification. 
+    [UIView animateWithDuration:.2 
+        animations:
+        ^{
+            self.alpha = ([[notification name] isEqualToString:kFadeFloatingDockNotificationName]) ? 0 : 1;
+        } 
+        completion:^(BOOL finished) 
+        {
+            
+        }
+    ];
+}
+
+%new
+- (void)recieveNotification:(NSNotification *)notification
+{
+    BOOL enabled = ([[notification name] isEqualToString:kEditingModeEnabledNotificationName]);
+    _rtEditingEnabled = enabled;
+    self.userInteractionEnabled = !enabled;
 }
 
 %end
@@ -1737,6 +1813,7 @@ NSDictionary *prefs = nil;
 @property (nonatomic, assign) CGFloat hpPanAmount;
 @property (nonatomic, assign) BOOL editorOpened;
 @property (nonatomic, assign) BOOL editorActivated;
+@property (nonatomic, assign) BOOL hitboxMaxed;
 @end
 
 %hook UISystemGestureView
@@ -1754,6 +1831,7 @@ NSDictionary *prefs = nil;
 %property (nonatomic, retain) HPHitboxView *hp_hitbox;
 %property (nonatomic, retain) HPHitboxWindow *hp_hitbox_window;
 %property (nonatomic, assign) CGFloat hpPanAmount;
+%property (nonatomic, assign) BOOL hitboxMaxed;
 
 %new
 - (void)TL_toggleEditingMode
@@ -1772,7 +1850,8 @@ NSDictionary *prefs = nil;
 - (void)createTopLeftHitboxView
 {
     self.editorOpened = NO;
-    self.hp_hitbox_window = [[HPHitboxWindow alloc] initWithFrame:CGRectMake(0, 0, 80, ([HPUtility isCurrentDeviceNotched] ?40:20))];
+    self.hitboxMaxed = NO;
+    self.hp_hitbox_window = [[HPHitboxWindow alloc] initWithFrame:CGRectMake(0, 0,  ([HPUtility isCurrentDeviceNotched] ?120:80), ([HPUtility isCurrentDeviceNotched] ?40:20))];
     _rtHitboxWindow = self.hp_hitbox_window;
     self.hp_hitbox = [[HPTouchKillerHitboxView alloc] init];
     // This is useful for debugging hitbox locations on weird devices
@@ -1787,7 +1866,7 @@ NSDictionary *prefs = nil;
     _rtGestureRecognizer = pan;
     [self.hp_hitbox addGestureRecognizer:pan];
     
-    CGSize hitboxSize = CGSizeMake(80, ([HPUtility isCurrentDeviceNotched] ?40:20));
+    CGSize hitboxSize = CGSizeMake( ([HPUtility isCurrentDeviceNotched] ?120:80), ([HPUtility isCurrentDeviceNotched] ?40:20));
     self.hp_hitbox.frame = CGRectMake(0, 0, hitboxSize.width, hitboxSize.height);
     [self.hp_hitbox_window addSubview:self.hp_hitbox];
     [self addSubview:self.hp_hitbox_window];
@@ -1805,9 +1884,15 @@ NSDictionary *prefs = nil;
     homeWindow.layer.borderWidth = 0;
     homeWindow.layer.cornerRadius = 0;
     wallpaperView.layer.cornerRadius = 0;
-    self.hp_hitbox_window.frame = CGRectMake(0, 0, 80, ([HPUtility isCurrentDeviceNotched] ?40:20));
-    self.hp_hitbox.frame = CGRectMake(0, 0, 80, ([HPUtility isCurrentDeviceNotched] ?40:20));
-    self.hp_hitbox_window.transform = CGAffineTransformIdentity;
+    if (self.hitboxMaxed)
+    {
+        self.hitboxMaxed = NO;
+        self.hp_hitbox_window.frame = CGRectMake(0, 0, 40, 20);
+        self.hp_hitbox.frame = CGRectMake(0, 0, ([HPUtility isCurrentDeviceNotched] ?120:80), ([HPUtility isCurrentDeviceNotched] ?10:20));
+        self.hp_hitbox_window.transform = CGAffineTransformIdentity;
+        [self.hp_hitbox_window setFrame:CGRectMake(0, 0, 40, 20)];
+        [self.hp_hitbox setFrame: CGRectMake(0, 0, ([HPUtility isCurrentDeviceNotched] ?120:80), ([HPUtility isCurrentDeviceNotched] ?10:20))];
+    }
     self.editorActivated = NO;
     self.editorOpened = NO;
 }
@@ -1883,9 +1968,12 @@ NSDictionary *prefs = nil;
                     {
                         // If the editor was open, disable it and move the hitbox frame back 
                         // to the original spot
-                        self.hp_hitbox_window.frame = CGRectMake(0, 0, 60, 20);
-                        self.hp_hitbox.frame = CGRectMake(0, 0, 60, 20);
-                        self.hp_hitbox_window.transform = CGAffineTransformIdentity;
+                        if (self.hitboxMaxed)
+                        {
+                            //self.hp_hitbox_window.frame = CGRectMake(0, 0, 60, 20);
+                            //self.hp_hitbox.frame = CGRectMake(0, 0, 60, 20);
+                            //self.hp_hitbox_window.transform = CGAffineTransformIdentity;
+                        }
                         [[NSNotificationCenter defaultCenter] postNotificationName:kEditingModeDisabledNotificationName object:nil];
                         AudioServicesPlaySystemSound(1519);
                         self.editorActivated = NO;
@@ -1916,9 +2004,13 @@ NSDictionary *prefs = nil;
                     if ([[EditorManager sharedManager] tutorialActive]) [[[EditorManager sharedManager] tutorialViewController] explainExit];
                     if ([[EditorManager sharedManager] tutorialActive]) [[EditorManager sharedManager] setTutorialActive:NO];
                     self.editorOpened = YES;
-                    self.hp_hitbox_window.frame = [[UIScreen mainScreen] bounds];
-                    self.hp_hitbox.frame = [[UIScreen mainScreen] bounds];
-                    self.hp_hitbox_window.transform = CGAffineTransformMakeScale(0.7, 0.7);
+                    if (!self.hitboxMaxed)
+                    {
+                        self.hitboxMaxed = YES;
+                        self.hp_hitbox_window.frame = [[UIScreen mainScreen] bounds];
+                        self.hp_hitbox.frame = [[UIScreen mainScreen] bounds];
+                        self.hp_hitbox_window.transform = CGAffineTransformMakeScale(0.7, 0.7);
+                    }
                 }
             ];
         }
@@ -1955,12 +2047,12 @@ NSDictionary *prefs = nil;
     }
     else 
     {
-        /*
         // If we're zeroed out, clear out the colors and stuff
         homeWindow.layer.borderColor = [[UIColor clearColor] CGColor];
         homeWindow.layer.borderWidth = 0;
         homeWindow.layer.cornerRadius = 0;
         wallpaperView.layer.cornerRadius = 0;
+        /*
         if (self.editorOpened)
         {
             // If the editor was open, disable it and move the hitbox frame back 
@@ -1977,6 +2069,13 @@ NSDictionary *prefs = nil;
 
     if (self.hpPanAmount >= maxAmt)
     {
+        if (!self.hitboxMaxed)
+        {
+            self.hitboxMaxed = YES;
+            self.hp_hitbox_window.frame = [[UIScreen mainScreen] bounds];
+            self.hp_hitbox.frame = [[UIScreen mainScreen] bounds];
+            self.hp_hitbox_window.transform = CGAffineTransformMakeScale(0.7, 0.7);
+        }
         if (self.editorOpened) 
         {
             // If the editor view is open, just cap it
@@ -1987,9 +2086,6 @@ NSDictionary *prefs = nil;
             self.hpPanAmount = maxAmt; // cap the value
             // If it hasn't been done yet, then create the new hitbox view that covers up the homescreen view
             self.editorOpened = YES;
-            self.hp_hitbox_window.frame = [[UIScreen mainScreen] bounds];
-            self.hp_hitbox.frame = [[UIScreen mainScreen] bounds];
-            self.hp_hitbox_window.transform = CGAffineTransformMakeScale(0.7, 0.7);
             if ([[EditorManager sharedManager] tutorialActive]) [[[EditorManager sharedManager] tutorialViewController] explainExit];
             if ([[EditorManager sharedManager] tutorialActive]) [[EditorManager sharedManager] setTutorialActive:NO];
             AudioServicesPlaySystemSound(1519);

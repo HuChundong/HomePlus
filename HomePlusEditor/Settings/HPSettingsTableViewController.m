@@ -305,10 +305,11 @@ const int RESET_VALUES = 1;
 
                     if( cell == nil ) 
                     {
-                        cell = [[HPTableCell alloc] initWithStyle:UITableViewCellStyleDefault reuseIdentifier:@"SwitchCell"];
+                        cell = [[HPTableCell alloc] initWithFrame:CGRectZero reuseIdentifier:@"SwitchCell"];
                         cell.textLabel.text = @"Hide Icon Labels";
                         cell.selectionStyle = UITableViewCellSelectionStyleNone;
                         UISwitch *switchView = [[UISwitch alloc] initWithFrame:CGRectZero];
+                        cell.accessoryType = UITableViewCellAccessoryDisclosureIndicator;
                         cell.accessoryView = switchView;
                         [switchView setOn:[[NSUserDefaults standardUserDefaults] integerForKey:@"HPThemeDefaultIconLabelsF"] animated:NO];
                         [switchView addTarget:self action:@selector(iconLabelSwitchChanged:) forControlEvents:UIControlEventValueChanged];
@@ -335,10 +336,11 @@ const int RESET_VALUES = 1;
 
                     if( cell == nil ) 
                     {
-                        cell = [[HPTableCell alloc] initWithStyle:UITableViewCellStyleDefault reuseIdentifier:@"SwitchCell"];
+                        cell = [[HPTableCell alloc] initWithFrame:CGRectZero reuseIdentifier:@"SwitchCell"];
                         cell.textLabel.text = @"Hide Badges";
                         cell.selectionStyle = UITableViewCellSelectionStyleNone;
                         UISwitch *switchView = [[UISwitch alloc] initWithFrame:CGRectZero];
+                        cell.accessoryType = UITableViewCellAccessoryDisclosureIndicator;
                         cell.accessoryView = switchView;
                         [switchView setOn: [[NSUserDefaults standardUserDefaults] integerForKey:@"HPThemeDefaultIconBadges"] animated:NO];
                         [switchView addTarget:self action:@selector(iconBadgeSwitchChanged:) forControlEvents:UIControlEventValueChanged];
@@ -365,10 +367,11 @@ const int RESET_VALUES = 1;
 
                     if( cell == nil ) 
                     {
-                        cell = [[HPTableCell alloc] initWithStyle:UITableViewCellStyleDefault reuseIdentifier:@"SwitchCell"];
+                        cell = [[HPTableCell alloc] initWithFrame:CGRectZero reuseIdentifier:@"SwitchCell"];
                         cell.textLabel.text = @"Hide Labels in Folders";
                         cell.selectionStyle = UITableViewCellSelectionStyleNone;
                         UISwitch *switchView = [[UISwitch alloc] initWithFrame:CGRectZero];
+                        cell.accessoryType = UITableViewCellAccessoryDisclosureIndicator;
                         cell.accessoryView = switchView;
                         [switchView setOn:[[NSUserDefaults standardUserDefaults] integerForKey:@"HPThemeDefaultIconLabelsF"] animated:NO];
                         [switchView addTarget:self action:@selector(iconLabelFolderSwitchChanged:) forControlEvents:UIControlEventValueChanged];
@@ -400,10 +403,11 @@ const int RESET_VALUES = 1;
 
                     if( cell == nil ) 
                     {
-                        cell = [[HPTableCell alloc] initWithStyle:UITableViewCellStyleDefault reuseIdentifier:@"SwitchCell"];
+                        cell = [[HPTableCell alloc] initWithFrame:CGRectZero reuseIdentifier:@"SwitchCell"];
                         cell.textLabel.text = @"Hide Dock BG";
                         cell.selectionStyle = UITableViewCellSelectionStyleNone;
                         UISwitch *switchView = [[UISwitch alloc] initWithFrame:CGRectZero];
+                        cell.accessoryType = UITableViewCellAccessoryDisclosureIndicator;
                         cell.accessoryView = switchView;
                         [switchView setOn:[[NSUserDefaults standardUserDefaults] integerForKey:@"HPThemeDefaultHideDock"]?:0 == 1  animated:NO];
                         [switchView addTarget:self action:@selector(dockbGSwitchChanged:) forControlEvents:UIControlEventValueChanged];
@@ -430,10 +434,11 @@ const int RESET_VALUES = 1;
 
                     if( cell == nil ) 
                     {
-                        cell = [[HPTableCell alloc] initWithStyle:UITableViewCellStyleDefault reuseIdentifier:@"SwitchCell"];
+                        cell = [[HPTableCell alloc] initWithFrame:CGRectZero reuseIdentifier:@"SwitchCell"];
                         cell.textLabel.text = @"Force iPX Dock";
                         cell.selectionStyle = UITableViewCellSelectionStyleNone;
                         UISwitch *switchView = [[UISwitch alloc] initWithFrame:CGRectZero];
+                        cell.accessoryType = UITableViewCellAccessoryDisclosureIndicator;
                         cell.accessoryView = switchView;
                         [switchView setOn:[[NSUserDefaults standardUserDefaults] integerForKey:@"HPThemeDefaultModernDock"]?:0 == 1  animated:NO];
                         [switchView addTarget:self action:@selector(modernDockSwitchChanged:) forControlEvents:UIControlEventValueChanged];
@@ -465,7 +470,7 @@ const int RESET_VALUES = 1;
                     HPTableCell *cell = [tableView dequeueReusableCellWithIdentifier:CellIdentifier];
                     if (!cell) 
                     {
-                        cell = [[HPTableCell alloc] initWithStyle:UITableViewCellStyleDefault reuseIdentifier:CellIdentifier];
+                        cell = [[HPTableCell alloc] initWithFrame:CGRectZero reuseIdentifier:CellIdentifier];
                         cell.accessoryType = UITableViewCellAccessoryDisclosureIndicator;
                         cell.textLabel.font = [UIFont systemFontOfSize:16.0];
                     }
@@ -495,10 +500,11 @@ const int RESET_VALUES = 1;
 
                     if( cell == nil ) 
                     {
-                        cell = [[HPTableCell alloc] initWithStyle:UITableViewCellStyleDefault reuseIdentifier:@"SwitchCell"];
+                        cell = [[HPTableCell alloc] initWithFrame:CGRectZero reuseIdentifier:@"SwitchCell"];
                         cell.textLabel.text = @"App Switcher Disables Editor";
                         cell.selectionStyle = UITableViewCellSelectionStyleNone;
                         UISwitch *switchView = [[UISwitch alloc] initWithFrame:CGRectZero];
+                        cell.accessoryType = UITableViewCellAccessoryDisclosureIndicator;
                         cell.accessoryView = switchView;
                         [switchView setOn:[[HPManager sharedManager] switcherDisables] animated:NO];
                         [switchView addTarget:self action:@selector(switcherSwitchChanged:) forControlEvents:UIControlEventValueChanged];
@@ -524,10 +530,11 @@ const int RESET_VALUES = 1;
 
                     if( cell == nil ) 
                     {
-                        cell = [[HPTableCell alloc] initWithStyle:UITableViewCellStyleDefault reuseIdentifier:@"SwitchCell"];
+                        cell = [[HPTableCell alloc] initWithFrame:CGRectZero reuseIdentifier:@"SwitchCell"];
                         cell.textLabel.text = @"Update V. Spacing W/ Rows";
                         cell.selectionStyle = UITableViewCellSelectionStyleNone;
                         UISwitch *switchView = [[UISwitch alloc] initWithFrame:CGRectZero];
+                        cell.accessoryType = UITableViewCellAccessoryDisclosureIndicator;
                         cell.accessoryView = switchView;
                         [switchView setOn:[[HPManager sharedManager] vRowUpdates] animated:NO];
                         [switchView addTarget:self action:@selector(vRowSwitchChanged:) forControlEvents:UIControlEventValueChanged];
@@ -554,7 +561,7 @@ const int RESET_VALUES = 1;
                     HPTableCell *cell = [tableView dequeueReusableCellWithIdentifier:CellIdentifier];
                     if (!cell) 
                     {
-                        cell = [[HPTableCell alloc] initWithStyle:UITableViewCellStyleDefault reuseIdentifier:CellIdentifier];
+                        cell = [[HPTableCell alloc] initWithFrame:CGRectZero reuseIdentifier:CellIdentifier];
                         cell.accessoryType = UITableViewCellAccessoryDisclosureIndicator;
                         cell.textLabel.font = [UIFont systemFontOfSize:16.0];
                     }
@@ -590,7 +597,7 @@ const int RESET_VALUES = 1;
                     HPTableCell *cell = [tableView dequeueReusableCellWithIdentifier:CellIdentifier];
                     if (!cell) 
                     {
-                        cell = [[HPTableCell alloc] initWithStyle:UITableViewCellStyleDefault reuseIdentifier:@"SegmentedCell"];
+                        cell = [[HPTableCell alloc] initWithFrame:CGRectZero reuseIdentifier:@"SegmentedCell"];
                         cell.selectionStyle = UITableViewCellSelectionStyleNone;
                         NSArray *itemArray = [NSArray arrayWithObjects: @"Filesystem", @"UserDefaults", nil];
                         UISegmentedControl *segmentedControl = [[UISegmentedControl alloc] initWithItems:itemArray];
