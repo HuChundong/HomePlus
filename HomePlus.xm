@@ -45,16 +45,16 @@ static int _rtIconViewInitialReloadCount = 0;
 static BOOL _tcDockyInstalled = NO;
 
 // Views to shrink with pan gesture
-static UIView *wallpaperView;
-static UIView *homeWindow;
-static UIView *floatingDockWindow;
-static UIView *mockBackgroundView;
+static UIView *wallpaperView = nil;
+static UIView *homeWindow = nil;
+static UIView *floatingDockWindow = nil;
+static UIView *mockBackgroundView = nil;
 
 // Gesture recognizer to enable whenever kDisableEditingMode is hit.
-static UIPanGestureRecognizer *_rtGestureRecognizer;
+static UIPanGestureRecognizer *_rtGestureRecognizer = nil;
 @implementation HPHitboxWindow
 @end
-static HPHitboxWindow *_rtHitboxWindow;
+static HPHitboxWindow *_rtHitboxWindow = nil;
 
 // Global for the preference dict. Not used outside of reloadPrefs() but its cool to have
 NSDictionary *prefs = nil;
@@ -443,7 +443,8 @@ NSDictionary *prefs = nil;
 {
     if (!%orig)
     {
-        _rtHitboxWindow.hidden = YES;
+        if (_rtHitboxWindow)
+            _rtHitboxWindow.hidden = YES;
     }
     else 
     {
@@ -452,7 +453,8 @@ NSDictionary *prefs = nil;
             _rtIconViewInitialReloadCount += 1;
             [[NSNotificationCenter defaultCenter] postNotificationName:@"HPResetIconViews" object:nil];
         }
-        _rtHitboxWindow.hidden = NO;
+        if (_rtHitboxWindow)
+            _rtHitboxWindow.hidden = NO;
     }
     if (%orig && [[NSUserDefaults standardUserDefaults] integerForKey:@"HPTutorialGiven"] == 0)
     {
