@@ -235,3 +235,61 @@
 @interface SBIconBadgeView : UIView 
 @property (nonatomic, retain) SBIconListLayout *listLayout;
 @end
+
+@interface SBFStaticWallpaperImageView : UIImageView 
+@end
+
+
+@interface FBRootWindow : UIView 
+@end
+
+
+@interface SBDockView : UIView
+@property (nonatomic, retain) UIView *backgroundView;
+@end
+
+
+@interface SBHomeScreenWindow (HomePlus)
+- (void)configureDefaultsIfNotYetConfigured;
+@end
+
+
+@interface _NSCompositeLayoutXAxisAnchor : NSObject
+- (NSArray *)_childAnchors;
+@end
+
+
+@interface NSLayoutXAxisAnchor ()
+- (_NSCompositeLayoutXAxisAnchor *)offsetBy:(CGFloat)arg;
+@end
+
+
+
+@interface FBSystemGestureView (HomePlusXII)
+- (void)_addGestureRecognizer:(id)arg atEnd:(BOOL)arg2;
+@property (nonatomic, assign) CGFloat hpPanAmount;
+@property (nonatomic, assign) BOOL editorOpened;
+@property (nonatomic, assign) BOOL editorActivated;
+@property (nonatomic, assign) BOOL hitboxMaxed;
+@property (nonatomic, retain) HPHitboxView *hp_larger_hitbox;
+@property (nonatomic, retain) HPHitboxWindow *hp_larger_window;
+@end
+
+
+@interface SBFloatingDockWindow : UIView
+@end
+
+
+@interface UIRootSceneWindow : UIView 
+@end
+
+
+@interface UISystemGestureView (HomePlus)
+- (void)_addGestureRecognizer:(id)arg atEnd:(BOOL)arg2;
+@property (nonatomic, assign) CGFloat hpPanAmount;
+@property (nonatomic, assign) BOOL editorOpened;
+@property (nonatomic, assign) BOOL editorActivated;
+@property (nonatomic, assign) BOOL hitboxMaxed;
+@property (nonatomic, retain) HPHitboxView *hp_larger_hitbox;
+@property (nonatomic, retain) HPHitboxWindow *hp_larger_window;
+@end

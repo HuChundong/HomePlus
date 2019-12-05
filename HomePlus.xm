@@ -10,6 +10,9 @@
 // Author: Kritanta
 //
 
+// Current TODO:
+// Continue Linting from Line 1666
+
 #include <UIKit/UIKit.h>
 #include "EditorManager.h"
 #include "HPManager.h"
@@ -19,6 +22,18 @@
 #import <IconSupport/ISIconSupport.h>
 #include <dlfcn.h>
 #include <spawn.h>
+
+// Quick empty implementations for custom UIViews
+// I use these solely to make things easier to find in Flex
+//      and maybe they will come in useful later
+@implementation HPTouchKillerHitboxView
+@end
+
+@implementation HPHitboxView
+@end
+
+@implementation HPHitboxWindow
+@end
 
 #pragma mark Global Values
 
@@ -35,7 +50,6 @@ static NSInteger _pfActivationGesture = 1;
 static BOOL _rtEditingEnabled = NO;
 static BOOL _rtConfigured = NO;
 static BOOL _rtKickedUp = NO;
-static BOOL _rtInjected = NO;
 static BOOL _rtIconSupportInjected = NO;
 // On <iOS 13 we need to reload the icon view initially several times to update our changes :)
 static int _rtIconViewInitialReloadCount = 0;
@@ -52,21 +66,10 @@ static UIView *mockBackgroundView = nil;
 
 // Gesture recognizer to enable whenever kDisableEditingMode is hit.
 static UIPanGestureRecognizer *_rtGestureRecognizer = nil;
-@implementation HPHitboxWindow
-@end
 static HPHitboxWindow *_rtHitboxWindow = nil;
 
 // Global for the preference dict. Not used outside of reloadPrefs() but its cool to have
 NSDictionary *prefs = nil;
-
-
-// Implementations for custom classes injected
-@implementation HPTouchKillerHitboxView
-@end
-
-@implementation HPHitboxView
-@end
-
 
 // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 //
@@ -89,18 +92,12 @@ NSDictionary *prefs = nil;
 
 %group Universal
 
-
-@interface SBHomeScreenWindow (HomePlus)
-- (void)configureDefaultsIfNotYetConfigured;
-@end
-
+#pragma mark HomeScreen Window
 
 %hook SBHomeScreenWindow
 
-// Contains the "App List" and all that fun stuff.
-
-%property (nonatomic, retain) HPHitboxView *hp_hitbox;
-%property (nonatomic, retain) HPHitboxWindow *hp_hitbox_window;
+// Contains the Icon Lists
+// Also where we inject the editor into springboard
 
 - (id)_initWithScreen:(id)arg1 layoutStrategy:(id)arg2 debugName:(id)arg3 rootViewController:(id)arg4 scene:(id)arg5
 {
@@ -108,10 +105,11 @@ NSDictionary *prefs = nil;
 
     if (!_pfTweakEnabled)
     {
-        // This if statement should go in every class of this tweak. 
         return o;
     } 
+
     homeWindow = self;
+
     [[NSNotificationCenter defaultCenter] addObserver:self selector:@selector(recieveNotification:) name:kEditingModeEnabledNotificationName object:nil];
     [[NSNotificationCenter defaultCenter] addObserver:self selector:@selector(recieveNotification:) name:kEditingModeDisabledNotificationName object:nil];
 
@@ -130,25 +128,29 @@ NSDictionary *prefs = nil;
 {
     CGAffineTransform transform = self.transform;
 
-    [UIView animateWithDuration:.3 // this matches it as closely as possible with the kicker in the editorviewcontroller
-                                   // Maybe in the future I can find a way to animate them both at the same time. 
-                                   // As for right now, I'm not quite sure :p
+    [UIView animateWithDuration:0.4 // this matches it as closely as possible with the kicker in the editorviewcontroller
+                                    // Maybe in the future I can find a way to animate them both at the same time. 
+                                    // As for right now, I'm not quite sure :p
     animations:
     ^{
         // Why all this complex math? Why not CGAffineTransformIdentity?
         // We're shrinking the view 30% while all of this happens
         // So instead of using Identity, we basically verify its doing the right thing several times
         // This helps prevent bad notification calls, or pretty much anything else weird that might happen
-        //      from making the view go off screen completely, requiring a respring 
+        //      from making the view go off screen completely, requiring a reload 
 
-        self.transform = (([[notification name] isEqualToString:kEditorKickViewsUp])                        // If we should move the view up
-                        && !_rtKickedUp)                                                                   //   And it isn't kicked up already (first verifiction)
-                                    ? CGAffineTransformTranslate(transform, 0, (transform.ty == 0           //      If 0, move it up            (second verification)
-                                                    ? 0- ([[UIScreen mainScreen] bounds].size.height * 0.7) //      move up
-                                                    : 0.0))                                                 //      if its not 0, make it 0     (second v.)
-                                    : CGAffineTransformTranslate(transform, 0, (transform.ty == 0           // If we should move it back 
-                                                    ? 0                                                     //   If it's 0, keep it as 0
-                                                    : ([[UIScreen mainScreen] bounds].size.height * 0.7))); //     else, move it back. 
+        self.transform = (([[notification name] isEqualToString:kEditorKickViewsUp])                 // If we should move the view up
+                        && !_rtKickedUp)                                                             //   And it isn't kicked up already (first verifiction)
+                                ? CGAffineTransformTranslate(transform, 0, 
+                                        (transform.ty == 0                                           //      If 0, move it up            (second verification)
+                                            ? 0 - ([[UIScreen mainScreen] bounds].size.height * 0.7) //      move up
+                                            : 0.0                                                    //      if its not 0, make it 0     (second v.)
+                                        ))                                                           
+                                : CGAffineTransformTranslate(transform, 0, 
+                                        (transform.ty == 0                                           // If we should move it back 
+                                            ? 0                                                      //   If it's 0, keep it as 0
+                                            : ([[UIScreen mainScreen] bounds].size.height * 0.7)     //     else, move it back.
+                                        ));                                                          
     }]; 
 }
 
@@ -156,20 +158,14 @@ NSDictionary *prefs = nil;
 - (void)recieveNotification:(NSNotification *)notification
 {
     BOOL enabled = ([[notification name] isEqualToString:kEditingModeEnabledNotificationName]);
-
-    // Set a corner radius value for notched devices to make the shrinking effect feel much more realistic
     
     if (enabled) 
     {
-        // Add our decorations
-        // If we're enabling, we want to add these before the shrinking starts
         [[EditorManager sharedManager] showEditorView];
     }
     else
     {
-        // Disable the editor view
         [[EditorManager sharedManager] hideEditorView];
-        //_rtGestureRecognizer.enabled = YES;
     }
 }
 
@@ -181,10 +177,11 @@ NSDictionary *prefs = nil;
     //      so, we can float things and obscure the view if needed.
     // It also lets the user use CC/NC/any of that fun stuff while editing
 
-    if (!_pfTweakEnabled) 
+    if (!_pfTweakEnabled || _pfGestureDisabled) 
     {
         return;
     }
+
     HPEditorWindow *view = [[EditorManager sharedManager] editorView];
     [[[UIApplication sharedApplication] keyWindow] addSubview:view];
     HPEditorWindow *tview = [[EditorManager sharedManager] tutorialView];
@@ -192,11 +189,15 @@ NSDictionary *prefs = nil;
 
     [HPManager sharedManager];
 
+    // This is commented out but needs to be implemented at some point
     //[self configureDefaultsIfNotYetConfigured];
     
 }
+
 %end
 
+
+#pragma mark Scalable Views
 
 %hook _SBWallpaperWindow 
 
@@ -207,14 +208,15 @@ NSDictionary *prefs = nil;
 
 - (id)_initWithScreen:(id)arg1 layoutStrategy:(id)arg2 debugName:(id)arg3 rootViewController:(id)arg4 scene:(id)arg5
 {
-    
     id o = %orig(arg1, arg2, arg3, arg4, arg5);
     
     if (!_pfTweakEnabled)
     {
         return o;
     } 
+    
     wallpaperView = self;
+    
     [[NSNotificationCenter defaultCenter] addObserver:self selector:@selector(recieveNotification:) name:kEditingModeEnabledNotificationName object:nil];
     [[NSNotificationCenter defaultCenter] addObserver:self selector:@selector(recieveNotification:) name:kEditingModeDisabledNotificationName object:nil];
 
@@ -227,45 +229,45 @@ NSDictionary *prefs = nil;
 %new 
 - (void)kicker:(NSNotification *)notification
 {
-    BOOL up = ([[notification name] isEqualToString:kEditorKickViewsUp]);
     CGAffineTransform transform = self.transform;
-    [UIView animateWithDuration:.3 
+
+    [UIView animateWithDuration:.4
     animations:
     ^{
-        self.transform = (up && !_rtKickedUp) 
-                        ? CGAffineTransformTranslate(transform, 0, (transform.ty == 0 
-                                                ? 0 - ([[UIScreen mainScreen] bounds].size.height * 0.7) 
-                                                : 0.0)) 
-                        : CGAffineTransformTranslate(transform, 0, (transform.ty == 0 
-                                                ? 0 
-                                                : ([[UIScreen mainScreen] bounds].size.height * 0.7)));
+        self.transform = (([[notification name] isEqualToString:kEditorKickViewsUp])              
+                        && !_rtKickedUp)                                                           
+                                ? CGAffineTransformTranslate(transform, 0, 
+                                        (transform.ty == 0                                           
+                                            ? 0 - ([[UIScreen mainScreen] bounds].size.height * 0.7) 
+                                            : 0.0                                                   
+                                        ))                                                           
+                                : CGAffineTransformTranslate(transform, 0, 
+                                        (transform.ty == 0
+                                            ? 0                                                     
+                                            : ([[UIScreen mainScreen] bounds].size.height * 0.7)
+                                        )); 
     }]; 
 }
 
 %new
 - (void)recieveNotification:(NSNotification *)notification
 {
+    // Set a corner radius on notched devices to make things look cleaner
     BOOL enabled = ([[notification name] isEqualToString:kEditingModeEnabledNotificationName]);
     _rtEditingEnabled = enabled;
     BOOL notched = [HPUtility isCurrentDeviceNotched];
     CGFloat cR = notched ? 35 : 0;
-
-    if (enabled) 
-    {
-        self.layer.cornerRadius = enabled ? cR : 0;
-    }
+    self.layer.cornerRadius = enabled ? cR : 0;
 }
+
 %end
-
-
-@interface SBFStaticWallpaperImageView : UIImageView 
-@end
 
 
 %hook SBFStaticWallpaperImageView
 
 // Whenever a wallpaper image is created for the homescreen, pass it to the manager
 // We then use this FB/UIRootWindow in the tweak to give the awesome blurred bg UI feel
+
 - (void)setImage:(UIImage *)img 
 {
     %orig(img);
@@ -276,56 +278,7 @@ NSDictionary *prefs = nil;
 %end
 
 
-@interface FBRootWindow : UIView 
-@end
-
-
-%hook FBRootWindow
-
-// iOS 12 - Dynamic editor background based on wallpaper
-// We use this to set the background image for the editor
-
-- (id)initWithDisplay:(id)arg
-{
-    id o = %orig(arg);
-
-    [[NSNotificationCenter defaultCenter] addObserver:self selector:@selector(recieveNotification:) name:@"CreateBackgroundObject" object:nil];
-
-    return o;
-}
-
-- (id)initWithDisplayConfiguration:(id)arg
-{
-    id o = %orig(arg);
-
-    [[NSNotificationCenter defaultCenter] addObserver:self selector:@selector(recieveNotification:) name:@"CreateBackgroundObject" object:nil];
-
-    return o;
-}
-
-- (id)initWithScreen:(id)arg
-{
-    id o = %orig(arg);
-
-    [[NSNotificationCenter defaultCenter] addObserver:self selector:@selector(recieveNotification:) name:@"CreateBackgroundObject" object:nil];
-
-    return o;
-}
-
-%new
-- (void)recieveNotification:(NSNotification *)notification
-{
-    
-    self.backgroundColor = [UIColor colorWithPatternImage:[EditorManager sharedManager].blurredAndDarkenedWallpaper];
-}
-
-%end
-
-
-@interface SBDockView : UIView
-@property (nonatomic, retain) UIView *backgroundView;
-@end
-
+#pragma mark Dock BG Handling
 
 %hook SBDockView
 
@@ -335,23 +288,27 @@ NSDictionary *prefs = nil;
 - (id)initWithDockListView:(id)arg1 forSnapshot:(BOOL)arg2 
 {
     id x = %orig;
+
     [[NSNotificationCenter defaultCenter] addObserver:self selector:@selector(layoutSubviews) name:@"HPLayoutDockView" object:nil];
+
     return x;
 }
+
 - (void)layoutSubviews
 {
     %orig;
-    // Reminder that, if you're building this for simulator,
-    //      hooking ivars requires importing the substrate headers
+
     UIView *bgView = MSHookIvar<UIView *>(self, "_backgroundView"); 
-    // "gross why are you using ints like booleans"
-    //      userDefault implementation of bools is ugly as fuck and a pain to check for validity
-    //      I personally prefer this. You should handle bools properly when working with a team.
+
+    // Dont use UserDefaults like this. Use the bool api. I am lazy. 
     bgView.alpha = [[NSUserDefaults standardUserDefaults] integerForKey:@"HPThemeDefaultHideDock"]?:0 == 1 ? 0 : 1;
-    bgView.hidden =  [[NSUserDefaults standardUserDefaults] integerForKey:@"HPThemeDefaultHideDock"]?:0 == 1 ? YES : NO;
+    bgView.hidden = [[NSUserDefaults standardUserDefaults] integerForKey:@"HPThemeDefaultHideDock"]?:0 == 1 ? YES : NO;
 }
+
 %end
 
+
+#pragma mark Editor Exit Listeners
 
 %hook SBCoverSheetWindow
 
@@ -361,11 +318,13 @@ NSDictionary *prefs = nil;
 - (BOOL)becomeFirstResponder 
 {
     BOOL x = %orig;
+
     if (_pfTweakEnabled && [(SpringBoard*)[UIApplication sharedApplication] isShowingHomescreen] && _rtEditingEnabled) 
     {
         [[NSNotificationCenter defaultCenter] postNotificationName:kEditingModeDisabledNotificationName object:nil];
         _rtEditingEnabled = NO;
     }
+
     return x;
 }
 
@@ -375,7 +334,7 @@ NSDictionary *prefs = nil;
 %hook SBMainSwitcherWindow
 
 // Whenever the user swipes up to enable the switcher, close the editor view. 
-// It's optional, since it makes half of the shit impossible to use
+// It's optional, since it makes the bottom half hard to use on HomeGesture Phones
 //      on really small phones with HomeGesture
 
 - (void)setHidden:(BOOL)arg
@@ -390,6 +349,8 @@ NSDictionary *prefs = nil;
 
 %end
 
+
+#pragma mark Reload Icon Model
 
 %hook SBIconModel
 
@@ -426,25 +387,36 @@ NSDictionary *prefs = nil;
 %end
 
 
+#pragma mark Force Modern Dock
+
 %hook UITraitCollection
+
+// Force Modern Dock on non-A11+ Phones. 
+
 - (CGFloat)displayCornerRadius 
 {
-    // This is why I love my ternary 
-    return (![HPUtility isCurrentDeviceNotched]                                                                 // Dont do this on notched devices, no need
-                    && [[NSUserDefaults standardUserDefaults] integerForKey:@"HPThemeDefaultModernDock"]?:0 == 1   // If we're supposed to force modern dock
-                                                                    ? 6                                         // Setting this to a non-0 value forced modern dock
-                                                                    : %orig );                                  // else just orig it. 
+    return ((![HPUtility isCurrentDeviceNotched]                                                                 // Dont do this on notched devices, no need
+                && ([[NSUserDefaults standardUserDefaults] integerForKey:@"HPThemeDefaultModernDock"]?:0) == 1)  // If we're supposed to force modern dock
+                        ? 6                                                                                      // Setting this to a non-0 value forced modern dock
+                        : %orig );                                                                               // else just orig it. 
 }
+
 %end
 
 
+#pragma mark SpringBoard Hook 
+#pragma mark FirstLoad/ShowingHomescreen
+
 %hook SpringBoard 
--(BOOL)isShowingHomescreen
+
+- (BOOL)isShowingHomescreen
 {
     if (!%orig)
     {
         if (_rtHitboxWindow)
+        {
             _rtHitboxWindow.hidden = YES;
+        }
     }
     else 
     {
@@ -454,7 +426,9 @@ NSDictionary *prefs = nil;
             [[NSNotificationCenter defaultCenter] postNotificationName:@"HPResetIconViews" object:nil];
         }
         if (_rtHitboxWindow)
+        {
             _rtHitboxWindow.hidden = NO;
+        }
     }
     if (%orig && [[NSUserDefaults standardUserDefaults] integerForKey:@"HPTutorialGiven"] == 0)
     {
@@ -538,6 +512,7 @@ NSDictionary *prefs = nil;
 }
 %end
 
+
 %end
 
 
@@ -550,116 +525,13 @@ NSDictionary *prefs = nil;
 
 %group iOS12
 
+#pragma mark Version Specific Interfaces
 
-%hook SBRootFolderView
-
-// Root folder view
-// Mainly just need to interact with a few things here for quality-of-life features
-
-- (id)initWithFolder:(id)arg1 orientation:(NSInteger)arg2 viewMap:(id)arg3 context:(id)arg4 {
-    if ((self = %orig(arg1, arg2, arg3, arg4))) {
-
-    }
-    //[[NSNotificationCenter defaultCenter] addObserver:self selector:@selector(dismissSpotlightIfVisible) name:kEditingModeEnabledNotificationName object:nil];
-    return self;
-}
-
-%end
-
-
-%hook SBMainScreenActiveInterfaceOrientationWindow
-
-// Scale floaty docks with the rest of the views
-// For some (maybe dumb, maybe not) reason, they get their own oddly named window
-// on iOS 13, the window is renamed, but it subclasses this one, so we're still good
-//      (for now)
-// This mostly mocks the handling of SBHomeScreenWindow, most documentation can be found there
-- (id)_initWithScreen:(id)arg1 layoutStrategy:(id)arg2 debugName:(id)arg3 rootViewController:(id)arg4 scene:(id)arg5
-{
-    id o = %orig(arg1, arg2, arg3, arg4, arg5);
-
-    [[NSNotificationCenter defaultCenter] addObserver:self selector:@selector(recieveNotification:) name:kEditingModeDisabledNotificationName object:nil];
-
-    [[NSNotificationCenter defaultCenter] addObserver:self selector:@selector(fader:) name:kFadeFloatingDockNotificationName object:nil];
-    [[NSNotificationCenter defaultCenter] addObserver:self selector:@selector(fader:) name:kShowFloatingDockNotificationName object:nil];
-    floatingDockWindow = self;
-    return o;
-}
-- (id)initWithDebugName:(id)arg
-{
-    id o = %orig(arg);
-
-    [[NSNotificationCenter defaultCenter] addObserver:self selector:@selector(recieveNotification:) name:kEditingModeDisabledNotificationName object:nil];
-
-    [[NSNotificationCenter defaultCenter] addObserver:self selector:@selector(fader:) name:kFadeFloatingDockNotificationName object:nil];
-    [[NSNotificationCenter defaultCenter] addObserver:self selector:@selector(fader:) name:kShowFloatingDockNotificationName object:nil];
-    floatingDockWindow = self;
-    
-    return o;
-}
-%new 
-- (void)fader:(NSNotification *)notification
-{
-    // In the settings view and keyboard view, floatydock (annoyingly) sits above it. 
-    // So we need to fade it at times using a notification. 
-    [UIView animateWithDuration:.2 
-        animations:
-        ^{
-            self.alpha = ([[notification name] isEqualToString:kFadeFloatingDockNotificationName]) ? 0 : 1;
-        } 
-        completion:^(BOOL finished) 
-        {
-            
-        }
-    ];
-}
-
-%new
-- (void)recieveNotification:(NSNotification *)notification
-{
-    BOOL enabled = ([[notification name] isEqualToString:kEditingModeEnabledNotificationName]);
-    _rtEditingEnabled = enabled;
-    self.userInteractionEnabled = !enabled;
-}
-
-%end
-
-
-%hook SBRootFolderController
-
-// Disable Icon Wiggle when Editor is loaded
-
-- (void)viewDidLoad
-{
-    %orig;
-    [[NSNotificationCenter defaultCenter] addObserver:self selector:@selector(disableWiggle:) name:kDisableWiggleTrigger object:nil];
-}
-
-%new 
-- (void)disableWiggle:(NSNotification *)notification 
-{
-    // This works even devices without a done button
-    if ([[[UIDevice currentDevice] systemVersion] floatValue] >= 11.0) 
-    {
-        [self doneButtonTriggered:self.contentView.doneButton];
-    }
-}
-
-%end
-
-
-@interface _NSCompositeLayoutXAxisAnchor : NSObject
-- (NSArray *)_childAnchors;
+@interface SBDockIconListView : SBRootIconListView
 @end
 
 
-@interface NSLayoutXAxisAnchor ()
-- (_NSCompositeLayoutXAxisAnchor *)offsetBy:(CGFloat)arg;
-@end
-
-
-#pragma mark -- SBRootIconListView
-
+#pragma mark Main Layout Handling
 
 %hook SBRootIconListView 
 
@@ -669,20 +541,18 @@ NSDictionary *prefs = nil;
 {
     %orig;
 
-    // I'm lazy and use this as an -init
-    if (!self.configured) 
+    if (!self.configured && _pfTweakEnabled) 
     {
+
         [[[EditorManager sharedManager] editorViewController] addRootIconListViewToUpdate:self];
+
         [[NSNotificationCenter defaultCenter] addObserver:self selector:@selector(layoutIconsNow) name:@"HPlayoutIconViews" object:nil];
+
         self.configured = YES;
         _rtConfigured = YES;
     }
-    if (!_rtInjected)
-    {
-        _rtInjected = YES;
-    }
-    
 }
+
 - (void)layoutIconsNow 
 {
     %orig;
@@ -696,7 +566,8 @@ NSDictionary *prefs = nil;
     [self setIconsLabelAlpha:1.0];
 }
 
-- (CGFloat)horizontalIconPadding {
+- (CGFloat)horizontalIconPadding 
+{
     CGFloat x = %orig;
 
     if (!_pfTweakEnabled || !self.configured || [[HPManager sharedManager] resettingIconLayout]) 
@@ -704,7 +575,8 @@ NSDictionary *prefs = nil;
         return x;
     }
 
-    BOOL buggedSpacing = ((([[NSUserDefaults standardUserDefaults] integerForKey:@"HPThemeDefaultRootColumns"]?:4) == 4) && ([[HPUtility deviceName] isEqualToString:@"iPhone X"])); // Afaik, the "Boxy" bug only happens on iOS 12 iPX w/ 4 columns
+    BOOL buggedSpacing = ((([[NSUserDefaults standardUserDefaults] integerForKey:@"HPThemeDefaultRootColumns"]?:4) == 4) 
+                                && ([[HPUtility deviceName] isEqualToString:@"iPhone X"])); // Afaik, the "Boxy" bug only happens on iOS 12 iPX w/ 4 columns
                                                                                   // We dont need to check version because we're in a group block
                                                                                   //    that only executes on iOS 12 and below
                          
@@ -746,8 +618,9 @@ NSDictionary *prefs = nil;
 - (CGFloat)verticalIconPadding 
 {
     CGFloat x = %orig;
+
     if (!self.configured || !_pfTweakEnabled) return x;
-    // simple, doesn't need explaining. 
+     
     return x+[[NSUserDefaults standardUserDefaults] floatForKey:@"HPThemeDefaultRootVerticalSpacing"]?:0.0;
 }
 
@@ -810,6 +683,7 @@ NSDictionary *prefs = nil;
     {
         return x;
     }
+    
     // NSUInteger -> NSInteger doesn't require casts, just dont give it a negative value and its fine. 
     return [[NSUserDefaults standardUserDefaults] integerForKey:@"HPThemeDefaultRootColumns"]?:4;
 }
@@ -817,10 +691,12 @@ NSDictionary *prefs = nil;
 + (NSUInteger)iconRowsForInterfaceOrientation:(NSInteger)arg1
 {
     NSInteger x = %orig(arg1);
+
     if (arg1==69)
     {
         return %orig(1);
     }
+
     if (!_rtConfigured || !_pfTweakEnabled || [[HPManager sharedManager] resettingIconLayout])
     {
         return x;
@@ -831,20 +707,19 @@ NSDictionary *prefs = nil;
 
 + (NSUInteger)maxVisibleIconRowsInterfaceOrientation:(NSInteger)arg1
 {
+    // Allow more than 24 icons on the SB w/o a reload
     if (_pfTweakEnabled 
         && ([[NSUserDefaults standardUserDefaults] integerForKey:@"HPThemeDefaultRootRows"]?:[HPUtility defaultRows] == [HPUtility defaultRows])
         && (([[NSUserDefaults standardUserDefaults] integerForKey:@"HPThemeDefaultRootColumns"]?:4) == 4))
     {
         return %orig;
     }
-    if (_pfTweakEnabled && !_rtConfigured)
-    {
-        //return 100;
-    }
+
     if (_pfTweakEnabled)
     {
         return ([[NSUserDefaults standardUserDefaults] integerForKey:@"HPThemeDefaultRootRows"]?:[HPUtility defaultRows]);
     }
+
     return %orig;
 }
 
@@ -865,38 +740,13 @@ NSDictionary *prefs = nil;
         return x;
     }
 
-    return [[NSUserDefaults standardUserDefaults] integerForKey:@"HPThemeDefaultRootRows"]?:x;
+    return [[NSUserDefaults standardUserDefaults] integerForKey:@"HPThemeDefaultRootRows"] ?: x;
 }
 
 %end
 
 
-%hook SBIconLegibilityLabelView
-
-// Icon labels
-
-- (void)setHidden:(BOOL)arg1 
-{
-    BOOL hide = NO;
-    if (((SBIconLabelImage *)self.image).parameters.iconLocation == 1) // this works, somehow. 
-    {
-        // home screen
-        hide = [[NSUserDefaults standardUserDefaults] integerForKey:@"HPThemeDefaultIconLabels"]?:0 == 1;
-    } 
-    else if (((SBIconLabelImage *)self.image).parameters.iconLocation == 6)
-    {
-        // folder
-        hide = [[NSUserDefaults standardUserDefaults] integerForKey:@"HPThemeDefaultIconLabelsF"]?:0 == 1;
-    }
-    hide = (hide || arg1);
-
-    %orig(hide);
-}
-
-%end
-
-@interface SBDockIconListView : SBRootIconListView
-@end
+#pragma mark Dock Handling 
 
 %hook SBDockIconListView
 
@@ -904,14 +754,15 @@ NSDictionary *prefs = nil;
 // For documentation on hooked methos see SbRootIconListView (ios 12)
 
 %property (nonatomic, assign) BOOL configured;
+
 - (void)layoutSubviews 
 {
     %orig;
 
-    if (_tcDockyInstalled) return; // This line goes everywhere here
-                                   // If Docky is detected, dont change a thing. 
+    if (_tcDockyInstalled || !_pfTweakEnabled) return; 
 
-    if ([[NSUserDefaults standardUserDefaults] boolForKey:@"HPdockConfigEnabled"]) return %orig;
+    if (![[NSUserDefaults standardUserDefaults] boolForKey:@"HPdockConfigEnabled"]) return %orig;
+
     if (!self.configured) 
     {
         [[[EditorManager sharedManager] editorViewController] addRootIconListViewToUpdate:self];
@@ -919,19 +770,21 @@ NSDictionary *prefs = nil;
     }
 }
 
-+ (NSUInteger)maxIcons {
-    if (_tcDockyInstalled) return %orig;
-    if ([[NSUserDefaults standardUserDefaults] boolForKey:@"HPdockConfigEnabled"]) return %orig;
-    return [[NSUserDefaults standardUserDefaults] floatForKey:@"HPThemeDefaultDockColumns"]?:4;
++ (NSUInteger)maxIcons 
+{
+    if (_tcDockyInstalled || (![[NSUserDefaults standardUserDefaults] boolForKey:@"HPdockConfigEnabled"]) || !_pfTweakEnabled) return %orig;
+
+    return [[NSUserDefaults standardUserDefaults] floatForKey:@"HPThemeDefaultDockColumns"] ?: 4;
 }
+
 - (UIEdgeInsets)layoutInsets
 {
     UIEdgeInsets x = %orig;
-    if (!_pfTweakEnabled)
+
+    if (!_pfTweakEnabled || (![[NSUserDefaults standardUserDefaults] boolForKey:@"HPdockConfigEnabled"]))
     {
         return x;
     }
-    if ([[NSUserDefaults standardUserDefaults] boolForKey:@"HPdockConfigEnabled"]) return %orig;
     
     if ((!([[NSUserDefaults standardUserDefaults] floatForKey:[NSString stringWithFormat:@"%@%@%@", @"HPThemeDefault", @"Dock", @"LeftInset"]]?:0)) == 0)
     {
@@ -953,23 +806,22 @@ NSDictionary *prefs = nil;
     }
 }
 
-- (NSUInteger)iconsInRowForSpacingCalculation {
-    if (_tcDockyInstalled) return %orig;
-    if ([[NSUserDefaults standardUserDefaults] boolForKey:@"HPdockConfigEnabled"]) return %orig;
-    return [[NSUserDefaults standardUserDefaults] floatForKey:@"HPThemeDefaultDockColumns"]?:4;
-}
-- (CGFloat)horizontalIconPadding {
+- (NSUInteger)iconsInRowForSpacingCalculation 
+{
+    if (_tcDockyInstalled || (![[NSUserDefaults standardUserDefaults] boolForKey:@"HPdockConfigEnabled"])) return %orig;
 
+    return [[NSUserDefaults standardUserDefaults] floatForKey:@"HPThemeDefaultDockColumns"] ?: 4;
+}
+
+- (CGFloat)horizontalIconPadding 
+{
     CGFloat x = %orig;
-    if (_tcDockyInstalled) return %orig;
-    if ([[NSUserDefaults standardUserDefaults] boolForKey:@"HPdockConfigEnabled"]) return %orig;
-    if (!_pfTweakEnabled || !self.configured) 
-    {
-        return x;
-    }
+
+    if (_tcDockyInstalled || (![[NSUserDefaults standardUserDefaults] boolForKey:@"HPdockConfigEnabled"]) || !_pfTweakEnabled || !self.configured) return %orig;
 
     BOOL buggedSpacing = ([[NSUserDefaults standardUserDefaults] floatForKey:@"HPThemeDefaultDockColumns"]?:4) == 4 && [[HPUtility deviceName] isEqualToString:@"iPhone X"];
     BOOL leftInsetZeroed = [[NSUserDefaults standardUserDefaults] floatForKey:@"HPThemeDefaultDockLeftInset"]?:0 == 0.0;
+
     if ([[[UIDevice currentDevice] systemVersion] floatValue] >= 12.0)
     {
         if (buggedSpacing)
@@ -993,7 +845,8 @@ NSDictionary *prefs = nil;
 - (CGFloat)verticalIconPadding 
 {
     CGFloat x = %orig;
-    if ([[NSUserDefaults standardUserDefaults] boolForKey:@"HPdockConfigEnabled"]) return %orig;
+
+    if (![[NSUserDefaults standardUserDefaults] boolForKey:@"HPdockConfigEnabled"]) return %orig;
     if (!self.configured || _tcDockyInstalled || !_pfTweakEnabled) return x;
 
     return x + [[NSUserDefaults standardUserDefaults] floatForKey:@"HPThemeDefaultDockVerticalSpacing"]?:0;
@@ -1002,12 +855,14 @@ NSDictionary *prefs = nil;
 - (CGFloat)sideIconInset
 {   
     CGFloat x = %orig;
-    if ([[NSUserDefaults standardUserDefaults] boolForKey:@"HPdockConfigEnabled"]) return %orig;
-    if (_tcDockyInstalled) return %orig;
+
+    if (_tcDockyInstalled || !([[NSUserDefaults standardUserDefaults] boolForKey:@"HPdockConfigEnabled"])) return %orig;
+
     if (!self.configured || !_pfTweakEnabled)
     {
         return x;
     }
+
     BOOL buggedSpacing = [[NSUserDefaults standardUserDefaults] floatForKey:@"HPThemeDefaultDockColumns"]?:4 == 4 
                                         && [[HPUtility deviceName] isEqualToString:@"iPhone X"];
     BOOL leftInsetZeroed = [[NSUserDefaults standardUserDefaults] floatForKey:@"HPThemeDefaultDockLeftInset"]?:0 == 0.0;
@@ -1028,57 +883,65 @@ NSDictionary *prefs = nil;
         return [[NSUserDefaults standardUserDefaults] floatForKey:@"HPThemeDefaultDockSideInset"]?:0;
     }
 }
+
 - (CGFloat)topIconInset
 {
-    if ([[NSUserDefaults standardUserDefaults] boolForKey:@"HPdockConfigEnabled"]) return %orig;
-    CGFloat x = %orig;
-    if (_tcDockyInstalled) return %orig;
-
-    if (!self.configured || !_pfTweakEnabled)
+    if (![[NSUserDefaults standardUserDefaults] boolForKey:@"HPdockConfigEnabled"] 
+            || (_tcDockyInstalled)
+            || !self.configured || !_pfTweakEnabled)
     {
-        return x;
-    }
+        return %orig;
+    } 
+
+    CGFloat x = %orig;
     
-    return x + [[NSUserDefaults standardUserDefaults] floatForKey:@"HPThemeDefaultDockTopInset"]?:0;
+    return x + [[NSUserDefaults standardUserDefaults] floatForKey:@"HPThemeDefaultDockTopInset"] ?: 0;
 }
 
 + (NSUInteger)iconColumnsForInterfaceOrientation:(NSInteger)arg1
 {
-    if ([[NSUserDefaults standardUserDefaults] boolForKey:@"HPdockConfigEnabled"]) return %orig(arg1);
-    NSInteger x = %orig(arg1);
-    if (_tcDockyInstalled) return x;
-
-    if (!_rtConfigured || !_pfTweakEnabled)
+    // Bad method name
+    // This method returns rows
+    if (![[NSUserDefaults standardUserDefaults] boolForKey:@"HPdockConfigEnabled"] 
+            || _tcDockyInstalled || !_rtConfigured 
+            || !_pfTweakEnabled) 
     {
-        return x;
+        return %orig(arg1);
     }
 
-    return [[NSUserDefaults standardUserDefaults] integerForKey:@"HPThemeDefaultDockColumns"]?:4;
+    return [[NSUserDefaults standardUserDefaults] integerForKey:@"HPThemeDefaultDockColumns"] ?: 4;
 }
 
 - (NSUInteger)iconsInColumnForSpacingCalculation
 {
-    if ([[NSUserDefaults standardUserDefaults] boolForKey:@"HPdockConfigEnabled"]) return %orig;
-    NSInteger x = %orig;
-
-    if (_tcDockyInstalled) return %orig;
-    if (!_rtConfigured || !_pfTweakEnabled || [[HPManager sharedManager] resettingIconLayout])
+    if (![[NSUserDefaults standardUserDefaults] boolForKey:@"HPdockConfigEnabled"] 
+        || _tcDockyInstalled || !_rtConfigured 
+        || !_pfTweakEnabled) 
     {
-        return x;
+        return %orig;
     }
 
     return [[NSUserDefaults standardUserDefaults] integerForKey:@"HPThemeDefaultDockRows"]?:1;
 }
+
 %end
 
+
+#pragma mark Icon Handling
+
 %hook SBIconView 
+
+// Icon Scale & Alpha
 
 - (void)layoutSubviews 
 {
     %orig;
+
     if (!_pfTweakEnabled) return;
+
     NSInteger loc = MSHookIvar<NSInteger>(self, "_iconLocation");
     NSString *x = @"";
+
     switch ( loc )
     {
         case 1: 
@@ -1102,19 +965,23 @@ NSDictionary *prefs = nil;
             break;
         }
     }
+
     CGFloat sx = ([[NSUserDefaults standardUserDefaults] floatForKey:[NSString stringWithFormat:@"%@%@%@", @"HPThemeDefault", x, @"Scale"]]?:60) / 60.0;
     [self.layer setSublayerTransform:CATransform3DMakeScale(sx, sx, 1)];
+
     self.alpha = ([[NSUserDefaults standardUserDefaults] floatForKey:[NSString stringWithFormat:@"%@%@%@", @"HPThemeDefault", x, @"IconAlpha"]]?:100.0) / 100.0;
 }
 
 %end
 
+
 %hook SBIconBadgeView
 
+// Hide Icon Badges
+
 - (void)setHidden:(BOOL)arg
-{    
-    NSString *x = @"Icon";
-    if (_pfTweakEnabled && [[NSUserDefaults standardUserDefaults] integerForKey:[NSString stringWithFormat:@"%@%@%@", @"HPThemeDefault", x, @"Badges"]] )
+{
+    if (_pfTweakEnabled && [[NSUserDefaults standardUserDefaults] boolForKey:@"HPThemeDefaultIconBadges"])
     {
         %orig(YES);
     }
@@ -1122,40 +989,187 @@ NSDictionary *prefs = nil;
         %orig(arg);
     }
 }
+
 - (BOOL)isHidden 
-{    
-    NSString *x = @"Icon";
-    if (_pfTweakEnabled && [[NSUserDefaults standardUserDefaults] floatForKey:[NSString stringWithFormat:@"%@%@%@", @"HPThemeDefault", x, @"Badges"]])
+{
+    if (_pfTweakEnabled && [[NSUserDefaults standardUserDefaults] boolForKey:@"HPThemeDefaultIconBadges"])
     {
         return YES;
     }
     return %orig;
 }
+
 - (CGFloat)alpha
 {    
-    NSString *x = @"Icon";
-    CGFloat a = [[NSUserDefaults standardUserDefaults] floatForKey:[NSString stringWithFormat:@"%@%@%@", @"HPThemeDefault", x, @"Badges"]] ? 0.0 : %orig;
+    CGFloat a = (_pfTweakEnabled && [[NSUserDefaults standardUserDefaults] boolForKey:@"HPThemeDefaultIconBadges"]) ? 0.0 : %orig;
+
     return a;
 }
+
 - (void)setAlpha:(CGFloat)arg
 {   
-    NSString *x = @"Icon";
-
-    %orig([[NSUserDefaults standardUserDefaults] floatForKey:[NSString stringWithFormat:@"%@%@%@", @"HPThemeDefault", x, @"Badges"]] ? 0.0 : arg);
+    %orig([[NSUserDefaults standardUserDefaults] boolForKey:@"HPThemeDefaultIconBadges"] ? 0.0 : arg);
 }
+
 %end
 
 
-@interface FBSystemGestureView (hp)
-- (void)_addGestureRecognizer:(id)arg atEnd:(BOOL)arg2;
-@property (nonatomic, assign) CGFloat hpPanAmount;
-@property (nonatomic, assign) BOOL editorOpened;
-@property (nonatomic, assign) BOOL editorActivated;
-@property (nonatomic, assign) BOOL hitboxMaxed;
-@property (nonatomic, retain) HPHitboxView *hp_larger_hitbox;
-@property (nonatomic, retain) HPHitboxWindow *hp_larger_window;
-@end
+%hook SBIconLegibilityLabelView
 
+// Hide Icon Labels
+
+- (void)setHidden:(BOOL)arg1 
+{
+    BOOL hide = NO;
+
+    if (((SBIconLabelImage *)self.image).parameters.iconLocation == 1) // this works, somehow. 
+    {
+        // home screen
+        hide = [[NSUserDefaults standardUserDefaults] integerForKey:@"HPThemeDefaultIconLabels"]?:0 == 1;
+    } 
+    else if (((SBIconLabelImage *)self.image).parameters.iconLocation == 6)
+    {
+        // folder
+        hide = [[NSUserDefaults standardUserDefaults] integerForKey:@"HPThemeDefaultIconLabelsF"]?:0 == 1;
+    }
+
+    // If we aren't hiding it but SB is, listen to springboard
+    %orig((hide || arg1));
+}
+
+%end
+
+
+#pragma mark End Icon Editing
+
+%hook SBRootFolderController
+
+// Disable Icon Wiggle when Editor is loaded
+
+- (void)viewDidLoad
+{
+    %orig;
+
+    [[NSNotificationCenter defaultCenter] addObserver:self selector:@selector(disableWiggle:) name:kDisableWiggleTrigger object:nil];
+}
+
+%new 
+- (void)disableWiggle:(NSNotification *)notification 
+{
+    // This works even devices without a done button
+    if ([[[UIDevice currentDevice] systemVersion] floatValue] >= 11.0) 
+    {
+        [self doneButtonTriggered:self.contentView.doneButton];
+    }
+}
+
+%end
+
+
+#pragma mark FloatyDock Handling
+
+%hook SBMainScreenActiveInterfaceOrientationWindow
+
+// Hide FloatyDock View when it is appropriate to do so
+
+- (id)_initWithScreen:(id)arg1 layoutStrategy:(id)arg2 debugName:(id)arg3 rootViewController:(id)arg4 scene:(id)arg5
+{
+    id o = %orig(arg1, arg2, arg3, arg4, arg5);
+
+    [[NSNotificationCenter defaultCenter] addObserver:self selector:@selector(recieveNotification:) name:kEditingModeDisabledNotificationName object:nil];
+    [[NSNotificationCenter defaultCenter] addObserver:self selector:@selector(recieveNotification:) name:kEditingModeEnabledNotificationName object:nil];
+
+    [[NSNotificationCenter defaultCenter] addObserver:self selector:@selector(fader:) name:kFadeFloatingDockNotificationName object:nil];
+    [[NSNotificationCenter defaultCenter] addObserver:self selector:@selector(fader:) name:kShowFloatingDockNotificationName object:nil];
+
+    floatingDockWindow = self;
+
+    return o;
+}
+
+- (id)initWithDebugName:(id)arg
+{
+    id o = %orig(arg);
+
+    [[NSNotificationCenter defaultCenter] addObserver:self selector:@selector(recieveNotification:) name:kEditingModeDisabledNotificationName object:nil];
+    [[NSNotificationCenter defaultCenter] addObserver:self selector:@selector(recieveNotification:) name:kEditingModeEnabledNotificationName object:nil];
+
+    [[NSNotificationCenter defaultCenter] addObserver:self selector:@selector(fader:) name:kFadeFloatingDockNotificationName object:nil];
+    [[NSNotificationCenter defaultCenter] addObserver:self selector:@selector(fader:) name:kShowFloatingDockNotificationName object:nil];
+
+    floatingDockWindow = self;
+    
+    return o;
+}
+
+%new 
+- (void)fader:(NSNotification *)notification
+{
+    [UIView animateWithDuration:.2 
+        animations:
+        ^{
+            self.alpha = ([[notification name] isEqualToString:kFadeFloatingDockNotificationName]) ? 0 : 1;
+        }
+    ];
+}
+
+%new
+- (void)recieveNotification:(NSNotification *)notification
+{
+    BOOL enabled = ([[notification name] isEqualToString:kEditingModeEnabledNotificationName]);
+
+    _rtEditingEnabled = enabled;
+
+    self.userInteractionEnabled = !enabled;
+}
+
+%end
+
+
+#pragma mark Dynamic Editor Background 
+
+%hook FBRootWindow
+
+// iOS 12 - Dynamic editor background based on wallpaper
+// We use this to set the background image for the editor
+
+- (id)initWithDisplay:(id)arg
+{
+    id o = %orig(arg);
+
+    [[NSNotificationCenter defaultCenter] addObserver:self selector:@selector(recieveNotification:) name:@"CreateBackgroundObject" object:nil];
+
+    return o;
+}
+
+- (id)initWithDisplayConfiguration:(id)arg
+{
+    id o = %orig(arg);
+
+    [[NSNotificationCenter defaultCenter] addObserver:self selector:@selector(recieveNotification:) name:@"CreateBackgroundObject" object:nil];
+
+    return o;
+}
+
+- (id)initWithScreen:(id)arg
+{
+    id o = %orig(arg);
+
+    [[NSNotificationCenter defaultCenter] addObserver:self selector:@selector(recieveNotification:) name:@"CreateBackgroundObject" object:nil];
+
+    return o;
+}
+
+%new
+- (void)recieveNotification:(NSNotification *)notification
+{
+    self.backgroundColor = [UIColor colorWithPatternImage:[EditorManager sharedManager].blurredAndDarkenedWallpaper];
+}
+
+%end
+
+
+#pragma mark Gesture Handler
 
 %hook FBSystemGestureView
 
@@ -1163,6 +1177,7 @@ NSDictionary *prefs = nil;
 // System Gesture View for <= iOS 12
 // Create the drag down gesture bits here. 
 //
+
 %property (nonatomic, assign) BOOL hitboxViewExists;
 %property (nonatomic, assign) BOOL editorOpened;
 %property (nonatomic, assign) BOOL editorActivated;
@@ -1172,19 +1187,6 @@ NSDictionary *prefs = nil;
 %property (nonatomic, retain) HPHitboxWindow *hp_larger_window;
 %property (nonatomic, assign) CGFloat hpPanAmount;
 %property (nonatomic, assign) BOOL hitboxMaxed;
-
-%new
-- (void)TL_toggleEditingMode
-{
-    if (![(SpringBoard*)[UIApplication sharedApplication] isShowingHomescreen]) 
-    {
-        return;
-    }
-    if (_pfActivationGesture != 1 || _pfGestureDisabled) 
-    {
-        return;
-    }
-}
 
 %new 
 - (void)createTopLeftHitboxView
@@ -1300,7 +1302,6 @@ NSDictionary *prefs = nil;
     self.hpPanAmount = translation;
 
     // If it's over, max/min the value. 
-    // TODO: animations instead. 
     if (gestureRecognizer.state == UIGestureRecognizerStateEnded)
     {
 
@@ -1392,7 +1393,6 @@ NSDictionary *prefs = nil;
     // We enable it at the start because we want to do the cool slide-in thing we 
     // call later
 
-    // TODO: This can probably be rewritten to use UIGestureRecognizerStateBegan
     if (self.hpPanAmount != 0)
     {
         if (!self.editorActivated)
@@ -1490,10 +1490,10 @@ NSDictionary *prefs = nil;
 - (void)layoutSubviews
 {
     %orig;
+
     if (!self.hp_hitbox_window && _pfTweakEnabled && !_pfGestureDisabled) 
     {
         [self createTopLeftHitboxView];
-        
     }
 }
 %end
@@ -1513,7 +1513,21 @@ NSDictionary *prefs = nil;
 
 %group iOS13
 
-// IOS 13
+#pragma mark Version Specific Interfaces
+
+@interface SBIconListView (HomePlus)
+- (NSUInteger)iconRowsForCurrentOrientation;
+@end
+
+@interface SBDockIconListView (HomePlusXIII)
+- (CGFloat)effectiveSpacingForNumberOfIcons:(NSUInteger)num;
+- (NSUInteger)iconsInRowForSpacingCalculation;
+- (NSUInteger)iconColumnsForCurrentOrientation;
+- (id)layout;
+@end
+
+
+#pragma mark Main Layout Handling
 
 %hook SBIconListGridLayoutConfiguration 
 
@@ -1558,8 +1572,11 @@ NSDictionary *prefs = nil;
     NSInteger x = %orig;
 
     if (!self.iconLocation) return x;
+
     if ([self.iconLocation isEqualToString:@"Dock"] && ([[NSUserDefaults standardUserDefaults] integerForKey:@"HPdockConfigEnabled"]?:1) == 0) return x;
+
     if (_tcDockyInstalled && (x<=2 || x==100))return %orig;
+
     if (!_rtConfigured && _pfTweakEnabled) return kMaxRowAmount;
 
     return _pfTweakEnabled ? [[NSUserDefaults standardUserDefaults] integerForKey:[NSString stringWithFormat:@"%@%@%@", @"HPThemeDefault", [self locationIfKnown], @"Rows"]]?:x : (NSUInteger)x;
@@ -1623,8 +1640,11 @@ NSDictionary *prefs = nil;
             self.iconLocation =  @"Root";
         }
     }
+
     if ([self.iconLocation isEqualToString:@"Folder"]) return x;
+
     if ([self.iconLocation isEqualToString:@"Dock"] && ([[NSUserDefaults standardUserDefaults] integerForKey:@"HPdockConfigEnabled"]?:1) == 0) return x;
+
     if ((!([[NSUserDefaults standardUserDefaults] floatForKey:[NSString stringWithFormat:@"%@%@%@", @"HPThemeDefault", self.iconLocation, @"LeftInset"]]?:0)) == 0)
     {
         return UIEdgeInsetsMake(
@@ -1647,55 +1667,187 @@ NSDictionary *prefs = nil;
 
 %end
 
-@interface SBFloatingDockWindow : UIView
-@end
 
-%hook SBFloatingDockWindow
+%hook SBIconListView 
 
-// Scale floaty docks with the rest of the views
-// For some (maybe dumb, maybe not) reason, they get their own oddly named window
-// on iOS 13, the window is renamed, but it subclasses this one, so we're still good
-//      (for now)
-// This mostly mocks the handling of SBHomeScreenWindow, most documentation can be found there
-- (id)_initWithScreen:(id)arg1 layoutStrategy:(id)arg2 debugName:(id)arg3 rootViewController:(id)arg4 scene:(id)arg5
+%property (nonatomic, assign) BOOL configured;
+
+- (id)initWithModel:(id)arg1 orientation:(id)arg2 viewMap:(id)arg3 
 {
-    id o = %orig(arg1, arg2, arg3, arg4, arg5);
+    id o = %orig(arg1, arg2, arg3);
 
-    [[NSNotificationCenter defaultCenter] addObserver:self selector:@selector(recieveNotification:) name:kEditingModeDisabledNotificationName object:nil];
-
-    [[NSNotificationCenter defaultCenter] addObserver:self selector:@selector(fader:) name:kFadeFloatingDockNotificationName object:nil];
-    [[NSNotificationCenter defaultCenter] addObserver:self selector:@selector(fader:) name:kShowFloatingDockNotificationName object:nil];
-    floatingDockWindow = self;
     return o;
 }
 
-%new 
-- (void)fader:(NSNotification *)notification
+- (void)layoutSubviews 
 {
-    // In the settings view and keyboard view, floatydock (annoyingly) sits above it. 
-    // So we need to fade it at times using a notification. 
-    [UIView animateWithDuration:.2 
-        animations:
-        ^{
-            self.alpha = ([[notification name] isEqualToString:kFadeFloatingDockNotificationName]) ? 0 : 1;
-        } 
-        completion:^(BOOL finished) 
-        {
-            
-        }
-    ];
+    %orig;
+
+    if (!self.configured) 
+    {
+        [[[EditorManager sharedManager] editorViewController] addRootIconListViewToUpdate:self];
+        [[NSNotificationCenter defaultCenter] addObserver:self selector:@selector(highlightView:) name:kHighlightViewNotificationName object:nil];
+        [[NSNotificationCenter defaultCenter] addObserver:self selector:@selector(layoutIconsNow) name:@"HPlayoutIconViews" object:nil];
+        self.configured = YES;
+        _rtConfigured = YES;
+    }
+    
+}
+
+- (BOOL)automaticallyAdjustsLayoutMetricsToFit
+{
+    return (!_pfTweakEnabled);
 }
 
 %new
-- (void)recieveNotification:(NSNotification *)notification
+- (void)highlightView:(NSNotification *)notification 
 {
-    BOOL enabled = ([[notification name] isEqualToString:kEditingModeEnabledNotificationName]);
-    _rtEditingEnabled = enabled;
-    self.userInteractionEnabled = !enabled;
+    if ([[self iconLocation] isEqualToString:[[EditorManager sharedManager] editingLocation]])
+    {
+        self.layer.borderColor = [[UIColor colorWithRed:0.69 green:0.90 blue:0.80 alpha:1.0] CGColor];
+        self.layer.borderWidth = 0;
+    } 
+    else
+    {
+        self.layer.borderColor = [[UIColor clearColor] CGColor];
+        self.layer.borderWidth = 0;
+    }
+}
+
+- (NSUInteger)iconRowsForCurrentOrientation
+{
+    if (_tcDockyInstalled && (%orig<=2 || %orig==100)) return %orig;
+    NSString *x = [[self iconLocation] substringFromIndex:14];
+
+    return [[NSUserDefaults standardUserDefaults] integerForKey:[NSString stringWithFormat:@"%@%@%@", @"HPThemeDefault", x, @"Rows"]]?:%orig;
+}
+
+- (NSUInteger)iconColumnsForCurrentOrientation
+{
+    if (_tcDockyInstalled && ([self iconRowsForCurrentOrientation]<=2 || [self iconRowsForCurrentOrientation]==100))return %orig;
+    NSString *x = [[self iconLocation] substringFromIndex:14];
+
+    return [[NSUserDefaults standardUserDefaults] integerForKey:[NSString stringWithFormat:@"%@%@%@", @"HPThemeDefault", x, @"Columns"]]?:%orig;
 }
 
 %end
 
+
+%hook SBIconListFlowLayout
+
+- (NSUInteger)numberOfRowsForOrientation:(NSInteger)arg1
+{
+    NSInteger x = %orig(arg1);
+    if (_tcDockyInstalled && x <=1)return %orig;
+    if (x==3)
+    {
+        return 3;
+    }
+
+    if (!_rtConfigured && _pfTweakEnabled) return kMaxRowAmount;
+
+    return _pfTweakEnabled ? [[self layoutConfiguration] numberOfPortraitRows] : (NSUInteger)x;
+}
+
+- (NSUInteger)numberOfColumnsForOrientation:(NSInteger)arg1
+{
+    NSInteger x = %orig(arg1);
+    if (x==3)
+    {
+        return 3;
+    }
+
+    if (!_rtConfigured && _pfTweakEnabled) return kMaxColumnAmount;
+
+    return _pfTweakEnabled ? [[self layoutConfiguration] numberOfPortraitColumns] : (NSUInteger)x;
+}
+
+%end
+
+
+#pragma mark Dock Handling
+
+%hook SBDockIconListView 
+
+- (UIEdgeInsets)layoutInsets
+{
+    if (_tcDockyInstalled)return %orig;
+    UIEdgeInsets x = %orig;
+    if (!_pfTweakEnabled) return x;
+
+    if ([[NSUserDefaults standardUserDefaults] boolForKey:@"HPdockConfigEnabled"]) return %orig;
+
+    return [[[self layout] layoutConfiguration] portraitLayoutInsets];
+}
+
+- (BOOL)automaticallyAdjustsLayoutMetricsToFit
+{
+    return (!_pfTweakEnabled);
+}
+- (CGFloat)horizontalIconPadding
+{
+    if (_tcDockyInstalled) return %orig;
+    if ([[NSUserDefaults standardUserDefaults] boolForKey:@"HPdockConfigEnabled"]) return %orig;
+    if (_pfTweakEnabled) return [[NSUserDefaults standardUserDefaults] floatForKey:[NSString stringWithFormat:@"%@%@%@", @"HPThemeDefault", @"Dock", @"SideInset"]];
+
+    return %orig;
+}
+- (NSUInteger)iconRowsForCurrentOrientation
+{
+    if (_tcDockyInstalled) return %orig;
+
+    if ([[NSUserDefaults standardUserDefaults] boolForKey:@"HPdockConfigEnabled"]) return %orig;
+    SBIconListGridLayoutConfiguration *config = [[self layout] layoutConfiguration];
+    return [config numberOfPortraitRows];
+}
+- (NSUInteger)iconColumnsForCurrentOrientation
+{
+    if (_tcDockyInstalled) return %orig;
+    if ([[NSUserDefaults standardUserDefaults] boolForKey:@"HPdockConfigEnabled"]) return %orig;
+
+    SBIconListGridLayoutConfiguration *config = [[self layout] layoutConfiguration];
+    return [config numberOfPortraitColumns];
+}
+/*
+-(CGPoint)originForIconAtCoordinate:(SBIconCoordinate)arg1 numberOfIcons:(NSUInteger)arg2 {
+    if ([self iconRowsForCurrentOrientation] == 1 && [self iconColumnsForCurrentOrientation] == 4) return %orig;
+/*
+    CGSize size = CGSizeMake(60,60);
+    iconSize = size;
+    *
+    return %orig;
+    /*
+    if (dockMode == 3) 
+    {
+        CGPoint orig = %orig;
+        CGFloat x = infiniteSpacing;
+        
+        if (infinitePaging) {
+            int max = (fiveIcons) ? 5 : 4;
+            CGFloat offset = (dockScrollView.frame.size.width - max * (size.width + infiniteSpacing))/2;
+            x = offset * (ceil((arg1.col - 1)/max)*2 + 1);
+        }
+
+        return CGPointMake(((size.width + infiniteSpacing) * (arg1.col - 1)) + x + infiniteSpacing/2, orig.y);
+    }
+    
+    CGFloat top = [%c(SBRootFolderDockIconListView) defaultHeight] - size.height * 1.2;
+
+    CGFloat x = (size.width + (fiveIcons ? 5 : 20)) * (arg1.col - 1) + (fiveIcons ? 25 : 35);
+    CGFloat y = (size.height + [dockView dockHeightPadding]/2 + 15) * (arg1.row - 1) + top;
+    
+    if (ipx) {
+        top = [%c(SBRootFolderDockIconListView) defaultHeight] - [dockView dockHeightPadding] - size.height * 1.2;
+        y = (size.height + [dockView dockHeightPadding] + 2 + 15) * (arg1.row - 1) + top;
+    }
+    
+    return CGPointMake(x, y);
+    *
+}*/
+%end
+
+
+#pragma mark Icon Handling
 
 %hook SBIconView
 
@@ -1824,6 +1976,8 @@ NSDictionary *prefs = nil;
 %end
 
 
+#pragma mark End Spotlight Search
+
 %hook SBHomeScreenSpotlightViewController
 
 - (id)initWithDelegate:(id)arg 
@@ -1836,9 +1990,56 @@ NSDictionary *prefs = nil;
 %end 
 
 
-@interface UIRootSceneWindow : UIView 
-@end
+#pragma mark FloatyDock Handling
 
+%hook SBFloatingDockWindow
+
+// Scale floaty docks with the rest of the views
+// For some (maybe dumb, maybe not) reason, they get their own oddly named window
+// on iOS 13, the window is renamed, but it subclasses this one, so we're still good
+//      (for now)
+// This mostly mocks the handling of SBHomeScreenWindow, most documentation can be found there
+- (id)_initWithScreen:(id)arg1 layoutStrategy:(id)arg2 debugName:(id)arg3 rootViewController:(id)arg4 scene:(id)arg5
+{
+    id o = %orig(arg1, arg2, arg3, arg4, arg5);
+
+    [[NSNotificationCenter defaultCenter] addObserver:self selector:@selector(recieveNotification:) name:kEditingModeDisabledNotificationName object:nil];
+
+    [[NSNotificationCenter defaultCenter] addObserver:self selector:@selector(fader:) name:kFadeFloatingDockNotificationName object:nil];
+    [[NSNotificationCenter defaultCenter] addObserver:self selector:@selector(fader:) name:kShowFloatingDockNotificationName object:nil];
+    floatingDockWindow = self;
+    return o;
+}
+
+%new 
+- (void)fader:(NSNotification *)notification
+{
+    // In the settings view and keyboard view, floatydock (annoyingly) sits above it. 
+    // So we need to fade it at times using a notification. 
+    [UIView animateWithDuration:.2 
+        animations:
+        ^{
+            self.alpha = ([[notification name] isEqualToString:kFadeFloatingDockNotificationName]) ? 0 : 1;
+        } 
+        completion:^(BOOL finished) 
+        {
+            
+        }
+    ];
+}
+
+%new
+- (void)recieveNotification:(NSNotification *)notification
+{
+    BOOL enabled = ([[notification name] isEqualToString:kEditingModeEnabledNotificationName]);
+    _rtEditingEnabled = enabled;
+    self.userInteractionEnabled = !enabled;
+}
+
+%end
+
+
+#pragma mark Dynamic Window Background
 
 %hook UIRootSceneWindow
 
@@ -1882,17 +2083,8 @@ NSDictionary *prefs = nil;
 
 %end
 
-#pragma mark Gesture Handler
 
-@interface UISystemGestureView (HomePlus)
-- (void)_addGestureRecognizer:(id)arg atEnd:(BOOL)arg2;
-@property (nonatomic, assign) CGFloat hpPanAmount;
-@property (nonatomic, assign) BOOL editorOpened;
-@property (nonatomic, assign) BOOL editorActivated;
-@property (nonatomic, assign) BOOL hitboxMaxed;
-@property (nonatomic, retain) HPHitboxView *hp_larger_hitbox;
-@property (nonatomic, retain) HPHitboxWindow *hp_larger_window;
-@end
+#pragma mark Gesture Handler
 
 %hook UISystemGestureView
 
@@ -2051,7 +2243,6 @@ NSDictionary *prefs = nil;
     self.hpPanAmount = translation;
 
     // If it's over, max/min the value. 
-    // TODO: animations instead. 
     if (gestureRecognizer.state == UIGestureRecognizerStateEnded)
     {
 
@@ -2143,7 +2334,6 @@ NSDictionary *prefs = nil;
     // We enable it at the start because we want to do the cool slide-in thing we 
     // call later
 
-    // TODO: This can probably be rewritten to use UIGestureRecognizerStateBegan
     if (self.hpPanAmount != 0)
     {
         if (!self.editorActivated)
@@ -2249,191 +2439,6 @@ NSDictionary *prefs = nil;
 
 %end
 
-
-%hook SBIconListFlowLayout
-
-- (NSUInteger)numberOfRowsForOrientation:(NSInteger)arg1
-{
-    NSInteger x = %orig(arg1);
-    if (_tcDockyInstalled && x <=1)return %orig;
-    if (x==3)
-    {
-        return 3;
-    }
-
-    if (!_rtConfigured && _pfTweakEnabled) return kMaxRowAmount;
-
-    return _pfTweakEnabled ? [[self layoutConfiguration] numberOfPortraitRows] : (NSUInteger)x;
-}
-
-- (NSUInteger)numberOfColumnsForOrientation:(NSInteger)arg1
-{
-    NSInteger x = %orig(arg1);
-    if (x==3)
-    {
-        return 3;
-    }
-
-    if (!_rtConfigured && _pfTweakEnabled) return kMaxColumnAmount;
-
-    return _pfTweakEnabled ? [[self layoutConfiguration] numberOfPortraitColumns] : (NSUInteger)x;
-}
-
-%end
-
-@interface SBIconListView (HomePlus)
-- (NSUInteger)iconRowsForCurrentOrientation;
-@end
-
-%hook SBIconListView 
-
-%property (nonatomic, assign) BOOL configured;
-
-- (id)initWithModel:(id)arg1 orientation:(id)arg2 viewMap:(id)arg3 
-{
-    id o = %orig(arg1, arg2, arg3);
-
-    return o;
-}
-
-- (void)layoutSubviews 
-{
-    %orig;
-
-    if (!self.configured) 
-    {
-        [[[EditorManager sharedManager] editorViewController] addRootIconListViewToUpdate:self];
-        [[NSNotificationCenter defaultCenter] addObserver:self selector:@selector(highlightView:) name:kHighlightViewNotificationName object:nil];
-        [[NSNotificationCenter defaultCenter] addObserver:self selector:@selector(layoutIconsNow) name:@"HPlayoutIconViews" object:nil];
-        self.configured = YES;
-        _rtConfigured = YES;
-    }
-    
-}
-
-- (BOOL)automaticallyAdjustsLayoutMetricsToFit
-{
-    return (!_pfTweakEnabled);
-}
-
-%new
-- (void)highlightView:(NSNotification *)notification 
-{
-    if ([[self iconLocation] isEqualToString:[[EditorManager sharedManager] editingLocation]])
-    {
-        self.layer.borderColor = [[UIColor colorWithRed:0.69 green:0.90 blue:0.80 alpha:1.0] CGColor];
-        self.layer.borderWidth = 0;
-    } 
-    else
-    {
-        self.layer.borderColor = [[UIColor clearColor] CGColor];
-        self.layer.borderWidth = 0;
-    }
-}
-
-- (NSUInteger)iconRowsForCurrentOrientation
-{
-    if (_tcDockyInstalled && (%orig<=2 || %orig==100)) return %orig;
-    NSString *x = [[self iconLocation] substringFromIndex:14];
-
-    return [[NSUserDefaults standardUserDefaults] integerForKey:[NSString stringWithFormat:@"%@%@%@", @"HPThemeDefault", x, @"Rows"]]?:%orig;
-}
-
-- (NSUInteger)iconColumnsForCurrentOrientation
-{
-    if (_tcDockyInstalled && ([self iconRowsForCurrentOrientation]<=2 || [self iconRowsForCurrentOrientation]==100))return %orig;
-    NSString *x = [[self iconLocation] substringFromIndex:14];
-
-    return [[NSUserDefaults standardUserDefaults] integerForKey:[NSString stringWithFormat:@"%@%@%@", @"HPThemeDefault", x, @"Columns"]]?:%orig;
-}
-
-%end
-
-@interface SBDockIconListView (HomePlusXIII)
-- (CGFloat)effectiveSpacingForNumberOfIcons:(NSUInteger)num;
-- (NSUInteger)iconsInRowForSpacingCalculation;
-- (NSUInteger)iconColumnsForCurrentOrientation;
-- (id)layout;
-@end
-
-%hook SBDockIconListView 
-
-- (UIEdgeInsets)layoutInsets
-{
-    if (_tcDockyInstalled)return %orig;
-    UIEdgeInsets x = %orig;
-    if (!_pfTweakEnabled) return x;
-
-    if ([[NSUserDefaults standardUserDefaults] boolForKey:@"HPdockConfigEnabled"]) return %orig;
-
-    return [[[self layout] layoutConfiguration] portraitLayoutInsets];
-}
-
-- (BOOL)automaticallyAdjustsLayoutMetricsToFit
-{
-    return (!_pfTweakEnabled);
-}
-- (CGFloat)horizontalIconPadding
-{
-    if (_tcDockyInstalled) return %orig;
-    if ([[NSUserDefaults standardUserDefaults] boolForKey:@"HPdockConfigEnabled"]) return %orig;
-    if (_pfTweakEnabled) return [[NSUserDefaults standardUserDefaults] floatForKey:[NSString stringWithFormat:@"%@%@%@", @"HPThemeDefault", @"Dock", @"SideInset"]];
-
-    return %orig;
-}
-- (NSUInteger)iconRowsForCurrentOrientation
-{
-    if (_tcDockyInstalled) return %orig;
-
-    if ([[NSUserDefaults standardUserDefaults] boolForKey:@"HPdockConfigEnabled"]) return %orig;
-    SBIconListGridLayoutConfiguration *config = [[self layout] layoutConfiguration];
-    return [config numberOfPortraitRows];
-}
-- (NSUInteger)iconColumnsForCurrentOrientation
-{
-    if (_tcDockyInstalled) return %orig;
-    if ([[NSUserDefaults standardUserDefaults] boolForKey:@"HPdockConfigEnabled"]) return %orig;
-
-    SBIconListGridLayoutConfiguration *config = [[self layout] layoutConfiguration];
-    return [config numberOfPortraitColumns];
-}
-/*
--(CGPoint)originForIconAtCoordinate:(SBIconCoordinate)arg1 numberOfIcons:(NSUInteger)arg2 {
-    if ([self iconRowsForCurrentOrientation] == 1 && [self iconColumnsForCurrentOrientation] == 4) return %orig;
-/*
-    CGSize size = CGSizeMake(60,60);
-    iconSize = size;
-    *
-    return %orig;
-    /*
-    if (dockMode == 3) 
-    {
-        CGPoint orig = %orig;
-        CGFloat x = infiniteSpacing;
-        
-        if (infinitePaging) {
-            int max = (fiveIcons) ? 5 : 4;
-            CGFloat offset = (dockScrollView.frame.size.width - max * (size.width + infiniteSpacing))/2;
-            x = offset * (ceil((arg1.col - 1)/max)*2 + 1);
-        }
-
-        return CGPointMake(((size.width + infiniteSpacing) * (arg1.col - 1)) + x + infiniteSpacing/2, orig.y);
-    }
-    
-    CGFloat top = [%c(SBRootFolderDockIconListView) defaultHeight] - size.height * 1.2;
-
-    CGFloat x = (size.width + (fiveIcons ? 5 : 20)) * (arg1.col - 1) + (fiveIcons ? 25 : 35);
-    CGFloat y = (size.height + [dockView dockHeightPadding]/2 + 15) * (arg1.row - 1) + top;
-    
-    if (ipx) {
-        top = [%c(SBRootFolderDockIconListView) defaultHeight] - [dockView dockHeightPadding] - size.height * 1.2;
-        y = (size.height + [dockView dockHeightPadding] + 2 + 15) * (arg1.row - 1) + top;
-    }
-    
-    return CGPointMake(x, y);
-    *
-}*/
-%end
 
 // END iOS 13 Group
 
