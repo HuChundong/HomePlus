@@ -138,16 +138,18 @@
 
     static NSDictionary* deviceNamesByCode = nil;
 
+    // its big brain time
+    // literally nothing else was reliable enough across versions and devices.
     if (!deviceNamesByCode) {
 
-        deviceNamesByCode = @{@"i386"      : @5,
-                              @"x86_64"    : @5,
-                              @"iPod1,1"   : @4,        // (Original)
-                              @"iPod2,1"   : @4,        // (Second Generation)
-                              @"iPod3,1"   : @4,        // (Third Generation)
-                              @"iPod4,1"   : @4,        // (Fourth Generation)
-                              @"iPod7,1"   : @4,        // (6th Generation)       
-                              @"iPhone1,1" : @4,            // (Original)
+        deviceNamesByCode = @{@"i386"      : @5,        // Simulator (32 bit)
+                              @"x86_64"    : @5,        // Simulator (64 bit)
+                              @"iPod1,1"   : @4,        // iPod Touch
+                              @"iPod2,1"   : @4,        // iPod Touch 2
+                              @"iPod3,1"   : @4,        // iPod Touch 3
+                              @"iPod4,1"   : @4,        // iPod Touch 4
+                              @"iPod7,1"   : @4,        // iPod Touch 6   
+                              @"iPhone1,1" : @4,        // iPhone
                               @"iPhone1,2" : @4,            // (3G)
                               @"iPhone2,1" : @4,            // (3GS)
                               @"iPad1,1"   : @4,              // (Original)

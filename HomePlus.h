@@ -157,7 +157,7 @@
 @interface HPTouchKillerHitboxView : HPHitboxView 
 @end 
 
-@interface HPHitboxWindow : UIWindow 
+@interface HPHitboxWindow : UIView
 @end 
 
 

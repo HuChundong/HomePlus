@@ -10,6 +10,7 @@ TWEAK_NAME = HomePlus
 dtoim = $(foreach d,$(1),-I$(d))
 
 _IMPORTS =  $(shell /bin/ls -d ./HomePlusEditor/*/)
+_IMPORTS +=  $(shell /bin/ls -d ./HomePlusEditor/*/*/)
 _IMPORTS += $(shell /bin/ls -d ./)
 IMPORTS = -I$./HomePlusEditor $(call dtoim, $(_IMPORTS))
 

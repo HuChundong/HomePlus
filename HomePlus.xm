@@ -585,7 +585,18 @@ NSDictionary *prefs = nil;
     floatingDockWindow = self;
     return o;
 }
+- (id)initWithDebugName:(id)arg
+{
+    id o = %orig(arg);
 
+    [[NSNotificationCenter defaultCenter] addObserver:self selector:@selector(recieveNotification:) name:kEditingModeDisabledNotificationName object:nil];
+
+    [[NSNotificationCenter defaultCenter] addObserver:self selector:@selector(fader:) name:kFadeFloatingDockNotificationName object:nil];
+    [[NSNotificationCenter defaultCenter] addObserver:self selector:@selector(fader:) name:kShowFloatingDockNotificationName object:nil];
+    floatingDockWindow = self;
+    
+    return o;
+}
 %new 
 - (void)fader:(NSNotification *)notification
 {
@@ -910,7 +921,33 @@ NSDictionary *prefs = nil;
     if (_tcDockyInstalled) return %orig;
     return [[NSUserDefaults standardUserDefaults] floatForKey:@"HPThemeDefaultDockColumns"]?:4;
 }
-
+- (UIEdgeInsets)layoutInsets
+{
+    UIEdgeInsets x = %orig;
+    if (!_pfTweakEnabled)
+    {
+        return x;
+    }
+    
+    if ((!([[NSUserDefaults standardUserDefaults] floatForKey:[NSString stringWithFormat:@"%@%@%@", @"HPThemeDefault", @"Dock", @"LeftInset"]]?:0)) == 0)
+    {
+        return UIEdgeInsetsMake(
+            x.top + ([[NSUserDefaults standardUserDefaults] floatForKey:[NSString stringWithFormat:@"%@%@%@", @"HPThemeDefault", @"Dock", @"TopInset"]]?:0),
+            [[NSUserDefaults standardUserDefaults] floatForKey:[NSString stringWithFormat:@"%@%@%@", @"HPThemeDefault", @"Dock", @"LeftInset"]]?:0,
+            x.bottom - ([[NSUserDefaults standardUserDefaults] floatForKey:[NSString stringWithFormat:@"%@%@%@", @"HPThemeDefault", @"Dock", @"TopInset"]]?:0) + ([[NSUserDefaults standardUserDefaults] floatForKey:[NSString stringWithFormat:@"%@%@%@", @"HPThemeDefault", @"Dock", @"VerticalSpacing"]]?:0) *-2, // * 2 because regularly it was too slow
+            x.right - ([[NSUserDefaults standardUserDefaults] floatForKey:[NSString stringWithFormat:@"%@%@%@", @"HPThemeDefault", @"Dock", @"LeftInset"]]?:0) + ([[NSUserDefaults standardUserDefaults] floatForKey:[NSString stringWithFormat:@"%@%@%@", @"HPThemeDefault", @"Dock", @"SideInset"]]?:0) *-2
+        );
+    }
+    else
+    {
+        return UIEdgeInsetsMake(
+            x.top + ([[NSUserDefaults standardUserDefaults] floatForKey:[NSString stringWithFormat:@"%@%@%@", @"HPThemeDefault", @"Dock", @"TopInset"]]?:0) ,
+            x.left + ([[NSUserDefaults standardUserDefaults] floatForKey:[NSString stringWithFormat:@"%@%@%@", @"HPThemeDefault", @"Dock", @"SideInset"]]?:0)*-2,
+            x.bottom - ([[NSUserDefaults standardUserDefaults] floatForKey:[NSString stringWithFormat:@"%@%@%@", @"HPThemeDefault", @"Dock", @"TopInset"]]?:0) + ([[NSUserDefaults standardUserDefaults] floatForKey:[NSString stringWithFormat:@"%@%@%@", @"HPThemeDefault", @"Dock", @"VerticalSpacing"]]?:0) *-2, // * 2 because regularly it was too slow
+            x.right + ([[NSUserDefaults standardUserDefaults] floatForKey:[NSString stringWithFormat:@"%@%@%@", @"HPThemeDefault", @"Dock", @"SideInset"]]?:0)*-2
+        );
+    }
+}
 
 - (NSUInteger)iconsInRowForSpacingCalculation {
     if (_tcDockyInstalled) return %orig;
@@ -925,7 +962,7 @@ NSDictionary *prefs = nil;
         return x;
     }
 
-    BOOL buggedSpacing = [[NSUserDefaults standardUserDefaults] floatForKey:@"HPThemeDefaultDockColumns"]?:4 == 4 && [[HPUtility deviceName] isEqualToString:@"iPhone X"];
+    BOOL buggedSpacing = ([[NSUserDefaults standardUserDefaults] floatForKey:@"HPThemeDefaultDockColumns"]?:4) == 4 && [[HPUtility deviceName] isEqualToString:@"iPhone X"];
     BOOL leftInsetZeroed = [[NSUserDefaults standardUserDefaults] floatForKey:@"HPThemeDefaultDockLeftInset"]?:0 == 0.0;
     if ([[[UIDevice currentDevice] systemVersion] floatValue] >= 12.0)
     {
@@ -1103,6 +1140,8 @@ NSDictionary *prefs = nil;
 @property (nonatomic, assign) BOOL editorOpened;
 @property (nonatomic, assign) BOOL editorActivated;
 @property (nonatomic, assign) BOOL hitboxMaxed;
+@property (nonatomic, retain) HPHitboxView *hp_larger_hitbox;
+@property (nonatomic, retain) HPHitboxWindow *hp_larger_window;
 @end
 
 
@@ -1112,13 +1151,13 @@ NSDictionary *prefs = nil;
 // System Gesture View for <= iOS 12
 // Create the drag down gesture bits here. 
 //
-
-
 %property (nonatomic, assign) BOOL hitboxViewExists;
 %property (nonatomic, assign) BOOL editorOpened;
 %property (nonatomic, assign) BOOL editorActivated;
 %property (nonatomic, retain) HPHitboxView *hp_hitbox;
 %property (nonatomic, retain) HPHitboxWindow *hp_hitbox_window;
+%property (nonatomic, retain) HPHitboxView *hp_larger_hitbox;
+%property (nonatomic, retain) HPHitboxWindow *hp_larger_window;
 %property (nonatomic, assign) CGFloat hpPanAmount;
 %property (nonatomic, assign) BOOL hitboxMaxed;
 
@@ -1142,11 +1181,11 @@ NSDictionary *prefs = nil;
     self.hitboxMaxed = NO;
     self.hp_hitbox_window = [[HPHitboxWindow alloc] initWithFrame:CGRectMake(0, 0,  ([HPUtility isCurrentDeviceNotched] ?120:80), ([HPUtility isCurrentDeviceNotched] ?40:20))];
     _rtHitboxWindow = self.hp_hitbox_window;
-    self.hp_hitbox = [[HPTouchKillerHitboxView alloc] init];
+    self.hp_hitbox = [[UIView alloc] init];
     // This is useful for debugging hitbox locations on weird devices
     //self.hp_hitbox.backgroundColor = [UIColor.lightGrayColor colorWithAlphaComponent:0.5];
     //self.hp_hitbox_window.backgroundColor = [UIColor.blueColor colorWithAlphaComponent:0.5];
-    [self.hp_hitbox setValue:@NO forKey:@"deliversTouchesForGesturesToSuperview"];
+    [self.hp_hitbox_window setValue:@NO forKey:@"deliversTouchesForGesturesToSuperview"];
 
     [[NSNotificationCenter defaultCenter] addObserver:self selector:@selector(recieveNotification:) name:kEditingModeDisabledNotificationName object:nil];
     [[NSNotificationCenter defaultCenter] addObserver:self selector:@selector(fader:) name:kFadeFloatingDockNotificationName object:nil];
@@ -1154,13 +1193,33 @@ NSDictionary *prefs = nil;
     UIPanGestureRecognizer *pan = [[UIPanGestureRecognizer alloc] initWithTarget:self action:@selector(move:)];
     _rtGestureRecognizer = pan;
     [self.hp_hitbox addGestureRecognizer:pan];
+
+    CGFloat screenHeight = self.frame.size.height;
+    CGFloat screenWidth = self.frame.size.width;
+
+    self.hp_larger_window = [[HPHitboxWindow alloc] initWithFrame:CGRectMake( (0.15*screenWidth), (0.15*screenHeight), (0.7*screenWidth), (0.7*screenHeight))];
+    self.hp_larger_hitbox = [[UIView alloc] init];
+    self.hp_larger_hitbox.frame = CGRectMake(0,0, (0.7*screenWidth), (0.7*screenHeight));
+    [self.hp_larger_window setValue:@NO forKey:@"deliversTouchesForGesturesToSuperview"];
+    [self.hp_larger_window addSubview:self.hp_larger_hitbox];
+    [self addSubview:self.hp_larger_window];
+
+    UIPanGestureRecognizer *pan2 = [[UIPanGestureRecognizer alloc] initWithTarget:self action:@selector(move:)];
+    [self.hp_larger_hitbox addGestureRecognizer:pan2];
     
     CGSize hitboxSize = CGSizeMake( ([HPUtility isCurrentDeviceNotched] ?120:80), ([HPUtility isCurrentDeviceNotched] ?40:20));
     self.hp_hitbox.frame = CGRectMake(0, 0, hitboxSize.width, hitboxSize.height);
     [self.hp_hitbox_window addSubview:self.hp_hitbox];
     [self addSubview:self.hp_hitbox_window];
 
+
+    //self.hp_larger_hitbox.backgroundColor = [UIColor.lightGrayColor colorWithAlphaComponent:0.5];
+    //self.hp_larger_window.backgroundColor = [UIColor.redColor colorWithAlphaComponent:0.5];
+
     self.hp_hitbox_window.hidden = NO;
+    self.hp_hitbox_window.userInteractionEnabled = YES;
+    self.hp_larger_window.userInteractionEnabled = NO;
+    self.hp_larger_window.hidden = YES;
 }
 
 %new 
@@ -1176,11 +1235,9 @@ NSDictionary *prefs = nil;
     if (self.hitboxMaxed)
     {
         self.hitboxMaxed = NO;
-        self.hp_hitbox_window.frame = CGRectMake(0, 0, 40, 20);
-        self.hp_hitbox.frame = CGRectMake(0, 0, ([HPUtility isCurrentDeviceNotched] ?120:80), ([HPUtility isCurrentDeviceNotched] ?10:20));
-        self.hp_hitbox_window.transform = CGAffineTransformIdentity;
-        [self.hp_hitbox_window setFrame:CGRectMake(0, 0, 40, 20)];
-        [self.hp_hitbox setFrame: CGRectMake(0, 0, ([HPUtility isCurrentDeviceNotched] ?120:80), ([HPUtility isCurrentDeviceNotched] ?10:20))];
+        self.hp_hitbox_window.userInteractionEnabled = YES;
+        self.hp_larger_window.userInteractionEnabled = NO;
+        self.hp_larger_window.hidden = YES;
     }
     self.editorActivated = NO;
     self.editorOpened = NO;
@@ -1190,13 +1247,13 @@ NSDictionary *prefs = nil;
 {
     if ([[notification name] isEqualToString:kFadeFloatingDockNotificationName])
     {
-        [self.hp_hitbox setValue:@YES forKey:@"deliversTouchesForGesturesToSuperview"];
-        [self.hp_hitbox_window setValue:@YES forKey:@"deliversTouchesForGesturesToSuperview"];
+        self.hp_larger_window.hidden = YES;
+        [self.hp_larger_window setValue:@YES forKey:@"deliversTouchesForGesturesToSuperview"];
     }
     else
     {
-        [self.hp_hitbox setValue:@NO forKey:@"deliversTouchesForGesturesToSuperview"];
-        [self.hp_hitbox_window setValue:@NO forKey:@"deliversTouchesForGesturesToSuperview"];
+        self.hp_larger_window.hidden = NO;
+        [self.hp_larger_window setValue:@NO forKey:@"deliversTouchesForGesturesToSuperview"];
     }
 }
 %new 
@@ -1263,10 +1320,14 @@ NSDictionary *prefs = nil;
                             //self.hp_hitbox.frame = CGRectMake(0, 0, 60, 20);
                             //self.hp_hitbox_window.transform = CGAffineTransformIdentity;
                         }
+
                         [[NSNotificationCenter defaultCenter] postNotificationName:kEditingModeDisabledNotificationName object:nil];
                         AudioServicesPlaySystemSound(1519);
                         self.editorActivated = NO;
                         self.editorOpened = NO;
+                        self.hp_hitbox_window.userInteractionEnabled = YES;
+                        self.hp_larger_window.userInteractionEnabled = NO;
+                        self.hp_larger_window.hidden = YES;
                     }
                 }
             ];
@@ -1295,10 +1356,9 @@ NSDictionary *prefs = nil;
                     self.editorOpened = YES;
                     if (!self.hitboxMaxed)
                     {
-                        self.hitboxMaxed = YES;
-                        self.hp_hitbox_window.frame = [[UIScreen mainScreen] bounds];
-                        self.hp_hitbox.frame = [[UIScreen mainScreen] bounds];
-                        self.hp_hitbox_window.transform = CGAffineTransformMakeScale(0.7, 0.7);
+                        self.hp_hitbox_window.userInteractionEnabled = NO;
+                        self.hp_larger_window.userInteractionEnabled = YES;
+                        self.hp_larger_window.hidden = NO;
                     }
                 }
             ];
@@ -1361,9 +1421,9 @@ NSDictionary *prefs = nil;
         if (!self.hitboxMaxed)
         {
             self.hitboxMaxed = YES;
-            self.hp_hitbox_window.frame = [[UIScreen mainScreen] bounds];
-            self.hp_hitbox.frame = [[UIScreen mainScreen] bounds];
-            self.hp_hitbox_window.transform = CGAffineTransformMakeScale(0.7, 0.7);
+            self.hp_hitbox_window.userInteractionEnabled = NO;
+            self.hp_larger_window.userInteractionEnabled = YES;
+            self.hp_larger_window.hidden = NO;
         }
         if (self.editorOpened) 
         {
@@ -1418,14 +1478,12 @@ NSDictionary *prefs = nil;
 - (void)layoutSubviews
 {
     %orig;
-
     if (!self.hp_hitbox_window && _pfTweakEnabled && !_pfGestureDisabled) 
     {
         [self createTopLeftHitboxView];
+        
     }
 }
-
-
 %end
 
 // End iOS 12 Grouping
@@ -1549,25 +1607,24 @@ NSDictionary *prefs = nil;
         {
             self.iconLocation =  @"Root";
         }
-        return [self portraitLayoutInsets];
     }
     if ([self.iconLocation isEqualToString:@"Folder"]) return x;
-    if ((!([[NSUserDefaults standardUserDefaults] floatForKey:[NSString stringWithFormat:@"%@%@%@", @"HPThemeDefault", [self locationIfKnown], @"LeftInset"]]?:0)) == 0)
+    if ((!([[NSUserDefaults standardUserDefaults] floatForKey:[NSString stringWithFormat:@"%@%@%@", @"HPThemeDefault", self.iconLocation, @"LeftInset"]]?:0)) == 0)
     {
         return UIEdgeInsetsMake(
-            x.top + ([[NSUserDefaults standardUserDefaults] floatForKey:[NSString stringWithFormat:@"%@%@%@", @"HPThemeDefault", [self locationIfKnown], @"TopInset"]]?:0),
-            [[NSUserDefaults standardUserDefaults] floatForKey:[NSString stringWithFormat:@"%@%@%@", @"HPThemeDefault", [self locationIfKnown], @"LeftInset"]]?:0,
-            x.bottom - ([[NSUserDefaults standardUserDefaults] floatForKey:[NSString stringWithFormat:@"%@%@%@", @"HPThemeDefault", [self locationIfKnown], @"TopInset"]]?:0) + ([[NSUserDefaults standardUserDefaults] floatForKey:[NSString stringWithFormat:@"%@%@%@", @"HPThemeDefault", [self locationIfKnown], @"VerticalSpacing"]]?:0) *-2, // * 2 because regularly it was too slow
-            x.right - ([[NSUserDefaults standardUserDefaults] floatForKey:[NSString stringWithFormat:@"%@%@%@", @"HPThemeDefault", [self locationIfKnown], @"LeftInset"]]?:0) + ([[NSUserDefaults standardUserDefaults] floatForKey:[NSString stringWithFormat:@"%@%@%@", @"HPThemeDefault", [self locationIfKnown], @"SideInset"]]?:0) *-2
+            x.top + ([[NSUserDefaults standardUserDefaults] floatForKey:[NSString stringWithFormat:@"%@%@%@", @"HPThemeDefault", self.iconLocation, @"TopInset"]]?:0),
+            [[NSUserDefaults standardUserDefaults] floatForKey:[NSString stringWithFormat:@"%@%@%@", @"HPThemeDefault", self.iconLocation, @"LeftInset"]]?:0,
+            x.bottom - ([[NSUserDefaults standardUserDefaults] floatForKey:[NSString stringWithFormat:@"%@%@%@", @"HPThemeDefault", self.iconLocation, @"TopInset"]]?:0) + ([[NSUserDefaults standardUserDefaults] floatForKey:[NSString stringWithFormat:@"%@%@%@", @"HPThemeDefault", [self locationIfKnown], @"VerticalSpacing"]]?:0) *-2, // * 2 because regularly it was too slow
+            x.right - ([[NSUserDefaults standardUserDefaults] floatForKey:[NSString stringWithFormat:@"%@%@%@", @"HPThemeDefault", self.iconLocation, @"LeftInset"]]?:0) + ([[NSUserDefaults standardUserDefaults] floatForKey:[NSString stringWithFormat:@"%@%@%@", @"HPThemeDefault", [self locationIfKnown], @"SideInset"]]?:0) *-2
         );
     }
     else
     {
         return UIEdgeInsetsMake(
-            x.top + ([[NSUserDefaults standardUserDefaults] floatForKey:[NSString stringWithFormat:@"%@%@%@", @"HPThemeDefault", [self locationIfKnown], @"TopInset"]]?:0) ,
-            x.left + ([[NSUserDefaults standardUserDefaults] floatForKey:[NSString stringWithFormat:@"%@%@%@", @"HPThemeDefault", [self locationIfKnown], @"SideInset"]]?:0)*-2,
-            x.bottom - ([[NSUserDefaults standardUserDefaults] floatForKey:[NSString stringWithFormat:@"%@%@%@", @"HPThemeDefault", [self locationIfKnown], @"TopInset"]]?:0) + ([[NSUserDefaults standardUserDefaults] floatForKey:[NSString stringWithFormat:@"%@%@%@", @"HPThemeDefault", [self locationIfKnown], @"VerticalSpacing"]]?:0) *-2, // * 2 because regularly it was too slow
-            x.right + ([[NSUserDefaults standardUserDefaults] floatForKey:[NSString stringWithFormat:@"%@%@%@", @"HPThemeDefault", [self locationIfKnown], @"SideInset"]]?:0)*-2
+            x.top + ([[NSUserDefaults standardUserDefaults] floatForKey:[NSString stringWithFormat:@"%@%@%@", @"HPThemeDefault", self.iconLocation, @"TopInset"]]?:0) ,
+            x.left + ([[NSUserDefaults standardUserDefaults] floatForKey:[NSString stringWithFormat:@"%@%@%@", @"HPThemeDefault", self.iconLocation, @"SideInset"]]?:0)*-2,
+            x.bottom - ([[NSUserDefaults standardUserDefaults] floatForKey:[NSString stringWithFormat:@"%@%@%@", @"HPThemeDefault", self.iconLocation, @"TopInset"]]?:0) + ([[NSUserDefaults standardUserDefaults] floatForKey:[NSString stringWithFormat:@"%@%@%@", @"HPThemeDefault", [self locationIfKnown], @"VerticalSpacing"]]?:0) *-2, // * 2 because regularly it was too slow
+            x.right + ([[NSUserDefaults standardUserDefaults] floatForKey:[NSString stringWithFormat:@"%@%@%@", @"HPThemeDefault", self.iconLocation, @"SideInset"]]?:0)*-2
         );
     }
 }
@@ -1816,6 +1873,8 @@ NSDictionary *prefs = nil;
 @property (nonatomic, assign) BOOL editorOpened;
 @property (nonatomic, assign) BOOL editorActivated;
 @property (nonatomic, assign) BOOL hitboxMaxed;
+@property (nonatomic, retain) HPHitboxView *hp_larger_hitbox;
+@property (nonatomic, retain) HPHitboxWindow *hp_larger_window;
 @end
 
 %hook UISystemGestureView
@@ -1832,6 +1891,8 @@ NSDictionary *prefs = nil;
 %property (nonatomic, assign) BOOL editorActivated;
 %property (nonatomic, retain) HPHitboxView *hp_hitbox;
 %property (nonatomic, retain) HPHitboxWindow *hp_hitbox_window;
+%property (nonatomic, retain) HPHitboxView *hp_larger_hitbox;
+%property (nonatomic, retain) HPHitboxWindow *hp_larger_window;
 %property (nonatomic, assign) CGFloat hpPanAmount;
 %property (nonatomic, assign) BOOL hitboxMaxed;
 
@@ -1851,15 +1912,24 @@ NSDictionary *prefs = nil;
 %new 
 - (void)createTopLeftHitboxView
 {
+    NSLog(@"HomePlus: %@", NSStringFromCGRect(self.frame));
+
+
+    // There is something terribly wrong with this code
+    // Things eat up 3x more space than they should. 
+    // So, I just make them 3x smaller.
+    // Please, if anyone knows what the hell is wrong, let me know
+
+
     self.editorOpened = NO;
     self.hitboxMaxed = NO;
-    self.hp_hitbox_window = [[HPHitboxWindow alloc] initWithFrame:CGRectMake(0, 0,  ([HPUtility isCurrentDeviceNotched] ?120:80), ([HPUtility isCurrentDeviceNotched] ?40:20))];
+    self.hp_hitbox_window = [[HPHitboxWindow alloc] initWithFrame:CGRectMake(0, 0, ([HPUtility isCurrentDeviceNotched] ?120:80), ([HPUtility isCurrentDeviceNotched] ?40:20))];
     _rtHitboxWindow = self.hp_hitbox_window;
-    self.hp_hitbox = [[HPTouchKillerHitboxView alloc] init];
+    self.hp_hitbox = [[UIView alloc] init];
     // This is useful for debugging hitbox locations on weird devices
     //self.hp_hitbox.backgroundColor = [UIColor.lightGrayColor colorWithAlphaComponent:0.5];
     //self.hp_hitbox_window.backgroundColor = [UIColor.blueColor colorWithAlphaComponent:0.5];
-    [self.hp_hitbox setValue:@NO forKey:@"deliversTouchesForGesturesToSuperview"];
+    [self.hp_hitbox_window setValue:@NO forKey:@"deliversTouchesForGesturesToSuperview"];
 
     [[NSNotificationCenter defaultCenter] addObserver:self selector:@selector(recieveNotification:) name:kEditingModeDisabledNotificationName object:nil];
     [[NSNotificationCenter defaultCenter] addObserver:self selector:@selector(fader:) name:kFadeFloatingDockNotificationName object:nil];
@@ -1868,12 +1938,34 @@ NSDictionary *prefs = nil;
     _rtGestureRecognizer = pan;
     [self.hp_hitbox addGestureRecognizer:pan];
     
+
+    CGFloat screenHeight = self.frame.size.height;
+    CGFloat screenWidth = self.frame.size.width;
+
+
+    self.hp_larger_window = [[HPHitboxWindow alloc] initWithFrame:CGRectMake( (0.15*screenWidth), (0.15*screenHeight), (0.7*screenWidth), (0.7*screenHeight))];
+    self.hp_larger_hitbox = [[UIView alloc] init];
+    self.hp_larger_hitbox.frame = CGRectMake(0,0, (0.7*screenWidth), (0.7*screenHeight));
+    [self.hp_larger_window setValue:@NO forKey:@"deliversTouchesForGesturesToSuperview"];
+    [self.hp_larger_window addSubview:self.hp_larger_hitbox];
+    [self addSubview:self.hp_larger_window];
+
+    UIPanGestureRecognizer *pan2 = [[UIPanGestureRecognizer alloc] initWithTarget:self action:@selector(move:)];
+    [self.hp_larger_hitbox addGestureRecognizer:pan2];
+    
     CGSize hitboxSize = CGSizeMake( ([HPUtility isCurrentDeviceNotched] ?120:80), ([HPUtility isCurrentDeviceNotched] ?40:20));
     self.hp_hitbox.frame = CGRectMake(0, 0, hitboxSize.width, hitboxSize.height);
     [self.hp_hitbox_window addSubview:self.hp_hitbox];
     [self addSubview:self.hp_hitbox_window];
 
+
+    //self.hp_larger_hitbox.backgroundColor = [UIColor.lightGrayColor colorWithAlphaComponent:0.5];
+    //self.hp_larger_window.backgroundColor = [UIColor.redColor colorWithAlphaComponent:0.5];
+
     self.hp_hitbox_window.hidden = NO;
+    self.hp_hitbox_window.userInteractionEnabled = YES;
+    self.hp_larger_window.userInteractionEnabled = NO;
+    self.hp_larger_window.hidden = YES;
 }
 
 %new 
@@ -1889,11 +1981,9 @@ NSDictionary *prefs = nil;
     if (self.hitboxMaxed)
     {
         self.hitboxMaxed = NO;
-        self.hp_hitbox_window.frame = CGRectMake(0, 0, 40, 20);
-        self.hp_hitbox.frame = CGRectMake(0, 0, ([HPUtility isCurrentDeviceNotched] ?120:80), ([HPUtility isCurrentDeviceNotched] ?10:20));
-        self.hp_hitbox_window.transform = CGAffineTransformIdentity;
-        [self.hp_hitbox_window setFrame:CGRectMake(0, 0, 40, 20)];
-        [self.hp_hitbox setFrame: CGRectMake(0, 0, ([HPUtility isCurrentDeviceNotched] ?120:80), ([HPUtility isCurrentDeviceNotched] ?10:20))];
+        self.hp_hitbox_window.userInteractionEnabled = YES;
+        self.hp_larger_window.userInteractionEnabled = NO;
+        self.hp_larger_window.hidden = YES;
     }
     self.editorActivated = NO;
     self.editorOpened = NO;
@@ -1903,13 +1993,13 @@ NSDictionary *prefs = nil;
 {
     if ([[notification name] isEqualToString:kFadeFloatingDockNotificationName])
     {
-        [self.hp_hitbox setValue:@YES forKey:@"deliversTouchesForGesturesToSuperview"];
-        [self.hp_hitbox_window setValue:@YES forKey:@"deliversTouchesForGesturesToSuperview"];
+        self.hp_larger_window.hidden = YES;
+        [self.hp_larger_window setValue:@YES forKey:@"deliversTouchesForGesturesToSuperview"];
     }
     else
     {
-        [self.hp_hitbox setValue:@NO forKey:@"deliversTouchesForGesturesToSuperview"];
-        [self.hp_hitbox_window setValue:@NO forKey:@"deliversTouchesForGesturesToSuperview"];
+        self.hp_larger_window.hidden = NO;
+        [self.hp_larger_window setValue:@NO forKey:@"deliversTouchesForGesturesToSuperview"];
     }
 }
 %new 
@@ -1976,10 +2066,14 @@ NSDictionary *prefs = nil;
                             //self.hp_hitbox.frame = CGRectMake(0, 0, 60, 20);
                             //self.hp_hitbox_window.transform = CGAffineTransformIdentity;
                         }
+
                         [[NSNotificationCenter defaultCenter] postNotificationName:kEditingModeDisabledNotificationName object:nil];
                         AudioServicesPlaySystemSound(1519);
                         self.editorActivated = NO;
                         self.editorOpened = NO;
+                        self.hp_hitbox_window.userInteractionEnabled = YES;
+                        self.hp_larger_window.userInteractionEnabled = NO;
+                        self.hp_larger_window.hidden = YES;
                     }
                 }
             ];
@@ -2008,10 +2102,9 @@ NSDictionary *prefs = nil;
                     self.editorOpened = YES;
                     if (!self.hitboxMaxed)
                     {
-                        self.hitboxMaxed = YES;
-                        self.hp_hitbox_window.frame = [[UIScreen mainScreen] bounds];
-                        self.hp_hitbox.frame = [[UIScreen mainScreen] bounds];
-                        self.hp_hitbox_window.transform = CGAffineTransformMakeScale(0.7, 0.7);
+                        self.hp_hitbox_window.userInteractionEnabled = NO;
+                        self.hp_larger_window.userInteractionEnabled = YES;
+                        self.hp_larger_window.hidden = NO;
                     }
                 }
             ];
@@ -2074,9 +2167,9 @@ NSDictionary *prefs = nil;
         if (!self.hitboxMaxed)
         {
             self.hitboxMaxed = YES;
-            self.hp_hitbox_window.frame = [[UIScreen mainScreen] bounds];
-            self.hp_hitbox.frame = [[UIScreen mainScreen] bounds];
-            self.hp_hitbox_window.transform = CGAffineTransformMakeScale(0.7, 0.7);
+            self.hp_hitbox_window.userInteractionEnabled = NO;
+            self.hp_larger_window.userInteractionEnabled = YES;
+            self.hp_larger_window.hidden = NO;
         }
         if (self.editorOpened) 
         {
@@ -2131,10 +2224,11 @@ NSDictionary *prefs = nil;
 - (void)layoutSubviews
 {
     %orig;
-
+    NSLog(@"HomePlus: created hitbox shit");
     if (!self.hp_hitbox_window && _pfTweakEnabled && !_pfGestureDisabled) 
     {
         [self createTopLeftHitboxView];
+        
     }
 }
 
@@ -2247,15 +2341,15 @@ NSDictionary *prefs = nil;
 @end
 
 %hook SBDockIconListView 
-/*
+
 - (UIEdgeInsets)layoutInsets
 {
     if (_tcDockyInstalled)return %orig;
     UIEdgeInsets x = %orig;
     if (!_pfTweakEnabled) return x;
-    return [[[HPManager sharedManager] config] currentLoadoutInsetsForLocation:@"SBIconLocationDock" pageIndex:0 withOriginal:x];
+    return [[[self layout] layoutConfiguration] portraitLayoutInsets];
 }
-*/
+
 - (BOOL)automaticallyAdjustsLayoutMetricsToFit
 {
     return (!_pfTweakEnabled);
