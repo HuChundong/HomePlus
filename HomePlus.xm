@@ -10,9 +10,6 @@
 // Author: Kritanta
 //
 
-// Current TODO:
-// Continue Linting from Line 1666
-
 #include <UIKit/UIKit.h>
 #include "EditorManager.h"
 #include "HPManager.h"
@@ -1696,7 +1693,8 @@ NSDictionary *prefs = nil;
 
 - (BOOL)automaticallyAdjustsLayoutMetricsToFit
 {
-    return (!_pfTweakEnabled);
+    // Allows us to adjust dock
+    return ((_pfTweakEnabled) ? NO : %orig);
 }
 
 %new
@@ -1738,7 +1736,9 @@ NSDictionary *prefs = nil;
 - (NSUInteger)numberOfRowsForOrientation:(NSInteger)arg1
 {
     NSInteger x = %orig(arg1);
+    
     if (_tcDockyInstalled && x <=1)return %orig;
+
     if (x==3)
     {
         return 3;
@@ -1752,6 +1752,7 @@ NSDictionary *prefs = nil;
 - (NSUInteger)numberOfColumnsForOrientation:(NSInteger)arg1
 {
     NSInteger x = %orig(arg1);
+
     if (x==3)
     {
         return 3;
@@ -1797,12 +1798,14 @@ NSDictionary *prefs = nil;
     if (_tcDockyInstalled) return %orig;
 
     if ([[NSUserDefaults standardUserDefaults] boolForKey:@"HPdockConfigEnabled"]) return %orig;
+
     SBIconListGridLayoutConfiguration *config = [[self layout] layoutConfiguration];
     return [config numberOfPortraitRows];
 }
 - (NSUInteger)iconColumnsForCurrentOrientation
 {
     if (_tcDockyInstalled) return %orig;
+
     if ([[NSUserDefaults standardUserDefaults] boolForKey:@"HPdockConfigEnabled"]) return %orig;
 
     SBIconListGridLayoutConfiguration *config = [[self layout] layoutConfiguration];
@@ -1875,8 +1878,10 @@ NSDictionary *prefs = nil;
     {
         SBIconView *superv = (SBIconView *)self.superview;
         NSString *x = @"";
+
         if ([[superv location] isEqualToString:@"SBIconLocationRoot"]) x = @"";
         else if ([[superv location] isEqualToString:@"SBIconLocationFolder"]) x = @"F";
+
         if (_pfTweakEnabled && [[NSUserDefaults standardUserDefaults] integerForKey:[NSString stringWithFormat:@"%@%@", @"HPThemeDefaultIconLabels", x]])
         {
             %orig(YES);
@@ -1891,6 +1896,7 @@ NSDictionary *prefs = nil;
         %orig(arg);
     }
 }
+
 - (BOOL)isHidden 
 {
     @try 
@@ -1907,9 +1913,11 @@ NSDictionary *prefs = nil;
     } 
     @catch (NSException *ex)
     {
+        // Icon being dragged
         return %orig;
     }
 }
+
 - (CGFloat)alpha
 {
     @try 
@@ -1922,9 +1930,11 @@ NSDictionary *prefs = nil;
     } 
     @catch (NSException *ex)
     {
+        // Icon Being Dragged
         return %orig;
     }
 }
+
 - (void)setAlpha:(CGFloat)arg
 {
     @try 
@@ -1957,22 +1967,27 @@ NSDictionary *prefs = nil;
         %orig(arg);
     }
 }
+
 - (BOOL)isHidden 
 {
     if (_pfTweakEnabled && [[NSUserDefaults standardUserDefaults] integerForKey:@"HPThemeDefaultIconBadges"])
     {
         return YES;
     }
+
     return %orig;
 }
+
 - (CGFloat)alpha
 {
     return (([[NSUserDefaults standardUserDefaults] integerForKey:@"HPThemeDefaultIconBadges"]?:0) == 0) ? %orig : 0;
 }
+
 - (void)setAlpha:(CGFloat)arg
 {
     %orig((([[NSUserDefaults standardUserDefaults] integerForKey:@"HPThemeDefaultIconBadges"]?:0) == 0) ? arg : 0);
 }
+
 %end
 
 
@@ -2007,7 +2022,9 @@ NSDictionary *prefs = nil;
 
     [[NSNotificationCenter defaultCenter] addObserver:self selector:@selector(fader:) name:kFadeFloatingDockNotificationName object:nil];
     [[NSNotificationCenter defaultCenter] addObserver:self selector:@selector(fader:) name:kShowFloatingDockNotificationName object:nil];
+
     floatingDockWindow = self;
+
     return o;
 }
 
@@ -2020,10 +2037,6 @@ NSDictionary *prefs = nil;
         animations:
         ^{
             self.alpha = ([[notification name] isEqualToString:kFadeFloatingDockNotificationName]) ? 0 : 1;
-        } 
-        completion:^(BOOL finished) 
-        {
-            
         }
     ];
 }
@@ -2032,7 +2045,9 @@ NSDictionary *prefs = nil;
 - (void)recieveNotification:(NSNotification *)notification
 {
     BOOL enabled = ([[notification name] isEqualToString:kEditingModeEnabledNotificationName]);
+
     _rtEditingEnabled = enabled;
+
     self.userInteractionEnabled = !enabled;
 }
 
@@ -2105,30 +2120,10 @@ NSDictionary *prefs = nil;
 %property (nonatomic, assign) CGFloat hpPanAmount;
 %property (nonatomic, assign) BOOL hitboxMaxed;
 
-%new
-- (void)TL_toggleEditingMode
-{
-    if (![(SpringBoard*)[UIApplication sharedApplication] isShowingHomescreen]) 
-    {
-        return;
-    }
-    if (_pfActivationGesture != 1 || _pfGestureDisabled) 
-    {
-        return;
-    }
-}
-
 %new 
 - (void)createTopLeftHitboxView
 {
     NSLog(@"HomePlus: %@", NSStringFromCGRect(self.frame));
-
-
-    // There is something terribly wrong with this code
-    // Things eat up 3x more space than they should. 
-    // So, I just make them 3x smaller.
-    // Please, if anyone knows what the hell is wrong, let me know
-
 
     self.editorOpened = NO;
     self.hitboxMaxed = NO;
@@ -2266,15 +2261,6 @@ NSDictionary *prefs = nil;
                     wallpaperView.layer.cornerRadius = 0;
                     if (self.editorActivated)
                     {
-                        // If the editor was open, disable it and move the hitbox frame back 
-                        // to the original spot
-                        if (self.hitboxMaxed)
-                        {
-                            //self.hp_hitbox_window.frame = CGRectMake(0, 0, 60, 20);
-                            //self.hp_hitbox.frame = CGRectMake(0, 0, 60, 20);
-                            //self.hp_hitbox_window.transform = CGAffineTransformIdentity;
-                        }
-
                         [[NSNotificationCenter defaultCenter] postNotificationName:kEditingModeDisabledNotificationName object:nil];
                         AudioServicesPlaySystemSound(1519);
                         self.editorActivated = NO;
@@ -2354,19 +2340,6 @@ NSDictionary *prefs = nil;
         homeWindow.layer.borderWidth = 0;
         homeWindow.layer.cornerRadius = 0;
         wallpaperView.layer.cornerRadius = 0;
-        /*
-        if (self.editorOpened)
-        {
-            // If the editor was open, disable it and move the hitbox frame back 
-            // to the original spot
-            self.hp_hitbox_window.frame = CGRectMake(0, 0, 60, 20);
-            self.hp_hitbox.frame = CGRectMake(0, 0, 60, 20);
-            self.hp_hitbox_window.transform = CGAffineTransformIdentity;
-            [[NSNotificationCenter defaultCenter] postNotificationName:kEditingModeDisabledNotificationName object:nil];
-            AudioServicesPlaySystemSound(1519);
-            self.editorActivated = NO;
-            self.editorOpened = NO;
-        }*/
     }
 
     if (self.hpPanAmount >= maxAmt)
