@@ -200,22 +200,22 @@ const int RESET_VALUES = 1;
     NSInteger rows = 0;
     switch ( section ) 
     {
-        case 0: 
+        case 0: // Icons
         {
             rows = 3;
             break;
         }
-        case 1:
+        case 1: // Dock
         {
-            rows = 2;
+            rows = 3;
             break;
         }
-        case 2: 
+        case 2: // Settings
         {
             rows = 4;
             break;
         }
-        case 3:
+        case 3: // Storage System (Disabled)
         {
             rows = 1;
             break;
@@ -397,6 +397,7 @@ const int RESET_VALUES = 1;
         {
             switch ( [indexPath row] )
             {
+
                 case 0: 
                 {
                     HPTableCell *cell = [tableView dequeueReusableCellWithIdentifier:@"SwitchCell"];
@@ -404,13 +405,13 @@ const int RESET_VALUES = 1;
                     if( cell == nil ) 
                     {
                         cell = [[HPTableCell alloc] initWithFrame:CGRectZero reuseIdentifier:@"SwitchCell"];
-                        cell.textLabel.text = @"Hide Dock BG";
+                        cell.textLabel.text = @"Dock Config Enabled";
                         cell.selectionStyle = UITableViewCellSelectionStyleNone;
                         UISwitch *switchView = [[UISwitch alloc] initWithFrame:CGRectZero];
                         cell.accessoryType = UITableViewCellAccessoryDisclosureIndicator;
                         cell.accessoryView = switchView;
-                        [switchView setOn:[[NSUserDefaults standardUserDefaults] integerForKey:@"HPThemeDefaultHideDock"]?:0 == 1  animated:NO];
-                        [switchView addTarget:self action:@selector(dockbGSwitchChanged:) forControlEvents:UIControlEventValueChanged];
+                        [switchView setOn:[[NSUserDefaults standardUserDefaults] boolForKey:@"HPdockConfigEnabled"] animated:NO];
+                        [switchView addTarget:self action:@selector(dockConfigSwitchChanged:) forControlEvents:UIControlEventValueChanged];
 
                         //[cell.layer setCornerRadius:10];
 
@@ -435,12 +436,43 @@ const int RESET_VALUES = 1;
                     if( cell == nil ) 
                     {
                         cell = [[HPTableCell alloc] initWithFrame:CGRectZero reuseIdentifier:@"SwitchCell"];
+                        cell.textLabel.text = @"Hide Dock BG";
+                        cell.selectionStyle = UITableViewCellSelectionStyleNone;
+                        UISwitch *switchView = [[UISwitch alloc] initWithFrame:CGRectZero];
+                        cell.accessoryType = UITableViewCellAccessoryDisclosureIndicator;
+                        cell.accessoryView = switchView;
+                        [switchView setOn:([[NSUserDefaults standardUserDefaults] integerForKey:@"HPThemeDefaultHideDock"]?:0) == 1  animated:NO];
+                        [switchView addTarget:self action:@selector(dockbGSwitchChanged:) forControlEvents:UIControlEventValueChanged];
+
+                        //[cell.layer setCornerRadius:10];
+
+                        [cell setBackgroundColor: [UIColor colorWithRed:10.0/255.0 green:10.0/255.0 blue:10.0/255.0 alpha:0.4]];//rgb(38, 37, 42)];
+                        //Border Color and Width
+                        [cell.layer setBorderColor:[UIColor blackColor].CGColor];
+                        [cell.layer setBorderWidth:0];
+
+                        //Set Text Col
+                        cell.textLabel.textColor = [UIColor whiteColor];//[prefs colorForKey:@"textTint"];
+                        cell.detailTextLabel.textColor = [UIColor whiteColor];//[prefs colorForKey:@"textTint"];
+
+                        cell.clipsToBounds = YES;
+                    }
+                    return cell;
+                }
+
+                case 2: 
+                {
+                    HPTableCell *cell = [tableView dequeueReusableCellWithIdentifier:@"SwitchCell"];
+
+                    if( cell == nil ) 
+                    {
+                        cell = [[HPTableCell alloc] initWithFrame:CGRectZero reuseIdentifier:@"SwitchCell"];
                         cell.textLabel.text = @"Force iPX Dock";
                         cell.selectionStyle = UITableViewCellSelectionStyleNone;
                         UISwitch *switchView = [[UISwitch alloc] initWithFrame:CGRectZero];
                         cell.accessoryType = UITableViewCellAccessoryDisclosureIndicator;
                         cell.accessoryView = switchView;
-                        [switchView setOn:[[NSUserDefaults standardUserDefaults] integerForKey:@"HPThemeDefaultModernDock"]?:0 == 1  animated:NO];
+                        [switchView setOn:([[NSUserDefaults standardUserDefaults] integerForKey:@"HPThemeDefaultModernDock"]?:0) == 1  animated:NO];
                         [switchView addTarget:self action:@selector(modernDockSwitchChanged:) forControlEvents:UIControlEventValueChanged];
 
                         //[cell.layer setCornerRadius:10];
@@ -635,6 +667,12 @@ const int RESET_VALUES = 1;
     else 
     {
     }
+}
+- (void)dockConfigSwitchChanged:(UISwitch *)sender
+{
+    [[NSUserDefaults standardUserDefaults] setBool:sender.on
+                    forKey:@"HPdockConfigEnabled"];
+    [[NSNotificationCenter defaultCenter] postNotificationName:@"HPResetIconViews" object:nil];
 }
 - (void)switcherSwitchChanged:(id)sender 
 {

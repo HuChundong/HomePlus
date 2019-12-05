@@ -11,6 +11,7 @@
 @property (nonatomic, assign) BOOL vRowUpdates;
 @property (nonatomic, assign) BOOL resettingIconLayout;
 @property (nonatomic, assign) BOOL pendingRespring;
+@property (nonatomic, assign) BOOL dockConfigEnabled;
 
 + (instancetype)sharedManager;
 - (instancetype)init;

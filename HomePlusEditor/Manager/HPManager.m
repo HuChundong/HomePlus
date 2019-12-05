@@ -3,6 +3,8 @@
 // HomePlus
 //
 // Data Manager
+// This class is kind of gutted from its former self
+// Needs cleaned up for the stuff it handles now
 //
 // Created Oct 2019
 // Author: Kritanta
@@ -86,6 +88,9 @@
     self.useUserDefaults = [[NSUserDefaults standardUserDefaults] objectForKey:@"HPuseUserDefaults"] 
                                         ? [[NSUserDefaults standardUserDefaults] boolForKey:@"HPuseUserDefaults"]
                                         : YES;
+    self.dockConfigEnabled = [[NSUserDefaults standardUserDefaults] objectForKey:@"HPdockEditingEnabled"] 
+                                    ? [[NSUserDefaults standardUserDefaults] boolForKey:@"HPdockEditingEnabled"]
+                                    : YES;
     return nil;
 }
 
@@ -100,12 +105,15 @@
     self.useUserDefaults = [[NSUserDefaults standardUserDefaults] objectForKey:@"HPuseUserDefaults"] 
                                         ? [[NSUserDefaults standardUserDefaults] boolForKey:@"HPuseUserDefaults"]
                                         : YES;
-
+    self.dockConfigEnabled = [[NSUserDefaults standardUserDefaults] objectForKey:@"HPdockEditingEnabled"] 
+                                    ? [[NSUserDefaults standardUserDefaults] boolForKey:@"HPdockEditingEnabled"]
+                                    : YES;
     return nil;
 }
 
 - (void)saveLoadoutToUserDefaults:(NSString *)name 
 {
+
 }
 
 - (NSMutableDictionary *)createDictionaryDefaultStructure

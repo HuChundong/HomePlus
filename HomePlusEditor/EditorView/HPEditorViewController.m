@@ -660,6 +660,7 @@ const CGFloat TABLE_HEADER_HEIGHT = 0.458;
         [_scaleControlView bottomTextFieldUpdated:_scaleControlView.bottomTextField];
     }
 }
+
 - (void)handleSpacerButtonPress:(UIButton*)sender 
 {
     [self loadControllerView:[self spacingControlView]];

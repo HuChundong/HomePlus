@@ -910,6 +910,8 @@ NSDictionary *prefs = nil;
 
     if (_tcDockyInstalled) return; // This line goes everywhere here
                                    // If Docky is detected, dont change a thing. 
+
+    if ([[NSUserDefaults standardUserDefaults] boolForKey:@"HPdockConfigEnabled"]) return %orig;
     if (!self.configured) 
     {
         [[[EditorManager sharedManager] editorViewController] addRootIconListViewToUpdate:self];
@@ -919,6 +921,7 @@ NSDictionary *prefs = nil;
 
 + (NSUInteger)maxIcons {
     if (_tcDockyInstalled) return %orig;
+    if ([[NSUserDefaults standardUserDefaults] boolForKey:@"HPdockConfigEnabled"]) return %orig;
     return [[NSUserDefaults standardUserDefaults] floatForKey:@"HPThemeDefaultDockColumns"]?:4;
 }
 - (UIEdgeInsets)layoutInsets
@@ -928,6 +931,7 @@ NSDictionary *prefs = nil;
     {
         return x;
     }
+    if ([[NSUserDefaults standardUserDefaults] boolForKey:@"HPdockConfigEnabled"]) return %orig;
     
     if ((!([[NSUserDefaults standardUserDefaults] floatForKey:[NSString stringWithFormat:@"%@%@%@", @"HPThemeDefault", @"Dock", @"LeftInset"]]?:0)) == 0)
     {
@@ -951,12 +955,14 @@ NSDictionary *prefs = nil;
 
 - (NSUInteger)iconsInRowForSpacingCalculation {
     if (_tcDockyInstalled) return %orig;
+    if ([[NSUserDefaults standardUserDefaults] boolForKey:@"HPdockConfigEnabled"]) return %orig;
     return [[NSUserDefaults standardUserDefaults] floatForKey:@"HPThemeDefaultDockColumns"]?:4;
 }
 - (CGFloat)horizontalIconPadding {
 
     CGFloat x = %orig;
     if (_tcDockyInstalled) return %orig;
+    if ([[NSUserDefaults standardUserDefaults] boolForKey:@"HPdockConfigEnabled"]) return %orig;
     if (!_pfTweakEnabled || !self.configured) 
     {
         return x;
@@ -987,6 +993,7 @@ NSDictionary *prefs = nil;
 - (CGFloat)verticalIconPadding 
 {
     CGFloat x = %orig;
+    if ([[NSUserDefaults standardUserDefaults] boolForKey:@"HPdockConfigEnabled"]) return %orig;
     if (!self.configured || _tcDockyInstalled || !_pfTweakEnabled) return x;
 
     return x + [[NSUserDefaults standardUserDefaults] floatForKey:@"HPThemeDefaultDockVerticalSpacing"]?:0;
@@ -995,6 +1002,7 @@ NSDictionary *prefs = nil;
 - (CGFloat)sideIconInset
 {   
     CGFloat x = %orig;
+    if ([[NSUserDefaults standardUserDefaults] boolForKey:@"HPdockConfigEnabled"]) return %orig;
     if (_tcDockyInstalled) return %orig;
     if (!self.configured || !_pfTweakEnabled)
     {
@@ -1022,6 +1030,7 @@ NSDictionary *prefs = nil;
 }
 - (CGFloat)topIconInset
 {
+    if ([[NSUserDefaults standardUserDefaults] boolForKey:@"HPdockConfigEnabled"]) return %orig;
     CGFloat x = %orig;
     if (_tcDockyInstalled) return %orig;
 
@@ -1035,8 +1044,9 @@ NSDictionary *prefs = nil;
 
 + (NSUInteger)iconColumnsForInterfaceOrientation:(NSInteger)arg1
 {
+    if ([[NSUserDefaults standardUserDefaults] boolForKey:@"HPdockConfigEnabled"]) return %orig(arg1);
     NSInteger x = %orig(arg1);
-    if (_tcDockyInstalled) return %orig;
+    if (_tcDockyInstalled) return x;
 
     if (!_rtConfigured || !_pfTweakEnabled)
     {
@@ -1048,6 +1058,7 @@ NSDictionary *prefs = nil;
 
 - (NSUInteger)iconsInColumnForSpacingCalculation
 {
+    if ([[NSUserDefaults standardUserDefaults] boolForKey:@"HPdockConfigEnabled"]) return %orig;
     NSInteger x = %orig;
 
     if (_tcDockyInstalled) return %orig;
@@ -1093,6 +1104,7 @@ NSDictionary *prefs = nil;
     }
     CGFloat sx = ([[NSUserDefaults standardUserDefaults] floatForKey:[NSString stringWithFormat:@"%@%@%@", @"HPThemeDefault", x, @"Scale"]]?:60) / 60.0;
     [self.layer setSublayerTransform:CATransform3DMakeScale(sx, sx, 1)];
+    self.alpha = ([[NSUserDefaults standardUserDefaults] floatForKey:[NSString stringWithFormat:@"%@%@%@", @"HPThemeDefault", x, @"IconAlpha"]]?:100.0) / 100.0;
 }
 
 %end
@@ -1522,8 +1534,8 @@ NSDictionary *prefs = nil;
     // Guess if it hasn't been set
     else 
     {
-        NSUInteger rows = [self numberOfPortraitRows];
-        NSUInteger columns = [self numberOfPortraitColumns];
+        NSUInteger rows = MSHookIvar<NSUInteger>(self, "_numberOfPortraitRows");
+        NSUInteger columns = MSHookIvar<NSUInteger>(self, "_numberOfPortraitColumns"); 
         // dock
         if (rows <= 2 && columns == 4) // woo nested boolean logic 
         {
@@ -1546,6 +1558,7 @@ NSDictionary *prefs = nil;
     NSInteger x = %orig;
 
     if (!self.iconLocation) return x;
+    if ([self.iconLocation isEqualToString:@"Dock"] && ([[NSUserDefaults standardUserDefaults] integerForKey:@"HPdockConfigEnabled"]?:1) == 0) return x;
     if (_tcDockyInstalled && (x<=2 || x==100))return %orig;
     if (!_rtConfigured && _pfTweakEnabled) return kMaxRowAmount;
 
@@ -1572,6 +1585,8 @@ NSDictionary *prefs = nil;
         return x;
     }
 
+    if ([self.iconLocation isEqualToString:@"Dock"] && ([[NSUserDefaults standardUserDefaults] integerForKey:@"HPdockConfigEnabled"]?:1) == 0) return x;
+
     if (!_rtConfigured && _pfTweakEnabled) // Hack on iOS 13 to allow adding more columns and rows in real time.
                                            //   For some reason, we cant increase columns/rows in runtime (w/o respring), 
                                            //   but, we CAN decrease. SO, start with the max it'll allow,
@@ -1592,8 +1607,8 @@ NSDictionary *prefs = nil;
     }
     if (!self.iconLocation)
     {
-        NSUInteger rows = [self numberOfPortraitRows];
-        NSUInteger columns = [self numberOfPortraitColumns];
+        NSUInteger rows = MSHookIvar<NSUInteger>(self, "_numberOfPortraitRows");
+        NSUInteger columns = MSHookIvar<NSUInteger>(self, "_numberOfPortraitColumns"); 
         // dock
         if (rows <= 2 && columns == 4) // woo nested boolean logic 
         {
@@ -1609,6 +1624,7 @@ NSDictionary *prefs = nil;
         }
     }
     if ([self.iconLocation isEqualToString:@"Folder"]) return x;
+    if ([self.iconLocation isEqualToString:@"Dock"] && ([[NSUserDefaults standardUserDefaults] integerForKey:@"HPdockConfigEnabled"]?:1) == 0) return x;
     if ((!([[NSUserDefaults standardUserDefaults] floatForKey:[NSString stringWithFormat:@"%@%@%@", @"HPThemeDefault", self.iconLocation, @"LeftInset"]]?:0)) == 0)
     {
         return UIEdgeInsetsMake(
@@ -1693,6 +1709,7 @@ NSDictionary *prefs = nil;
 
     CGFloat sx = ([[NSUserDefaults standardUserDefaults] floatForKey:[NSString stringWithFormat:@"%@%@%@", @"HPThemeDefault", x, @"Scale"]]?:60.0) / 60.0;
     [self.layer setSublayerTransform:CATransform3DMakeScale(sx, sx, 1)];
+    self.alpha = ([[NSUserDefaults standardUserDefaults] floatForKey:[NSString stringWithFormat:@"%@%@%@", @"HPThemeDefault", x, @"IconAlpha"]]?:100.0) / 100.0;
 }
 
 %end 
@@ -2224,11 +2241,9 @@ NSDictionary *prefs = nil;
 - (void)layoutSubviews
 {
     %orig;
-    NSLog(@"HomePlus: created hitbox shit");
     if (!self.hp_hitbox_window && _pfTweakEnabled && !_pfGestureDisabled) 
     {
         [self createTopLeftHitboxView];
-        
     }
 }
 
@@ -2320,6 +2335,7 @@ NSDictionary *prefs = nil;
 {
     if (_tcDockyInstalled && (%orig<=2 || %orig==100)) return %orig;
     NSString *x = [[self iconLocation] substringFromIndex:14];
+
     return [[NSUserDefaults standardUserDefaults] integerForKey:[NSString stringWithFormat:@"%@%@%@", @"HPThemeDefault", x, @"Rows"]]?:%orig;
 }
 
@@ -2347,6 +2363,9 @@ NSDictionary *prefs = nil;
     if (_tcDockyInstalled)return %orig;
     UIEdgeInsets x = %orig;
     if (!_pfTweakEnabled) return x;
+
+    if ([[NSUserDefaults standardUserDefaults] boolForKey:@"HPdockConfigEnabled"]) return %orig;
+
     return [[[self layout] layoutConfiguration] portraitLayoutInsets];
 }
 
@@ -2357,20 +2376,24 @@ NSDictionary *prefs = nil;
 - (CGFloat)horizontalIconPadding
 {
     if (_tcDockyInstalled) return %orig;
-
+    if ([[NSUserDefaults standardUserDefaults] boolForKey:@"HPdockConfigEnabled"]) return %orig;
     if (_pfTweakEnabled) return [[NSUserDefaults standardUserDefaults] floatForKey:[NSString stringWithFormat:@"%@%@%@", @"HPThemeDefault", @"Dock", @"SideInset"]];
+
     return %orig;
 }
 - (NSUInteger)iconRowsForCurrentOrientation
 {
     if (_tcDockyInstalled) return %orig;
 
+    if ([[NSUserDefaults standardUserDefaults] boolForKey:@"HPdockConfigEnabled"]) return %orig;
     SBIconListGridLayoutConfiguration *config = [[self layout] layoutConfiguration];
     return [config numberOfPortraitRows];
 }
 - (NSUInteger)iconColumnsForCurrentOrientation
 {
     if (_tcDockyInstalled) return %orig;
+    if ([[NSUserDefaults standardUserDefaults] boolForKey:@"HPdockConfigEnabled"]) return %orig;
+
     SBIconListGridLayoutConfiguration *config = [[self layout] layoutConfiguration];
     return [config numberOfPortraitColumns];
 }
