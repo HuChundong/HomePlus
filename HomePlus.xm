@@ -125,7 +125,7 @@ NSDictionary *prefs = nil;
 {
     CGAffineTransform transform = self.transform;
 
-    [UIView animateWithDuration:0.4 // this matches it as closely as possible with the kicker in the editorviewcontroller
+    [UIView animateWithDuration:0.4f// this matches it as closely as possible with the kicker in the editorviewcontroller
                                     // Maybe in the future I can find a way to animate them both at the same time. 
                                     // As for right now, I'm not quite sure :p
     animations:
@@ -140,13 +140,13 @@ NSDictionary *prefs = nil;
                         && !_rtKickedUp)                                                             //   And it isn't kicked up already (first verifiction)
                                 ? CGAffineTransformTranslate(transform, 0, 
                                         (transform.ty == 0                                           //      If 0, move it up            (second verification)
-                                            ? 0 - ([[UIScreen mainScreen] bounds].size.height * 0.7) //      move up
-                                            : 0.0                                                    //      if its not 0, make it 0     (second v.)
+                                            ? 0 - ([[UIScreen mainScreen] bounds].size.height * 0.7f) //      move up
+                                            : 0.0f                                                   //      if its not 0, make it 0     (second v.)
                                         ))                                                           
                                 : CGAffineTransformTranslate(transform, 0, 
                                         (transform.ty == 0                                           // If we should move it back 
                                             ? 0                                                      //   If it's 0, keep it as 0
-                                            : ([[UIScreen mainScreen] bounds].size.height * 0.7)     //     else, move it back.
+                                            : ([[UIScreen mainScreen] bounds].size.height * 0.7f)     //     else, move it back.
                                         ));                                                          
     }]; 
 }
@@ -233,15 +233,15 @@ NSDictionary *prefs = nil;
     ^{
         self.transform = (([[notification name] isEqualToString:kEditorKickViewsUp])              
                         && !_rtKickedUp)                                                           
-                                ? CGAffineTransformTranslate(transform, 0, 
-                                        (transform.ty == 0                                           
-                                            ? 0 - ([[UIScreen mainScreen] bounds].size.height * 0.7) 
-                                            : 0.0                                                   
+                                ? CGAffineTransformTranslate(transform, 0.0f, 
+                                        (transform.ty == 0.0f                                          
+                                            ? 0.0f - ([[UIScreen mainScreen] bounds].size.height * 0.7f) 
+                                            : 0.0f                                                  
                                         ))                                                           
                                 : CGAffineTransformTranslate(transform, 0, 
-                                        (transform.ty == 0
-                                            ? 0                                                     
-                                            : ([[UIScreen mainScreen] bounds].size.height * 0.7)
+                                        (transform.ty == 0.0
+                                            ? 0.0f                                                    
+                                            : ([[UIScreen mainScreen] bounds].size.height * 0.7f)
                                         )); 
     }]; 
 }
@@ -393,8 +393,8 @@ NSDictionary *prefs = nil;
 - (CGFloat)displayCornerRadius 
 {
     return ((![HPUtility isCurrentDeviceNotched]                                                                 // Dont do this on notched devices, no need
-                && ([[NSUserDefaults standardUserDefaults] integerForKey:@"HPThemeDefaultModernDock"]?:0) == 1)  // If we're supposed to force modern dock
-                        ? 6                                                                                      // Setting this to a non-0 value forced modern dock
+                && (([[NSUserDefaults standardUserDefaults] integerForKey:@"HPThemeDefaultModernDock"]?:0) == 1))  // If we're supposed to force modern dock
+                        ? 6.0f                                                                                      // Setting this to a non-0 value forced modern dock
                         : %orig );                                                                               // else just orig it. 
 }
 
@@ -417,7 +417,7 @@ NSDictionary *prefs = nil;
     }
     else 
     {
-        if ([[[UIDevice currentDevice] systemVersion] floatValue] < 13.0 && _rtIconViewInitialReloadCount < 2)
+        if ([[[UIDevice currentDevice] systemVersion] floatValue] < 13.0f && _rtIconViewInitialReloadCount < 2)
         {
             _rtIconViewInitialReloadCount += 1;
             [[NSNotificationCenter defaultCenter] postNotificationName:@"HPResetIconViews" object:nil];
@@ -430,78 +430,81 @@ NSDictionary *prefs = nil;
     if (%orig && [[NSUserDefaults standardUserDefaults] integerForKey:@"HPTutorialGiven"] == 0)
     {
         [[NSUserDefaults standardUserDefaults] setInteger:1 forKey:@"HPTutorialGiven"];
+
         NSUserDefaults *userDefaults = [NSUserDefaults standardUserDefaults];
+
         NSString *location = @"Root";
         NSString *name = @"Default";
+
         NSString *prefix = [NSString stringWithFormat:@"%@%@", @"HPTheme", name];
         [userDefaults setBool:NO
-                        forKey:[NSString stringWithFormat:@"%@%@", prefix, @"IconLabels"] ];
+                        forKey:[NSString stringWithFormat:@"%@%@", prefix, @"IconLabels"]];
         [userDefaults setBool:NO
-                        forKey:[NSString stringWithFormat:@"%@%@", prefix, @"IconBadges"] ];
+                        forKey:[NSString stringWithFormat:@"%@%@", prefix, @"IconBadges"]];
         [userDefaults setBool:NO
-                        forKey:[NSString stringWithFormat:@"%@%@", prefix, @"IconLabelsF"] ];
+                        forKey:[NSString stringWithFormat:@"%@%@", prefix, @"IconLabelsF"]];
         [userDefaults setBool:NO
-                        forKey:[NSString stringWithFormat:@"%@%@", prefix, @"DockBG"] ];
+                        forKey:[NSString stringWithFormat:@"%@%@", prefix, @"DockBG"]];
         [userDefaults setBool:NO
-                        forKey:[NSString stringWithFormat:@"%@%@", prefix, @"ModernDock"] ];
+                        forKey:[NSString stringWithFormat:@"%@%@", prefix, @"ModernDock"]];
 
         prefix = [NSString stringWithFormat:@"%@%@%@", @"HPTheme", name, location];
         [userDefaults setInteger:4
-                        forKey:[NSString stringWithFormat:@"%@%@", prefix, @"Columns"] ];
+                        forKey:[NSString stringWithFormat:@"%@%@", prefix, @"Columns"]];
         [userDefaults setInteger:[HPUtility defaultRows]
-                        forKey:[NSString stringWithFormat:@"%@%@", prefix, @"Rows"] ];
-        [userDefaults setFloat:0.0
-                        forKey:[NSString stringWithFormat:@"%@%@", prefix, @"TopInset"] ];
-        [userDefaults setFloat:0.0
-                        forKey:[NSString stringWithFormat:@"%@%@", prefix, @"LeftInset"] ];
-        [userDefaults setFloat:0.0
-                        forKey:[NSString stringWithFormat:@"%@%@", prefix, @"SideInset"] ];
-        [userDefaults setFloat:0.0
-                        forKey:[NSString stringWithFormat:@"%@%@", prefix, @"VerticalSpacing"] ];
-        [userDefaults setFloat:60.0
-                        forKey:[NSString stringWithFormat:@"%@%@", prefix, @"Scale"] ];
-        [userDefaults setFloat:0.0
-                        forKey:[NSString stringWithFormat:@"%@%@", prefix, @"Rotation"] ];
+                        forKey:[NSString stringWithFormat:@"%@%@", prefix, @"Rows"]];
+        [userDefaults setFloat:0.0f
+                        forKey:[NSString stringWithFormat:@"%@%@", prefix, @"TopInset"]];
+        [userDefaults setFloat:0.0f
+                        forKey:[NSString stringWithFormat:@"%@%@", prefix, @"LeftInset"]];
+        [userDefaults setFloat:0.0f
+                        forKey:[NSString stringWithFormat:@"%@%@", prefix, @"SideInset"]];
+        [userDefaults setFloat:0.0f
+                        forKey:[NSString stringWithFormat:@"%@%@", prefix, @"VerticalSpacing"]];
+        [userDefaults setFloat:60.0f
+                        forKey:[NSString stringWithFormat:@"%@%@", prefix, @"Scale"]];
+        [userDefaults setFloat:100.0f
+                        forKey:[NSString stringWithFormat:@"%@%@", prefix, @"IconAlpha"]];
 
         location = @"Dock";
         prefix = [NSString stringWithFormat:@"%@%@%@", @"HPTheme", name, location];
         [userDefaults setInteger:4.0
-                        forKey:[NSString stringWithFormat:@"%@%@", prefix, @"Columns"] ];
+                        forKey:[NSString stringWithFormat:@"%@%@", prefix, @"Columns"]];
         [userDefaults setInteger:1.0
-                        forKey:[NSString stringWithFormat:@"%@%@", prefix, @"Rows"] ];
-        [userDefaults setFloat:0.0
-                        forKey:[NSString stringWithFormat:@"%@%@", prefix, @"TopInset"] ];
-        [userDefaults setFloat:0.0
-                        forKey:[NSString stringWithFormat:@"%@%@", prefix, @"LeftInset"] ];
-        [userDefaults setFloat:0.0
-                        forKey:[NSString stringWithFormat:@"%@%@", prefix, @"SideInset"] ];
-        [userDefaults setFloat:0.0
-                        forKey:[NSString stringWithFormat:@"%@%@", prefix, @"VerticalSpacing"] ];
-        [userDefaults setFloat:60.0
-                        forKey:[NSString stringWithFormat:@"%@%@", prefix, @"Scale"] ];
-        [userDefaults setFloat:0.0
-                        forKey:[NSString stringWithFormat:@"%@%@", prefix, @"Rotation"] ];
-        
+                        forKey:[NSString stringWithFormat:@"%@%@", prefix, @"Rows"]];
+        [userDefaults setFloat:0.0f
+                        forKey:[NSString stringWithFormat:@"%@%@", prefix, @"TopInset"]];
+        [userDefaults setFloat:0.0f
+                        forKey:[NSString stringWithFormat:@"%@%@", prefix, @"LeftInset"]];
+        [userDefaults setFloat:0.0f
+                        forKey:[NSString stringWithFormat:@"%@%@", prefix, @"SideInset"]];
+        [userDefaults setFloat:0.0f
+                        forKey:[NSString stringWithFormat:@"%@%@", prefix, @"VerticalSpacing"]];
+        [userDefaults setFloat:60.0f
+                        forKey:[NSString stringWithFormat:@"%@%@", prefix, @"Scale"]];
+        [userDefaults setFloat:100.0f
+                        forKey:[NSString stringWithFormat:@"%@%@", prefix, @"IconAlpha"]];
         
         location = @"Folder";
         prefix = [NSString stringWithFormat:@"%@%@%@", @"HPTheme", name, location];
         [userDefaults setInteger:3 // THIS NEEDS TO BE SET BECAUSE FOLDERS ARE ACTUALLY MODIFIED BY THE TWEAK
                                 // FOLDERS WILL CRASH SB IF MODIFIED TILL I ACTUALLY WRITE A PROPER IMPLEMENTATION
-                        forKey:[NSString stringWithFormat:@"%@%@", prefix, @"Columns"] ];
+                        forKey:[NSString stringWithFormat:@"%@%@", prefix, @"Columns"]];
         [userDefaults setInteger:3
-                        forKey:[NSString stringWithFormat:@"%@%@", prefix, @"Rows"] ];
-        [userDefaults setFloat:0.0
-                        forKey:[NSString stringWithFormat:@"%@%@", prefix, @"TopInset"] ];
-        [userDefaults setFloat:0.0
-                        forKey:[NSString stringWithFormat:@"%@%@", prefix, @"LeftInset"] ];
-        [userDefaults setFloat:0.0
-                        forKey:[NSString stringWithFormat:@"%@%@", prefix, @"SideInset"] ];
-        [userDefaults setFloat:0.0
-                        forKey:[NSString stringWithFormat:@"%@%@", prefix, @"VerticalSpacing"] ];
-        [userDefaults setFloat:60.0
-                        forKey:[NSString stringWithFormat:@"%@%@", prefix, @"Scale"] ];
-        [userDefaults setFloat:0.0
-                        forKey:[NSString stringWithFormat:@"%@%@", prefix, @"Rotation"] ];
+                        forKey:[NSString stringWithFormat:@"%@%@", prefix, @"Rows"]];
+        [userDefaults setFloat:0.0f
+                        forKey:[NSString stringWithFormat:@"%@%@", prefix, @"TopInset"]];
+        [userDefaults setFloat:0.0f
+                        forKey:[NSString stringWithFormat:@"%@%@", prefix, @"LeftInset"]];
+        [userDefaults setFloat:0.0f
+                        forKey:[NSString stringWithFormat:@"%@%@", prefix, @"SideInset"]];
+        [userDefaults setFloat:0.0f
+                        forKey:[NSString stringWithFormat:@"%@%@", prefix, @"VerticalSpacing"]];
+        [userDefaults setFloat:60.0f
+                        forKey:[NSString stringWithFormat:@"%@%@", prefix, @"Scale"]];
+        [userDefaults setFloat:0.0f
+                        forKey:[NSString stringWithFormat:@"%@%@", prefix, @"IconAlpha"]];
+
         [userDefaults synchronize];
         [[EditorManager sharedManager] showTutorialView];
     }
@@ -560,7 +563,7 @@ NSDictionary *prefs = nil;
     }
     
     // Trigger the icon label alpha function we hook
-    [self setIconsLabelAlpha:1.0];
+    [self setIconsLabelAlpha:1.0f];
 }
 
 - (CGFloat)horizontalIconPadding 
@@ -578,13 +581,13 @@ NSDictionary *prefs = nil;
                                                                                   //    that only executes on iOS 12 and below
                          
 
-    BOOL leftInsetZeroed = ([[NSUserDefaults standardUserDefaults] floatForKey:@"HPThemeDefaultRootLeftInset"]?:0.0) == 0.0; // Enable more intuitive behavior 
-    if ([[[UIDevice currentDevice] systemVersion] floatValue] >= 12.0)
+    BOOL leftInsetZeroed = ([[NSUserDefaults standardUserDefaults] floatForKey:@"HPThemeDefaultRootLeftInset"]?:0.0f) == 0.0f; // Enable more intuitive behavior 
+    if ([[[UIDevice currentDevice] systemVersion] floatValue] >= 12.0f)
     {
         // This gets confusing and is the result of a lot of experimentation
         if (buggedSpacing)
         {
-            return -100.0; // When the boxy bug happens, its triggered by this value being more than 0
+            return -100.0f; // When the boxy bug happens, its triggered by this value being more than 0
                            //   From what I remember writing this, the lower the value, the more we can adjust the 
                            //   "Horizontal Spacing" aka "Side Inset"
         }
@@ -601,14 +604,14 @@ NSDictionary *prefs = nil;
             // What happens here is that this legitimately changes icon padding. 
             // It is near impossible to center; That is what some people want when they change
             // the left offset, so now, this function isn't dynamically calculated, its manually set by the user.
-            return [[NSUserDefaults standardUserDefaults] floatForKey:@"HPThemeDefaultRootSideInset"]?:0.0;
+            return [[NSUserDefaults standardUserDefaults] floatForKey:@"HPThemeDefaultRootSideInset"]?:0.0f;
         }
     }
     else 
     {
         // on iOS 11, do things Boxy style. I need to do further testing to see if iOS 11 supports the cool
         //      calculations we used on iOS 12
-        return [[NSUserDefaults standardUserDefaults] floatForKey:@"HPThemeDefaultRootSideInset"]?:0.0;
+        return [[NSUserDefaults standardUserDefaults] floatForKey:@"HPThemeDefaultRootSideInset"]?:0.0f;
     }
 }
 
@@ -618,7 +621,7 @@ NSDictionary *prefs = nil;
 
     if (!self.configured || !_pfTweakEnabled) return x;
      
-    return x+[[NSUserDefaults standardUserDefaults] floatForKey:@"HPThemeDefaultRootVerticalSpacing"]?:0.0;
+    return x+[[NSUserDefaults standardUserDefaults] floatForKey:@"HPThemeDefaultRootVerticalSpacing"]?:0.0f;
 }
 
 - (CGFloat)sideIconInset
@@ -636,24 +639,24 @@ NSDictionary *prefs = nil;
                                                                                   //    that only executes on iOS 12 and below
                          
 
-    BOOL leftInsetZeroed = ([[NSUserDefaults standardUserDefaults] floatForKey:@"HPThemeDefaultRootLeftInset"]?:0.0) == 0.0; // Enable more intuitive behavior 
+    BOOL leftInsetZeroed = ([[NSUserDefaults standardUserDefaults] floatForKey:@"HPThemeDefaultRootLeftInset"]?:0.0f) == 0.0f; // Enable more intuitive behavior 
 
-    if ([[[UIDevice currentDevice] systemVersion] floatValue] >= 12.0)
+    if ([[[UIDevice currentDevice] systemVersion] floatValue] >= 12.0f)
     {
         if (leftInsetZeroed || buggedSpacing) 
         {
-            return x + [[NSUserDefaults standardUserDefaults] floatForKey:@"HPThemeDefaultRootSideInset"]?:0;  // Here's the fix I found for the iPX 4col bug
+            return x + [[NSUserDefaults standardUserDefaults] floatForKey:@"HPThemeDefaultRootSideInset"]?:0.0f;  // Here's the fix I found for the iPX 4col bug
                                                                                                             // Essentially, we can create the "HSpacing"/Side Inset
                                                                                                             //      by returning it here (along w/ hIP returning -100)
         }
         else
         {
-            return [[NSUserDefaults standardUserDefaults] floatForKey:@"HPThemeDefaultRootLeftInset"]?:0;      // Otherwise, return the Left Inset for here, on normal devices
+            return [[NSUserDefaults standardUserDefaults] floatForKey:@"HPThemeDefaultRootLeftInset"]?:0.0f;      // Otherwise, return the Left Inset for here, on normal devices
         }
     }
     else
     {
-        return [[NSUserDefaults standardUserDefaults] floatForKey:@"HPThemeDefaultRootLeftInset"]?:0; // Just return Left Inset on iOS 12
+        return [[NSUserDefaults standardUserDefaults] floatForKey:@"HPThemeDefaultRootLeftInset"]?:0.0f; // Just return Left Inset on iOS 12
     }  
 }
 
@@ -669,7 +672,7 @@ NSDictionary *prefs = nil;
     // But fuck it; In boxy/cuboid and early versions of this tweak, i let users modify the value that was returned
     // Now, to make everything massively easier on both users and me, I return the original value and let the user
     //          add and subtract from that value. So, setting things to 0 means iOS defaults :)
-    return x + [[NSUserDefaults standardUserDefaults] floatForKey:@"HPThemeDefaultRootTopInset"]?:0;
+    return x + [[NSUserDefaults standardUserDefaults] floatForKey:@"HPThemeDefaultRootTopInset"]?:0.0f;
 }
 
 + (NSUInteger)iconColumnsForInterfaceOrientation:(NSInteger)arg1
@@ -714,7 +717,7 @@ NSDictionary *prefs = nil;
 
     if (_pfTweakEnabled)
     {
-        return ([[NSUserDefaults standardUserDefaults] integerForKey:@"HPThemeDefaultRootRows"]?:[HPUtility defaultRows]);
+        return ([[NSUserDefaults standardUserDefaults] integerForKey:@"HPThemeDefaultRootRows"] ?: [HPUtility defaultRows]);
     }
 
     return %orig;
@@ -771,7 +774,7 @@ NSDictionary *prefs = nil;
 {
     if (_tcDockyInstalled || (![[NSUserDefaults standardUserDefaults] boolForKey:@"HPdockConfigEnabled"]) || !_pfTweakEnabled) return %orig;
 
-    return [[NSUserDefaults standardUserDefaults] floatForKey:@"HPThemeDefaultDockColumns"] ?: 4;
+    return [[NSUserDefaults standardUserDefaults] floatForKey:@"HPThemeDefaultDockColumns"] ?: 4.0f;
 }
 
 - (UIEdgeInsets)layoutInsets
@@ -783,22 +786,22 @@ NSDictionary *prefs = nil;
         return x;
     }
     
-    if ((!([[NSUserDefaults standardUserDefaults] floatForKey:[NSString stringWithFormat:@"%@%@%@", @"HPThemeDefault", @"Dock", @"LeftInset"]]?:0)) == 0)
+    if ((!([[NSUserDefaults standardUserDefaults] floatForKey:[NSString stringWithFormat:@"%@%@%@", @"HPThemeDefault", @"Dock", @"LeftInset"]]?:0.0f)) == 0.0f)
     {
         return UIEdgeInsetsMake(
-            x.top + ([[NSUserDefaults standardUserDefaults] floatForKey:[NSString stringWithFormat:@"%@%@%@", @"HPThemeDefault", @"Dock", @"TopInset"]]?:0),
-            [[NSUserDefaults standardUserDefaults] floatForKey:[NSString stringWithFormat:@"%@%@%@", @"HPThemeDefault", @"Dock", @"LeftInset"]]?:0,
-            x.bottom - ([[NSUserDefaults standardUserDefaults] floatForKey:[NSString stringWithFormat:@"%@%@%@", @"HPThemeDefault", @"Dock", @"TopInset"]]?:0) + ([[NSUserDefaults standardUserDefaults] floatForKey:[NSString stringWithFormat:@"%@%@%@", @"HPThemeDefault", @"Dock", @"VerticalSpacing"]]?:0) *-2, // * 2 because regularly it was too slow
-            x.right - ([[NSUserDefaults standardUserDefaults] floatForKey:[NSString stringWithFormat:@"%@%@%@", @"HPThemeDefault", @"Dock", @"LeftInset"]]?:0) + ([[NSUserDefaults standardUserDefaults] floatForKey:[NSString stringWithFormat:@"%@%@%@", @"HPThemeDefault", @"Dock", @"SideInset"]]?:0) *-2
+            x.top + ([[NSUserDefaults standardUserDefaults] floatForKey:[NSString stringWithFormat:@"%@%@%@", @"HPThemeDefault", @"Dock", @"TopInset"]]?:0.0f),
+            [[NSUserDefaults standardUserDefaults] floatForKey:[NSString stringWithFormat:@"%@%@%@", @"HPThemeDefault", @"Dock", @"LeftInset"]]?:0.0f,
+            x.bottom - ([[NSUserDefaults standardUserDefaults] floatForKey:[NSString stringWithFormat:@"%@%@%@", @"HPThemeDefault", @"Dock", @"TopInset"]]?:0.0f) + ([[NSUserDefaults standardUserDefaults] floatForKey:[NSString stringWithFormat:@"%@%@%@", @"HPThemeDefault", @"Dock", @"VerticalSpacing"]]?:0.0f) *-2, // * 2 because regularly it was too slow
+            x.right - ([[NSUserDefaults standardUserDefaults] floatForKey:[NSString stringWithFormat:@"%@%@%@", @"HPThemeDefault", @"Dock", @"LeftInset"]]?:0.0f) + ([[NSUserDefaults standardUserDefaults] floatForKey:[NSString stringWithFormat:@"%@%@%@", @"HPThemeDefault", @"Dock", @"SideInset"]]?:0.0f) *-2
         );
     }
     else
     {
         return UIEdgeInsetsMake(
-            x.top + ([[NSUserDefaults standardUserDefaults] floatForKey:[NSString stringWithFormat:@"%@%@%@", @"HPThemeDefault", @"Dock", @"TopInset"]]?:0) ,
-            x.left + ([[NSUserDefaults standardUserDefaults] floatForKey:[NSString stringWithFormat:@"%@%@%@", @"HPThemeDefault", @"Dock", @"SideInset"]]?:0)*-2,
-            x.bottom - ([[NSUserDefaults standardUserDefaults] floatForKey:[NSString stringWithFormat:@"%@%@%@", @"HPThemeDefault", @"Dock", @"TopInset"]]?:0) + ([[NSUserDefaults standardUserDefaults] floatForKey:[NSString stringWithFormat:@"%@%@%@", @"HPThemeDefault", @"Dock", @"VerticalSpacing"]]?:0) *-2, // * 2 because regularly it was too slow
-            x.right + ([[NSUserDefaults standardUserDefaults] floatForKey:[NSString stringWithFormat:@"%@%@%@", @"HPThemeDefault", @"Dock", @"SideInset"]]?:0)*-2
+            x.top + ([[NSUserDefaults standardUserDefaults] floatForKey:[NSString stringWithFormat:@"%@%@%@", @"HPThemeDefault", @"Dock", @"TopInset"]]?:0.0f) ,
+            x.left + ([[NSUserDefaults standardUserDefaults] floatForKey:[NSString stringWithFormat:@"%@%@%@", @"HPThemeDefault", @"Dock", @"SideInset"]]?:0.0f)*-2,
+            x.bottom - ([[NSUserDefaults standardUserDefaults] floatForKey:[NSString stringWithFormat:@"%@%@%@", @"HPThemeDefault", @"Dock", @"TopInset"]]?:0.0f) + ([[NSUserDefaults standardUserDefaults] floatForKey:[NSString stringWithFormat:@"%@%@%@", @"HPThemeDefault", @"Dock", @"VerticalSpacing"]]?:0.0f) *-2, // * 2 because regularly it was too slow
+            x.right + ([[NSUserDefaults standardUserDefaults] floatForKey:[NSString stringWithFormat:@"%@%@%@", @"HPThemeDefault", @"Dock", @"SideInset"]]?:0.0f)*-2
         );
     }
 }
@@ -807,7 +810,7 @@ NSDictionary *prefs = nil;
 {
     if (_tcDockyInstalled || (![[NSUserDefaults standardUserDefaults] boolForKey:@"HPdockConfigEnabled"])) return %orig;
 
-    return [[NSUserDefaults standardUserDefaults] floatForKey:@"HPThemeDefaultDockColumns"] ?: 4;
+    return [[NSUserDefaults standardUserDefaults] integerForKey:@"HPThemeDefaultDockColumns"] ?: 4;
 }
 
 - (CGFloat)horizontalIconPadding 
@@ -816,26 +819,26 @@ NSDictionary *prefs = nil;
 
     if (_tcDockyInstalled || (![[NSUserDefaults standardUserDefaults] boolForKey:@"HPdockConfigEnabled"]) || !_pfTweakEnabled || !self.configured) return %orig;
 
-    BOOL buggedSpacing = ([[NSUserDefaults standardUserDefaults] floatForKey:@"HPThemeDefaultDockColumns"]?:4) == 4 && [[HPUtility deviceName] isEqualToString:@"iPhone X"];
-    BOOL leftInsetZeroed = [[NSUserDefaults standardUserDefaults] floatForKey:@"HPThemeDefaultDockLeftInset"]?:0 == 0.0;
+    BOOL buggedSpacing = ([[NSUserDefaults standardUserDefaults] integerForKey:@"HPThemeDefaultDockColumns"]?:4) == 4 && [[HPUtility deviceName] isEqualToString:@"iPhone X"];
+    BOOL leftInsetZeroed = [[NSUserDefaults standardUserDefaults] floatForKey:@"HPThemeDefaultDockLeftInset"]?:0.0f == 0.0f;
 
-    if ([[[UIDevice currentDevice] systemVersion] floatValue] >= 12.0)
+    if ([[[UIDevice currentDevice] systemVersion] floatValue] >= 12.0f)
     {
         if (buggedSpacing)
         {
-            return -100.0;
+            return -100.0f;
         }
         if (leftInsetZeroed) {
             return x;
         }
         else
         {
-            return [[NSUserDefaults standardUserDefaults] floatForKey:@"HPThemeDefaultDockSideInset"]?:0;
+            return [[NSUserDefaults standardUserDefaults] floatForKey:@"HPThemeDefaultDockSideInset"]?:0.0f;
         }
     }
     else 
     {
-        return [[NSUserDefaults standardUserDefaults] floatForKey:@"HPThemeDefaultDockSideInset"]?:0;
+        return [[NSUserDefaults standardUserDefaults] floatForKey:@"HPThemeDefaultDockSideInset"]?:0.0f;
     }
 }
 
@@ -846,7 +849,7 @@ NSDictionary *prefs = nil;
     if (![[NSUserDefaults standardUserDefaults] boolForKey:@"HPdockConfigEnabled"]) return %orig;
     if (!self.configured || _tcDockyInstalled || !_pfTweakEnabled) return x;
 
-    return x + [[NSUserDefaults standardUserDefaults] floatForKey:@"HPThemeDefaultDockVerticalSpacing"]?:0;
+    return x + [[NSUserDefaults standardUserDefaults] floatForKey:@"HPThemeDefaultDockVerticalSpacing"]?:0.0f;
 }
 
 - (CGFloat)sideIconInset
@@ -862,22 +865,22 @@ NSDictionary *prefs = nil;
 
     BOOL buggedSpacing = [[NSUserDefaults standardUserDefaults] floatForKey:@"HPThemeDefaultDockColumns"]?:4 == 4 
                                         && [[HPUtility deviceName] isEqualToString:@"iPhone X"];
-    BOOL leftInsetZeroed = [[NSUserDefaults standardUserDefaults] floatForKey:@"HPThemeDefaultDockLeftInset"]?:0 == 0.0;
+    BOOL leftInsetZeroed = [[NSUserDefaults standardUserDefaults] floatForKey:@"HPThemeDefaultDockLeftInset"]?:0.0f == 0.0f;
 
-    if ([[[UIDevice currentDevice] systemVersion] floatValue] >= 12.0)
+    if ([[[UIDevice currentDevice] systemVersion] floatValue] >= 12.0f)
     {
         if (leftInsetZeroed || buggedSpacing) 
         {
-            return x + [[NSUserDefaults standardUserDefaults] floatForKey:@"HPThemeDefaultDockSideInset"]?:0;
+            return x + [[NSUserDefaults standardUserDefaults] floatForKey:@"HPThemeDefaultDockSideInset"]?:0.0f;
         }
         else
         {
-            return [[NSUserDefaults standardUserDefaults] floatForKey:@"HPThemeDefaultDockLeftInset"]?:0;
+            return [[NSUserDefaults standardUserDefaults] floatForKey:@"HPThemeDefaultDockLeftInset"]?:0.0f;
         }
     }
     else
     {
-        return [[NSUserDefaults standardUserDefaults] floatForKey:@"HPThemeDefaultDockSideInset"]?:0;
+        return [[NSUserDefaults standardUserDefaults] floatForKey:@"HPThemeDefaultDockSideInset"]?:0.0f;
     }
 }
 
@@ -892,7 +895,7 @@ NSDictionary *prefs = nil;
 
     CGFloat x = %orig;
     
-    return x + [[NSUserDefaults standardUserDefaults] floatForKey:@"HPThemeDefaultDockTopInset"] ?: 0;
+    return x + [[NSUserDefaults standardUserDefaults] floatForKey:@"HPThemeDefaultDockTopInset"] ?: 0.0f;
 }
 
 + (NSUInteger)iconColumnsForInterfaceOrientation:(NSInteger)arg1
@@ -963,10 +966,47 @@ NSDictionary *prefs = nil;
         }
     }
 
-    CGFloat sx = ([[NSUserDefaults standardUserDefaults] floatForKey:[NSString stringWithFormat:@"%@%@%@", @"HPThemeDefault", x, @"Scale"]]?:60) / 60.0;
+    CGFloat sx = ([[NSUserDefaults standardUserDefaults] floatForKey:[NSString stringWithFormat:@"%@%@%@", @"HPThemeDefault", x, @"Scale"]]?:60.0f) / 60.0f;
     [self.layer setSublayerTransform:CATransform3DMakeScale(sx, sx, 1)];
 
-    self.alpha = ([[NSUserDefaults standardUserDefaults] floatForKey:[NSString stringWithFormat:@"%@%@%@", @"HPThemeDefault", x, @"IconAlpha"]]?:100.0) / 100.0;
+    [self setAlpha:self.alpha];
+}
+
+- (void)setAlpha:(CGFloat)alpha
+{
+    if (alpha != 1.0 || !_pfTweakEnabled)
+    {
+        %orig(alpha);
+        return;
+    }
+    
+    NSInteger loc = MSHookIvar<NSInteger>(self, "_iconLocation");
+    NSString *x = @"";
+
+    switch ( loc )
+    {
+        case 1: 
+        {   
+            x = @"Root";
+            break;
+        }
+        case 3: 
+        {
+            x = @"Dock";
+            break;
+        }
+        case 6: 
+        {
+            x = @"Folder";
+            break;
+        }
+        default: 
+        {
+            x = @"Folder";
+            break;
+        }
+    }
+    %orig(([[NSUserDefaults standardUserDefaults] floatForKey:[NSString stringWithFormat:@"%@%@%@", @"HPThemeDefault", x, @"IconAlpha"]]?:100.0f) / 100.0f);
 }
 
 %end
@@ -1864,8 +1904,18 @@ NSDictionary *prefs = nil;
 
     CGFloat sx = ([[NSUserDefaults standardUserDefaults] floatForKey:[NSString stringWithFormat:@"%@%@%@", @"HPThemeDefault", x, @"Scale"]]?:60.0) / 60.0;
     [self.layer setSublayerTransform:CATransform3DMakeScale(sx, sx, 1)];
-    self.alpha = ([[NSUserDefaults standardUserDefaults] floatForKey:[NSString stringWithFormat:@"%@%@%@", @"HPThemeDefault", x, @"IconAlpha"]]?:100.0) / 100.0;
 }
+
+- (CGFloat)iconImageAlpha
+{    
+    NSString *x = @"";
+    if ([[self location] isEqualToString:@"SBIconLocationRoot"]) x = @"Root";
+    else if ([[self location] isEqualToString:@"SBIconLocationDock"]) x = @"Dock";
+    else x = @"Folder";
+
+    return (([[NSUserDefaults standardUserDefaults] floatForKey:[NSString stringWithFormat:@"%@%@%@", @"HPThemeDefault", x, @"IconAlpha"]]?:100.0f) / 100.0f);
+}
+
 
 %end 
 
@@ -2427,7 +2477,6 @@ NSDictionary *prefs = nil;
 //
 //
 // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
-
 
 
 static void *observer = NULL;
