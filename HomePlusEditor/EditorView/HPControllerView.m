@@ -228,12 +228,14 @@ Properties:
             self.transform = CGAffineTransformTranslate(transform, 0, (0-([[UIScreen mainScreen] bounds].size.height * 0.5)));
         }
     ]; 
+    [[NSNotificationCenter defaultCenter] postNotificationName:kFadeFloatingDockNotificationName object:nil];
     [[NSNotificationCenter defaultCenter] postNotificationName:@"HomePlusKickWindowsUp" object:nil];
 }
 
 - (void)bottomTextFieldEndedEditing:(UITextField *)textField
 {
     [self.bottomTextField resignFirstResponder];
+    [[NSNotificationCenter defaultCenter] postNotificationName:kShowFloatingDockNotificationName object:nil];
     [[NSNotificationCenter defaultCenter] postNotificationName:@"HomePlusKickWindowsBack" object:nil];
     [UIView animateWithDuration:0.4 
         animations:
