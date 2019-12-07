@@ -169,7 +169,7 @@ const int RESET_VALUES = 1;
 
 - (void)handleSourceButtonPress:(UIButton*)sender
 {
-    [[UIApplication sharedApplication] openURL:[NSURL URLWithString: @"http://git.kritanta.me/Kritanta/HomePlus"] options:@{} completionHandler:nil];
+    [[UIApplication sharedApplication] openURL:[NSURL URLWithString: @"https://github.com/KritantaDev/HomePlus"] options:@{} completionHandler:nil];
 }
 
 #pragma mark - 
