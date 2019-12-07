@@ -969,44 +969,7 @@ NSDictionary *prefs = nil;
     CGFloat sx = ([[NSUserDefaults standardUserDefaults] floatForKey:[NSString stringWithFormat:@"%@%@%@", @"HPThemeDefault", x, @"Scale"]]?:60.0f) / 60.0f;
     [self.layer setSublayerTransform:CATransform3DMakeScale(sx, sx, 1)];
 
-    [self setAlpha:self.alpha];
-}
-
-- (void)setAlpha:(CGFloat)alpha
-{
-    if (alpha != 1.0 || !_pfTweakEnabled)
-    {
-        %orig(alpha);
-        return;
-    }
-    
-    NSInteger loc = MSHookIvar<NSInteger>(self, "_iconLocation");
-    NSString *x = @"";
-
-    switch ( loc )
-    {
-        case 1: 
-        {   
-            x = @"Root";
-            break;
-        }
-        case 3: 
-        {
-            x = @"Dock";
-            break;
-        }
-        case 6: 
-        {
-            x = @"Folder";
-            break;
-        }
-        default: 
-        {
-            x = @"Folder";
-            break;
-        }
-    }
-    %orig(([[NSUserDefaults standardUserDefaults] floatForKey:[NSString stringWithFormat:@"%@%@%@", @"HPThemeDefault", x, @"IconAlpha"]]?:100.0f) / 100.0f);
+    if (self.alpha != 0) self.alpha = (([[NSUserDefaults standardUserDefaults] floatForKey:[NSString stringWithFormat:@"%@%@%@", @"HPThemeDefault", x, @"IconAlpha"]]?:100.0f) / 100.0f);
 }
 
 %end
@@ -1904,18 +1867,8 @@ NSDictionary *prefs = nil;
 
     CGFloat sx = ([[NSUserDefaults standardUserDefaults] floatForKey:[NSString stringWithFormat:@"%@%@%@", @"HPThemeDefault", x, @"Scale"]]?:60.0) / 60.0;
     [self.layer setSublayerTransform:CATransform3DMakeScale(sx, sx, 1)];
+    if (self.alpha != 0) self.alpha = (([[NSUserDefaults standardUserDefaults] floatForKey:[NSString stringWithFormat:@"%@%@%@", @"HPThemeDefault", x, @"IconAlpha"]]?:100.0f) / 100.0f);
 }
-
-- (CGFloat)iconImageAlpha
-{    
-    NSString *x = @"";
-    if ([[self location] isEqualToString:@"SBIconLocationRoot"]) x = @"Root";
-    else if ([[self location] isEqualToString:@"SBIconLocationDock"]) x = @"Dock";
-    else x = @"Folder";
-
-    return (([[NSUserDefaults standardUserDefaults] floatForKey:[NSString stringWithFormat:@"%@%@%@", @"HPThemeDefault", x, @"IconAlpha"]]?:100.0f) / 100.0f);
-}
-
 
 %end 
 
