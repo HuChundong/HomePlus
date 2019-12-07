@@ -1,7 +1,36 @@
+//
+// HPSpacingControllerView.m
+//
+// Controller View for editing Horizontal/Vertical Spacing
+// H Spacing is oft refered to in this tweak as "Side Inset"
+// Depending on the situation, users actually want side inset instead of H Spacing
+//      And typically when they actually want H spacing, its because they have a Left
+//      offset, *so*, when they've changed Left Offset, give them real H spacing
+//      It works beautifully 
+//
+// Author:  Kritanta
+// Created: Dec 2019
+//
+
+
 #include "HPSpacingControllerView.h"
 #include "EditorManager.h"
 
 @implementation HPSpacingControllerView
+
+/*
+Properties: 
+    @property (nonatomic, retain) UIView *topView;
+    @property (nonatomic, retain) UIView *bottomView;
+
+    @property (nonatomic, retain) UILabel *topLabel;
+    @property (nonatomic, retain) OBSlider *topControl;
+    @property (nonatomic, retain) UITextField *topTextField;
+
+    @property (nonatomic, retain) UILabel *bottomLabel;
+    @property (nonatomic, retain) OBSlider *bottomControl;
+    @property (nonatomic, retain) UITextField *bottomTextField;
+*/
 
 - (instancetype)initWithFrame:(CGRect)frame
 {

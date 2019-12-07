@@ -1,7 +1,31 @@
+//
+// HPOffsetControllerView.m
+// 
+// Control View for Editing Top/Left Offsets
+//
+// Author:  Kritanta
+// Created: Dec 2019
+//
+
 #include "HPOffsetControllerView.h"
 #include "EditorManager.h"
 
 @implementation HPOffsetControllerView
+
+/*
+Properties: 
+    @property (nonatomic, retain) UIView *topView;
+    @property (nonatomic, retain) UIView *bottomView;
+
+    @property (nonatomic, retain) UILabel *topLabel;
+    @property (nonatomic, retain) OBSlider *topControl;
+    @property (nonatomic, retain) UITextField *topTextField;
+
+    @property (nonatomic, retain) UILabel *bottomLabel;
+    @property (nonatomic, retain) OBSlider *bottomControl;
+    @property (nonatomic, retain) UITextField *bottomTextField;
+*/
+
 
 - (instancetype)initWithFrame:(CGRect)frame
 {

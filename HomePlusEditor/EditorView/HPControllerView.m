@@ -1,16 +1,28 @@
+//
+// HPControllerView.m
+// 
+// Base to build controller views on. 
+// Subclasses of this go in ./ControllerViews
+// 
+// Author: Kritanta
+// Created: Oct 2019
+//
+
 #include "HPControllerView.h"
 @implementation HPControllerView 
+
 /*
-@property (nonatomic, retain) UIView *topView;
-@property (nonatomic, retain) UIView *bottomView;
+Properties: 
+    @property (nonatomic, retain) UIView *topView;
+    @property (nonatomic, retain) UIView *bottomView;
 
-@property (nonatomic, retain) UILabel *topLabel;
-@property (nonatomic, retain) OBSlider *topControl;
-@property (nonatomic, retain) UITextField *topTextField;
+    @property (nonatomic, retain) UILabel *topLabel;
+    @property (nonatomic, retain) OBSlider *topControl;
+    @property (nonatomic, retain) UITextField *topTextField;
 
-@property (nonatomic, retain) UILabel *bottomLabel;
-@property (nonatomic, retain) OBSlider *bottomControl;
-@property (nonatomic, retain) UITextField *bottomTextField;
+    @property (nonatomic, retain) UILabel *bottomLabel;
+    @property (nonatomic, retain) OBSlider *bottomControl;
+    @property (nonatomic, retain) UITextField *bottomTextField;
 */
 
 - (instancetype)initWithFrame:(CGRect)frame
@@ -23,6 +35,8 @@
 
     return self;
 }
+
+#pragma mark Layout
 
 - (void)layoutControllerView
 {
@@ -47,7 +61,9 @@
     [self.topTextField addTarget:self
             action:@selector(topTextFieldUpdated:)
             forControlEvents:UIControlEventEditingChanged];
-
+    [self.topTextField addTarget:self
+            action:@selector(topTextFieldBeganEditing:)
+            forControlEvents:UIControlEventEditingDidBegin];
     self.topTextField.keyboardType = UIKeyboardTypeNumberPad;
     self.topTextField.textColor = [UIColor whiteColor];
 
@@ -67,7 +83,7 @@
                                     target:nil action:nil];
     UIBarButtonItem *doneBarButton = [[UIBarButtonItem alloc]
                                     initWithBarButtonSystemItem:UIBarButtonSystemItemDone
-                                    target:self.topTextField action:@selector(resignFirstResponder)];
+                                    target:self action:@selector(topTextFieldEndedEditing:)];
     keyboardToolbar.items = @[flexBarButton, doneBarButton];
     self.topTextField.inputAccessoryView = keyboardToolbar;
     [self.topTextField.inputAccessoryView addSubview:tminusButton];
@@ -158,8 +174,11 @@
 
 }
 
+#pragma mark Sliders 
+
 - (void)topSliderUpdated:(UISlider *)slider
 {
+    // Mainly stubs for subclasses. If they need this they can call super (most if not all need it)
     [[NSNotificationCenter defaultCenter] postNotificationName:@"HPlayoutIconViews" object:nil];
 }
 
@@ -168,12 +187,25 @@
     [[NSNotificationCenter defaultCenter] postNotificationName:@"HPlayoutIconViews" object:nil];
 }
 
+#pragma mark Text Fields
+
+- (void)topTextFieldBeganEditing:(UITextField *)textField
+{
+    [[NSNotificationCenter defaultCenter] postNotificationName:kFadeFloatingDockNotificationName object:nil];
+}
+
+- (void)topTextFieldEndedEditing:(UITextField *)textField
+{
+    [self.topTextField resignFirstResponder];
+    [[NSNotificationCenter defaultCenter] postNotificationName:kShowFloatingDockNotificationName object:nil];
+}
 
 - (void)topTextFieldUpdated:(UITextField *)textField
 {
     self.topControl.value = [[textField text] floatValue];
     [self topSliderUpdated:self.topControl];
 }
+
 - (void)invertTopTextField
 {
     if ([self.topTextField.text hasPrefix:@"-"])
@@ -198,6 +230,7 @@
     ]; 
     [[NSNotificationCenter defaultCenter] postNotificationName:@"HomePlusKickWindowsUp" object:nil];
 }
+
 - (void)bottomTextFieldEndedEditing:(UITextField *)textField
 {
     [self.bottomTextField resignFirstResponder];
@@ -209,11 +242,13 @@
         }
     ]; 
 }
+
 - (void)bottomTextFieldUpdated:(UITextField *)textField
 {
     self.bottomControl.value = [[textField text] floatValue];
     [self bottomSliderUpdated:self.bottomControl];
 }
+
 -(void)invertBottomTextField
 {
     if ([self.bottomTextField.text hasPrefix:@"-"])

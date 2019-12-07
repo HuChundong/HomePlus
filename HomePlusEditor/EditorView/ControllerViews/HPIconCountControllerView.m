@@ -1,7 +1,32 @@
+//
+// HPIconCountControllerView.m
+//
+// Controller View for Editing Columns/Rows
+// Maybe someday I should make a custom subclass for button controlls and such
+//
+// Author:  Kritanta
+// Created: Dec 2019
+//
+
 #include "HPIconCountControllerView.h"
 #include "EditorManager.h"
 
 @implementation HPIconCountControllerView
+
+/*
+Properties: 
+    @property (nonatomic, retain) UIView *topView;
+    @property (nonatomic, retain) UIView *bottomView;
+
+    @property (nonatomic, retain) UILabel *topLabel;
+    @property (nonatomic, retain) OBSlider *topControl;
+    @property (nonatomic, retain) UITextField *topTextField;
+
+    @property (nonatomic, retain) UILabel *bottomLabel;
+    @property (nonatomic, retain) OBSlider *bottomControl;
+    @property (nonatomic, retain) UITextField *bottomTextField;
+*/
+
 
 - (instancetype)initWithFrame:(CGRect)frame
 {

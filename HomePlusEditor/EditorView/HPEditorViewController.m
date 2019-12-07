@@ -31,16 +31,16 @@
 @end
 
 @interface HPEditorViewController () 
+
 @property (nonatomic, readwrite, strong) HPControllerView *offsetControlView;
 @property (nonatomic, readwrite, strong) HPControllerView *spacingControlView;
 @property (nonatomic, readwrite, strong) HPControllerView *iconCountControlView;
 @property (nonatomic, readwrite, strong) HPControllerView *scaleControlView;
 @property (nonatomic, readwrite, strong) HPControllerView *settingsView;
+
 @property (nonatomic, readwrite, strong) HPEditorViewNavigationTabBar *tabBar;
 
 @property (nonatomic, readwrite, strong) HPSettingsTableViewController *tableViewController;
-
-@property (nonatomic, readwrite, strong) UIView *tapBackView;
 
 @property (nonatomic, retain) HPControllerView *activeView;
 @property (nonatomic, retain) UIButton *activeButton;
@@ -91,10 +91,8 @@ const CGFloat TABLE_HEADER_HEIGHT = 0.458;
 
 
 @implementation HPEditorViewController
-@synthesize topOffsetSlider, sideOffsetSlider, verticalSpacingSlider, horizontalSpacingSlider, 
-            rootIconListViewsToUpdate, topOffsetValueInput, bottomOffsetValueInput,
-            topSpacingValueInput, bottomSpacingValueInput, rowsSlider, columnsSlider, scaleSlider,
-            rotationSlider;
+
+
 
 - (void)viewDidLoad
 {
@@ -264,8 +262,6 @@ const CGFloat TABLE_HEADER_HEIGHT = 0.458;
     self.bottomResetButton.frame = CGRectMake(20,(0.912) * [[UIScreen mainScreen] bounds].size.height, RESET_BUTTON_SIZE, RESET_BUTTON_SIZE);
     self.bottomResetButton.alpha = 0.8;
     [self.view addSubview:self.bottomResetButton];
-
-    self.tapBackView.hidden = NO;
     
     self.activeButton = self.offsetButton;
 
@@ -362,36 +358,6 @@ const CGFloat TABLE_HEADER_HEIGHT = 0.458;
     [[NSNotificationCenter defaultCenter] postNotificationName:kHighlightViewNotificationName object:nil];
 }
 
-#pragma mark TapBackView
-
-- (UIView *)tapBackView 
-{
-    if (!_tapBackView) 
-    {   //uicontroleventtouchdownrepeat
-        _tapBackView = [[UIView alloc] initWithFrame:[[UIScreen mainScreen] bounds]];
-        UITapGestureRecognizer *singleTapRecognizer = [[UITapGestureRecognizer alloc] initWithTarget:self action: @selector(handleTapOnView:)];                                 
-        [singleTapRecognizer setNumberOfTouchesRequired:2];
-        [_tapBackView addGestureRecognizer: singleTapRecognizer];
-        _tapBackView.transform = CGAffineTransformMakeScale(0.7, 0.7);
-    }
-    return _tapBackView;
-}
-- (void)handleTapOnView:(id)sender
-{
-
-    [[NSNotificationCenter defaultCenter] postNotificationName:@"HomePlusEditingModeDisabled" object:nil];
-    [[self.view subviews] makeObjectsPerformSelector:@selector(removeFromSuperview)];
-    _spacingControlView = nil;
-    _offsetControlView = nil;
-    _settingsView = nil;
-    [self viewDidLoad];
-    [[EditorManager sharedManager] hideEditorView];
-}
-
-#pragma mark - HPControllerViews
-
-
-
 #pragma mark Settings View
 
 - (HPControllerView *)settingsView 
@@ -430,6 +396,8 @@ const CGFloat TABLE_HEADER_HEIGHT = 0.458;
     _settingsView.hidden = NO;
     return _settingsView;
 }
+
+#pragma mark - HPControllerViews
 
 - (HPSettingsTableViewController *)tableViewController
 {
@@ -529,7 +497,6 @@ const CGFloat TABLE_HEADER_HEIGHT = 0.458;
     [[self tableViewController] opened];
 
     self.activeButton = sender;
-    self.tapBackView.hidden = YES;
 }
 - (void)handleDoneSettingsButtonPress:(UIButton*)sender
 {
@@ -551,16 +518,14 @@ const CGFloat TABLE_HEADER_HEIGHT = 0.458;
     [[NSNotificationCenter defaultCenter] postNotificationName:kShowFloatingDockNotificationName object:nil];
     //[[NSNotificationCenter defaultCenter] postNotificationName:@"HPResetIconViews" object:nil];
 
-    self.tapBackView.hidden = NO;
-
     [self handleOffsetButtonPress:self.offsetButton];
 }
 - (void)handleOffsetButtonPress:(UIButton*)sender 
 {
     [self loadControllerView:[self offsetControlView]];
-
+    /*
     if (((([[NSUserDefaults standardUserDefaults] integerForKey:@"HPThemeDefaultRootColumns"]?:4) == 4) && ([[HPUtility deviceName] isEqualToString:@"iPhone X"])) && (kCFCoreFoundationVersionNumber < 1600)) 
-    {
+    { TODO: THIS
         self.leftOffsetLabel.text = @"Left Offset Disabled When\n4 Columns Selected on Notched Devices";
         self.bottomOffsetValueInput.enabled = NO;
         self.sideOffsetSlider.enabled = NO;
@@ -573,7 +538,7 @@ const CGFloat TABLE_HEADER_HEIGHT = 0.458;
         self.sideOffsetSlider.enabled = YES;
         self.bottomResetButton.enabled = YES;
     }
-
+    */
     self.activeButton.userInteractionEnabled = YES; 
     [UIView animateWithDuration:.2 
         animations:
@@ -582,9 +547,11 @@ const CGFloat TABLE_HEADER_HEIGHT = 0.458;
             self.bottomResetButton.alpha = 0.8;
         }
     ];
+    
     self.activeButton = sender; 
     sender.userInteractionEnabled = NO; 
-    self.tapBackView.hidden = NO;
+    //self.tapBackView.hidden = NO;
+    
 }
 
 - (void)handleScaleButtonPress:(UIButton*)sender 
@@ -601,7 +568,6 @@ const CGFloat TABLE_HEADER_HEIGHT = 0.458;
     ];
     self.activeButton = sender; 
     sender.userInteractionEnabled = NO; 
-    self.tapBackView.hidden = NO;
 }
 
 - (void)handleTopResetButtonPress:(UIButton*)sender 
@@ -676,7 +642,6 @@ const CGFloat TABLE_HEADER_HEIGHT = 0.458;
 
     self.activeButton = sender;
     sender.userInteractionEnabled = NO; 
-    self.tapBackView.hidden = NO;
 }
 - (void)handleIconCountButtonPress:(UIButton*)sender 
 {
@@ -691,7 +656,6 @@ const CGFloat TABLE_HEADER_HEIGHT = 0.458;
     ];
     self.activeButton = sender;
     sender.userInteractionEnabled = NO; 
-    self.tapBackView.hidden = NO;
 }
 - (void)resignAllTextFields
 {

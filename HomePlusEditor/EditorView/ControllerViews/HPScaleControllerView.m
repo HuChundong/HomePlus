@@ -1,7 +1,30 @@
+//
+// HPScaleControllerView.m
+//
+// Controller View for editing Icon Scale/Alpha
+//
+// Author:  Kritanta
+// Created: Dec 2019
+//
+
 #include "HPScaleControllerView.h"
 #include "EditorManager.h"
 
 @implementation HPScaleControllerView
+
+/*
+Properties: 
+    @property (nonatomic, retain) UIView *topView;
+    @property (nonatomic, retain) UIView *bottomView;
+
+    @property (nonatomic, retain) UILabel *topLabel;
+    @property (nonatomic, retain) OBSlider *topControl;
+    @property (nonatomic, retain) UITextField *topTextField;
+
+    @property (nonatomic, retain) UILabel *bottomLabel;
+    @property (nonatomic, retain) OBSlider *bottomControl;
+    @property (nonatomic, retain) UITextField *bottomTextField;
+*/
 
 - (instancetype)initWithFrame:(CGRect)frame
 {

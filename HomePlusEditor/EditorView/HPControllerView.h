@@ -1,4 +1,5 @@
 #include <UIKit/UIKit.h>
+#include "HomePlus.h"
 #include "OBSlider.h"
 
 #define kLeftScreenBuffer 0.146
@@ -24,6 +25,8 @@
 - (void)topSliderUpdated:(UISlider *)slider;
 - (void)bottomSliderUpdated:(UISlider *)slider;
 
+- (void)topTextFieldBeganEditing:(UITextField *)textField;
+- (void)topTextFieldEndedEditing:(UITextField *)textField;
 - (void)topTextFieldUpdated:(UITextField *)textField;
 - (void)invertTopTextField;
 
